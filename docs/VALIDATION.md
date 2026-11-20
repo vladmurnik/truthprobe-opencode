@@ -307,3 +307,32 @@ bun x electron-builder --win --x64 --publish never --dir --config electron-build
 **Известное ограничение точности.** На этом шлюзе распределение почти детерминированное
 (`logprob` лучшего токена порядка `-0.001`), поэтому `phi ≈ 1` и `answer confidence` уходит к
 `99.9997%`. Высокие проценты здесь означают «модель шла ровно», а не «ответ верный».
+
+## 10. Полный прогон монорепо: найденный баг схемы (19.11.2026)
+
+До этого проверялись только truthprobe-файлы. Полный `bun test` в `packages/core` (7 713 тестов,
+331 файл) дал **218 падений** в сюитах `SessionRunnerLLM` и соседях с ошибкой:
+
+```
+SchemaError: Expected Truthprobe.Level | undefined
+  at ["content"][0]["truthprobe"]["level"]
+```
+
+Причина: `scoreAnswer` кладёт `level: null`, когда сигнала нет (`status: "unavailable"`), а схема
+принимала только пять литералов или `undefined`. Любой парт с вердиктом `unavailable` не проходил
+декодирование — то есть в реальной работе это ломало как раз те ответы, где цифр нет.
+
+Фикс: `level: optional(Schema.NullOr(Level))` в `packages/schema/src/truthprobe.ts`, плюс
+`level?: TruthprobeLevel | null` в клиентских типах. После фикса:
+
+| Прогон | pass | skip | fail |
+| --- | --- | --- | --- |
+| до фикса | 7 144 | 351 | 218 |
+| после фикса | 7 300 | 351 | 62 |
+
+Оставшиеся 62 падения к патчу отношения не имеют: `tool-search` скачивает ripgrep с github.com,
+`provider-gitlab-oauth` ходит на gitlab.com, `cross-spawn`/MCP зависят от spawn — в harness
+исходящая сеть заблокирована (`test attempted network request: GET https://github.com/...`).
+
+Чего по-прежнему нет: прогона на чистых VM (Hyper-V/VirtualBox/VMware/Windows Sandbox на машине
+отсутствуют), запуска `install.sh` на Linux/macOS и замеров на облачных провайдерах с ключами.

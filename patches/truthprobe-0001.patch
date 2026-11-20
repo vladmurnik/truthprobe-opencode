@@ -1,7 +1,7 @@
 From 3ccda6cdf3320c8fbcfbb2c8656c34a2827932af Mon Sep 17 00:00:00 2001
 From: truthprobe <truthprobe@local>
 Date: Thu, 19 Nov 2026 00:59:59 +0300
-Subject: [PATCH 01/11] feat(truthprobe): score answers from token logprobs
+Subject: [PATCH 01/12] feat(truthprobe): score answers from token logprobs
 
 - schema: Truthprobe.Info, capabilities.logprobs, AssistantText.truthprobe, optional truthprobe on session.text.ended
 - ai/openai-chat: request logprobs/top_logprobs when enabled, parse choice-level logprobs into providerMetadata
@@ -1192,7 +1192,7 @@ index 6a844d7..f21811e 100644
 From a9db0dab3c3392b40e8c9366e3455be1f37b7dcf Mon Sep 17 00:00:00 2001
 From: adik <adik@local>
 Date: Thu, 19 Nov 2026 01:12:00 +0300
-Subject: [PATCH 02/11] fix(tui): apply truthprobe metadata from
+Subject: [PATCH 02/12] fix(tui): apply truthprobe metadata from
  session.text.ended events
 
 The solid client store only copied event.data.text into the in-memory
@@ -1222,7 +1222,7 @@ index 8b6d247..7368d0c 100644
 From 2870f64a9bcb19d1e1701d85101c5074646cdcac Mon Sep 17 00:00:00 2001
 From: adik <adik@local>
 Date: Thu, 19 Nov 2026 03:08:36 +0300
-Subject: [PATCH 03/11] test(truthprobe): cover segmentation, scoring and
+Subject: [PATCH 03/12] test(truthprobe): cover segmentation, scoring and
  protocol parsing
 
 - send logprobs from every chat-completions model that declares the capability
@@ -1985,7 +1985,7 @@ index eed85f3..5bde799 100755
 From f04342565c0963f466c9bae21dc1b0d9158bab44 Mon Sep 17 00:00:00 2001
 From: TruthProbe <truthprobe@local>
 Date: Thu, 19 Nov 2026 09:40:19 +0300
-Subject: [PATCH 04/11] feat(truthprobe): probe providers and enable logprobs
+Subject: [PATCH 04/12] feat(truthprobe): probe providers and enable logprobs
  automatically
 
 Adding a provider key no longer needs an environment variable.
@@ -2800,7 +2800,7 @@ index 0000000..e23e561
 From 3126939707e7c7c305f8b3c2a89d196dc1b5acd9 Mon Sep 17 00:00:00 2001
 From: adik <adik@local>
 Date: Thu, 19 Nov 2026 13:34:58 +0300
-Subject: [PATCH 05/11] feat(truthprobe): show confidence in the desktop
+Subject: [PATCH 05/12] feat(truthprobe): show confidence in the desktop
  session UI
 
 ---
@@ -2897,7 +2897,7 @@ index be526b4..659538f 100644
 From 335305a2e846ae50c7d31cec6a750b74a4d385a6 Mon Sep 17 00:00:00 2001
 From: TruthProbe <truthprobe@localhost>
 Date: Thu, 19 Nov 2026 13:44:43 +0300
-Subject: [PATCH 06/11] feat(truthprobe): list doubtful sentences in the
+Subject: [PATCH 06/12] feat(truthprobe): list doubtful sentences in the
  desktop footer
 
 ---
@@ -3082,7 +3082,7 @@ index b44a4df..2a7ef9d 100644
 From 6017d751fc1a7a9bf1eac92e2b40b161e0c48b49 Mon Sep 17 00:00:00 2001
 From: TruthProbe <truthprobe@localhost>
 Date: Thu, 19 Nov 2026 14:33:06 +0300
-Subject: [PATCH 07/11] feat(desktop): let a fork brand the desktop app
+Subject: [PATCH 07/12] feat(desktop): let a fork brand the desktop app
 
 A fork that ships its own Electron application sets OPENCODE_DESKTOP_APP and
 OPENCODE_DESKTOP_APP_ID before building. The window title, the AppUserModelID,
@@ -3294,7 +3294,7 @@ index 9688672..de655d5 100644
 From a478531b342afc1a07626aafcd1e085543cbaef2 Mon Sep 17 00:00:00 2001
 From: truthprobe <truthprobe@local>
 Date: Thu, 19 Nov 2026 19:21:40 +0300
-Subject: [PATCH 08/11] fix(truthprobe): keep logprobs that arrive without
+Subject: [PATCH 08/12] fix(truthprobe): keep logprobs that arrive without
  text, align tokens, always publish a verdict
 
 - ai: buffer token logprobs in parser state; gateways send them in a separate
@@ -3705,7 +3705,7 @@ index f21811e..edac0e3 100644
 From 5a335e31658d33202b76ac0fb58f795cb1db4e03 Mon Sep 17 00:00:00 2001
 From: truthprobe <truthprobe@local>
 Date: Thu, 19 Nov 2026 19:36:25 +0300
-Subject: [PATCH 09/11] fix(truthprobe): say so when tokens do not match the
+Subject: [PATCH 09/12] fix(truthprobe): say so when tokens do not match the
  answer text
 
 Dropping every token that cannot be found in the text silently produced
@@ -3737,7 +3737,7 @@ index e024f93..7d46333 100644
 From 3d8a5b1ac9a2b94bd6729f6e9de9b6b400ac5df6 Mon Sep 17 00:00:00 2001
 From: adik <adik@users.noreply.github.com>
 Date: Thu, 19 Nov 2026 21:10:26 +0300
-Subject: [PATCH 10/11] feat(truthprobe): confidence levels and sentence
+Subject: [PATCH 10/12] feat(truthprobe): confidence levels and sentence
  highlights
 
 ---
@@ -8105,7 +8105,7 @@ index 0000000..d3450d7
 From 51f6f1088316234b53fb7ba8b8b78619c9b3d570 Mon Sep 17 00:00:00 2001
 From: adik <adik@users.noreply.github.com>
 Date: Thu, 19 Nov 2026 21:13:56 +0300
-Subject: [PATCH 11/11] feat(truthprobe): pluggable scorer (geometric | linear
+Subject: [PATCH 11/12] feat(truthprobe): pluggable scorer (geometric | linear
  weights)
 
 ---
@@ -8480,6 +8480,64 @@ index 0000000..998bf44
 +    expect(result.score).toBeGreaterThan(0.9)
 +  })
 +})
+-- 
+2.53.0
+
+
+From 699374c936946d597addbc90680dd680e048a37c Mon Sep 17 00:00:00 2001
+From: adik <adik@users.noreply.github.com>
+Date: Thu, 19 Nov 2026 21:28:48 +0300
+Subject: [PATCH 12/12] fix(schema): accept null level so unavailable verdicts
+ decode
+
+---
+ packages/client/src/promise/generated/types.ts | 4 ++--
+ packages/schema/src/truthprobe.ts              | 4 ++--
+ 2 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/packages/client/src/promise/generated/types.ts b/packages/client/src/promise/generated/types.ts
+index 6e42876..7c61ec6 100644
+--- a/packages/client/src/promise/generated/types.ts
++++ b/packages/client/src/promise/generated/types.ts
+@@ -123,7 +123,7 @@ export type TruthprobeSentence = {
+   phi: number | "Infinity" | "-Infinity" | "NaN"
+   tokens: number | "Infinity" | "-Infinity" | "NaN"
+   flag: boolean
+-  level?: TruthprobeLevel
++  level?: TruthprobeLevel | null
+ }
+ 
+ export type SessionMessageToolStateStreaming = { status: "streaming"; input: string }
+@@ -618,7 +618,7 @@ export type TruthprobeInfo = {
+   first: TruthprobeFirst | null
+   sentences: Array<TruthprobeSentence>
+   flagged: number | "Infinity" | "-Infinity" | "NaN"
+-  level?: TruthprobeLevel
++  level?: TruthprobeLevel | null
+   reason?: string
+ }
+ 
+diff --git a/packages/schema/src/truthprobe.ts b/packages/schema/src/truthprobe.ts
+index 5d05c07..d6f7831 100644
+--- a/packages/schema/src/truthprobe.ts
++++ b/packages/schema/src/truthprobe.ts
+@@ -42,7 +42,7 @@ export const Sentence = Schema.Struct({
+   tokens: Schema.Number,
+   /** score ниже порога: предложение спорное. */
+   flag: Schema.Boolean,
+-  level: optional(Level),
++  level: optional(Schema.NullOr(Level)),
+ }).annotate({ identifier: "Truthprobe.Sentence" })
+ 
+ export interface Info extends Schema.Schema.Type<typeof Info> {}
+@@ -53,6 +53,6 @@ export const Info = Schema.Struct({
+   first: Schema.NullOr(First),
+   sentences: Schema.Array(Sentence),
+   flagged: Schema.Number,
+-  level: optional(Level),
++  level: optional(Schema.NullOr(Level)),
+   reason: optional(Schema.String),
+ }).annotate({ identifier: "Truthprobe.Info" })
 -- 
 2.53.0
 

@@ -202,7 +202,8 @@ States: `ok` — tokens matched the text; `partial` — offsets drifted; `unavai
 | OpenAI protocol (gate, request body, `choices[i].logprobs` parsing) | `packages/ai/test/truthprobe.test.ts` | **8 pass / 0 fail**, 23 expect |
 | Auto-enable without environment variables | mock + two consecutive runs | RUN1: probe → `{"status":"ok"}`; RUN2: **2 of 2** requests with `logprobs: true, top_logprobs: 20` |
 | Regression around text events | `test/session*.test.ts test/projector*.test.ts test/message*.test.ts` | **811 pass / 0 fail** |
-| Full core run | `bun run script/test.ts` | 7 272 pass / 39 fail — the same 39 fail on a clean base (network: GitLab OAuth, ripgrep) |
+| Full core run | `bun test` in `packages/core` (7 713 tests, 331 files) | 7 300 pass / 351 skip / 62 fail — none in truthprobe: `tool-search` downloads ripgrep from github.com, `provider-gitlab-oauth` calls gitlab.com, `cross-spawn`/MCP depend on spawn; the harness blocks outbound network |
+| TruthProbe tests, current build | `bun test` of the four truthprobe files | **97 pass / 0 fail** |
 | Patch on a clean tree | `git am` in a `007afb1` worktree | applies without conflicts, tests 45 + 8 green |
 | Typecheck | schema / ai / core / client / tui | green (132 / 357+322 / 2 030 / 181 / 1 942 files) |
 | Typecheck of the UI packages | session-ui / app / desktop | green (382 / 2 445 / 3 569 files, desktop 2 projects) |
@@ -225,9 +226,29 @@ python3 scripts/tui-probe.py && python3 scripts/screen-dump.py /tmp/tui-probe.lo
 Full numbers and the decision log — [`docs/VALIDATION.md`](docs/VALIDATION.md), step-by-step
 reproduction — [`docs/SMOKE-E2E.md`](docs/SMOKE-E2E.md).
 
+### Reproduced on 19.11.2026 (build `0.0.0-dev-202611191814`)
+
+| What | Result |
+| --- | --- |
+| Live answer, `freepi/particle` | `score 0.7595 · likely`, sentence `#0 0.603 · uncertain` |
+| Live answer, `freepi/deepseek-v4.1-flash` | `score 0.6893`, first doubtful sentence `0.4849` |
+| Scorer swap `TRUTHPROBE_SCORER=linear:weights.json` | score moved `0.7595 → 0.9992`, so the custom scorer is really used |
+| Windows installer, `install.ps1 -Dir <empty> -DryRun` | clean clone, `git apply --check` passed, 12 commits applied |
+| Desktop build | app 246 MB, bundled CLI 279 MB |
+
+**Not tested, and we will not pretend otherwise:**
+
+- **Fresh virtual machines.** The dev machine has no Hyper-V, VirtualBox, VMware or Windows Sandbox;
+  everything ran on a single Windows 11 install. A clean-OS install is unconfirmed.
+- **Linux and macOS.** `install.sh` has never been executed; only `install.ps1` was.
+- **Cloud providers with keys.** OpenAI, Anthropic, Gemini — never measured; the support claim rests on
+  the protocol shape, not on numbers.
+- **Calibration.** `calibrate.py --demo --fit` reports `AUROC 1.000 / ECE 0.039` on synthetic data.
+  That is a property of the synthetic set, not of the scorer.
+
 ## Anatomy of the patch
 
-38 files, +2280/−40, nine commits on top of `007afb1`. The seam is thin and additive:
+43 files, +6565/−40, twelve commits on top of `007afb1`. The seam is thin and additive:
 
 | Layer | File | What it does |
 | --- | --- | --- |
@@ -271,7 +292,9 @@ docs/                     prior art, built-in model plan, validation, build
   probe, that is from the second request on. The first answer gets no badge.
 - The real `opencode.ai/inference` gateway has not been verified: no key. The probe handles it on its
   own — `scripts/probe-logprobs.py` is only there to look at the verdict by hand.
-- The `0.45` threshold was calibrated on the mock; it needs checking on real long answers.
+- The `0.90 / 0.75 / 0.55 / 0.35` level bounds were chosen by common sense, not from labelled data;
+  they need re-checking on real long answers. Override with `TRUTHPROBE_RISKY_THRESHOLD` and
+  `TRUTHPROBE_SHAKY_THRESHOLD`.
 - A known weakness of the approach: confident lies. It is cured not by a threshold but by a second
   independent signal.
 
