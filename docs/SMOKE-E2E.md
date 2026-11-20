@@ -9,13 +9,21 @@
 # 1. мок в отдельном терминале
 python3 scripts/mock-openai-logprobs.py 8899
 
-# 2. прогон opencode из исходников с включённым TruthProbe
+# 2. прогон opencode из исходников: TruthProbe включается сам
 cd ~/src/opencode
-OPENCODE_TRUTHPROBE=1 \
 OPENCODE_CONFIG=/path/to/opencode-truthprobe/scripts/mock-opencode.json \
 bun run --cwd packages/cli src/index.ts run --model mock/mock-1 \
   "What is the capital of France? Answer in two sentences."
+
+# 3. (опционально) что решила автопроверка
+cat ~/.local/share/opencode/truthprobe/capabilities.json
 ```
+
+Первый прогон на чистом кэше: сам запрос идёт без `logprobs`, параллельно уходит проверочная
+посылка `{"model":"mock-1","messages":[{"role":"user","content":"ping"}],"max_tokens":1,
+"logprobs":true,"top_logprobs":3,"stream":false}`, и вердикт `ok` ложится в кэш. Со второго
+прогона все запросы к этому провайдеру идут уже с `logprobs: true, top_logprobs: 20` —
+измерено: 2 из 2 streaming-запросов, 0 новых проб.
 
 ## Измеренный результат (прогон в VM)
 
@@ -47,7 +55,8 @@ The capital of France is Paris. It is home to about 2 million people.
 
 Что это доказывает:
 
-1. `logprobs: true, top_logprobs: 20` реально уходит в тело запроса, когда включён гейт.
+1. `logprobs: true, top_logprobs: 20` реально уходит в тело запроса — без переменных окружения,
+   только за счёт вердикта автопроверки.
 2. Стрим-чанки с `choices[].logprobs.content[]` разбираются, токены накапливаются по блоку текста.
 3. Скоринг считает первое предложение уверенным (0.876, риск 0.124), второе — спорным (0.079, риск 0.921), φ первого токена 0.708.
 4. Скоринг доезжает до хранилища через `session.text.ended`, без отдельного события `session.text.scored`

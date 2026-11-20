@@ -1,7 +1,7 @@
 From 3ccda6cdf3320c8fbcfbb2c8656c34a2827932af Mon Sep 17 00:00:00 2001
 From: truthprobe <truthprobe@local>
 Date: Thu, 19 Nov 2026 00:59:59 +0300
-Subject: [PATCH 1/3] feat(truthprobe): score answers from token logprobs
+Subject: [PATCH 1/4] feat(truthprobe): score answers from token logprobs
 
 - schema: Truthprobe.Info, capabilities.logprobs, AssistantText.truthprobe, optional truthprobe on session.text.ended
 - ai/openai-chat: request logprobs/top_logprobs when enabled, parse choice-level logprobs into providerMetadata
@@ -1192,7 +1192,7 @@ index 6a844d7..f21811e 100644
 From a9db0dab3c3392b40e8c9366e3455be1f37b7dcf Mon Sep 17 00:00:00 2001
 From: adik <adik@local>
 Date: Thu, 19 Nov 2026 01:12:00 +0300
-Subject: [PATCH 2/3] fix(tui): apply truthprobe metadata from
+Subject: [PATCH 2/4] fix(tui): apply truthprobe metadata from
  session.text.ended events
 
 The solid client store only copied event.data.text into the in-memory
@@ -1222,7 +1222,7 @@ index 8b6d247..7368d0c 100644
 From 2870f64a9bcb19d1e1701d85101c5074646cdcac Mon Sep 17 00:00:00 2001
 From: adik <adik@local>
 Date: Thu, 19 Nov 2026 03:08:36 +0300
-Subject: [PATCH 3/3] test(truthprobe): cover segmentation, scoring and
+Subject: [PATCH 3/4] test(truthprobe): cover segmentation, scoring and
  protocol parsing
 
 - send logprobs from every chat-completions model that declares the capability
@@ -1978,6 +1978,821 @@ index eed85f3..5bde799 100755
 +    }
    })
  })
+-- 
+2.53.0
+
+
+From f04342565c0963f466c9bae21dc1b0d9158bab44 Mon Sep 17 00:00:00 2001
+From: TruthProbe <truthprobe@local>
+Date: Thu, 19 Nov 2026 09:40:19 +0300
+Subject: [PATCH 4/4] feat(truthprobe): probe providers and enable logprobs
+ automatically
+
+Adding a provider key no longer needs an environment variable.
+
+* `opencode.truthprobe` plugin listens on `http.request`, where both the
+  model and the authorised URL are visible, and enqueues the event. A
+  single worker fiber sends one fixed one-token probe
+  (`"ping"`, `max_tokens: 1`, `logprobs: true`) so the model response
+  never waits for the check and user data never leaves the machine.
+* The verdict is cached in `<data>/truthprobe/capabilities.json`
+  (ok/ignored/rejected/unsupported 7d, auth 1h, transport errors are not
+  cached) and replayed at startup, so a known-good endpoint collects
+  logprobs from the first request of the next run.
+* `capabilities.logprobs` is set through the model transform, and the
+  `ai` package reads the same cache via `OPENCODE_TRUTHPROBE_CACHE`
+  (standard data directory as a fallback), so the protocol asks for
+  logprobs without any manual configuration.
+* Provider-level fallback: any fresh `ok` entry of the same provider
+  counts, because logprobs support is an endpoint property and aliases
+  or variants must not hide the badge.
+* `mergeCapabilities` now carries `logprobs`, which it used to drop.
+* Disable with `OPENCODE_TRUTHPROBE_PROBE=off`.
+
+Tests: 32 capability cases plus the existing 45 scoring/protocol cases.
+---
+ packages/ai/src/protocols/openai-chat.ts      |  23 +-
+ .../ai/src/protocols/truthprobe-capability.ts |  89 ++++++++
+ packages/core/src/model.ts                    |   1 +
+ packages/core/src/plugin/internal.ts          |   2 +
+ packages/core/src/plugin/truthprobe.ts        | 170 ++++++++++++++
+ packages/core/src/truthprobe/capability.ts    | 212 ++++++++++++++++++
+ .../core/test/truthprobe-capability.test.ts   | 191 ++++++++++++++++
+ 7 files changed, 683 insertions(+), 5 deletions(-)
+ create mode 100644 packages/ai/src/protocols/truthprobe-capability.ts
+ create mode 100644 packages/core/src/plugin/truthprobe.ts
+ create mode 100644 packages/core/src/truthprobe/capability.ts
+ create mode 100644 packages/core/test/truthprobe-capability.test.ts
+
+diff --git a/packages/ai/src/protocols/openai-chat.ts b/packages/ai/src/protocols/openai-chat.ts
+index 019deba..42479fb 100644
+--- a/packages/ai/src/protocols/openai-chat.ts
++++ b/packages/ai/src/protocols/openai-chat.ts
+@@ -34,6 +34,7 @@ import { OpenResponsesOptions } from "./utils/open-responses-options.js"
+ import { Lifecycle } from "./utils/lifecycle.js"
+ import { ToolStream } from "./utils/tool-stream.js"
+ import { OpenAIFreeform } from "./openai-freeform.js"
++import * as TruthprobeCapability from "./truthprobe-capability.js"
+ 
+ const ADAPTER = "openai-chat"
+ const RESERVED_REASONING_FIELDS = new Set(["role", "content", "refusal", "tool_calls"])
+@@ -43,21 +44,33 @@ export const PATH = "/chat/completions"
+ export const TRUTHPROBE_TOP_K = 20
+ 
+ /**
+- * TruthProbe включён, если модель объявила `capabilities.logprobs`,
+- * иначе — по переменной окружения OPENCODE_TRUTHPROBE=1.
++ * TruthProbe включён, если:
++ *   1) модель явно объявила `capabilities.logprobs` (true или false — решает пользователь);
++ *   2) иначе — по переменной окружения OPENCODE_TRUTHPROBE=1;
++ *   3) иначе — если автопроверка уже подтвердила, что провайдер отдаёт logprobs
++ *      (кэш `truthprobe/capabilities.json`, путь приходит из ядра).
+  */
+-export const truthprobeEnabled = (model: { capabilities?: { logprobs?: boolean } }) => {
++export const truthprobeEnabled = (model: {
++  id?: string
++  provider?: string
++  capabilities?: { logprobs?: boolean }
++}) => {
+   if (model.capabilities?.logprobs !== undefined) return model.capabilities.logprobs
+   const env = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env
+   const flag = env?.OPENCODE_TRUTHPROBE
+-  return flag === "1" || flag === "on" || flag === "true"
++  if (flag === "1" || flag === "on" || flag === "true") return true
++  return TruthprobeCapability.supported(model.provider, model.id)
+ }
+ 
+ /**
+  * Поля запроса, которые включает TruthProbe. Отдельная функция, чтобы
+  * поведение «просим logprobs» покрывалось тестом без сборки всего тела.
+  */
+-export const truthprobeBody = (model: { capabilities?: { logprobs?: boolean } }) =>
++export const truthprobeBody = (model: {
++  id?: string
++  provider?: string
++  capabilities?: { logprobs?: boolean }
++}) =>
+   truthprobeEnabled(model) ? { logprobs: true, top_logprobs: TRUTHPROBE_TOP_K } : {}
+ 
+ // =============================================================================
+diff --git a/packages/ai/src/protocols/truthprobe-capability.ts b/packages/ai/src/protocols/truthprobe-capability.ts
+new file mode 100644
+index 0000000..9447994
+--- /dev/null
++++ b/packages/ai/src/protocols/truthprobe-capability.ts
+@@ -0,0 +1,89 @@
++/**
++ * TruthProbe: чтение вердикта «провайдер отдаёт logprobs» из кэша.
++ *
++ * Путь к файлу кэша сообщает ядро (переменная OPENCODE_TRUTHPROBE_CACHE,
++ * её ставит плагин opencode.truthprobe). Если переменной нет, пакет ai просто
++ * не знает о кэше и работает по явному `capabilities.logprobs`.
++ *
++ * Модуль не делает сетевых запросов и не зависит от каталога моделей: только
++ * чтение файла с коротким TTL в памяти, чтобы не трогать диск на каждый токен.
++ */
++
++import fs from "node:fs"
++import os from "node:os"
++import path from "node:path"
++
++export type Status = "ok" | "ignored" | "rejected" | "auth" | "unsupported" | "error"
++
++interface Entry {
++  readonly status?: unknown
++  readonly checkedAt?: unknown
++}
++
++const DEFAULT_TTL = 7 * 24 * 60 * 60 * 1000
++const AUTH_TTL = 60 * 60 * 1000
++const READ_INTERVAL_MS = 2_000
++
++let snapshot: { at: number; path: string; entries: Record<string, Entry> } | undefined
++
++/** Путь к кэшу: ядро передаёт его переменной, иначе берём стандартный каталог данных. */
++const cachePath = (): string | undefined => {
++  const explicit = typeof process === "undefined" ? undefined : process.env?.OPENCODE_TRUTHPROBE_CACHE
++  if (explicit) return explicit
++  const data =
++    process?.env?.XDG_DATA_HOME ?? (process?.platform === "win32"
++      ? process?.env?.APPDATA
++      : os.homedir() && path.join(os.homedir(), ".local", "share"))
++  if (!data) return undefined
++  return path.join(data, "opencode", "truthprobe", "capabilities.json")
++}
++
++const readEntries = (): Record<string, Entry> => {
++  const file = cachePath()
++  if (!file) return {}
++  const now = Date.now()
++  if (snapshot && snapshot.path === file && now - snapshot.at < READ_INTERVAL_MS) return snapshot.entries
++  let entries: Record<string, Entry> = {}
++  try {
++    const parsed = JSON.parse(fs.readFileSync(file, "utf8")) as { entries?: unknown }
++    if (parsed && typeof parsed === "object" && typeof parsed.entries === "object" && parsed.entries !== null) {
++      entries = parsed.entries as Record<string, Entry>
++    }
++  } catch {
++    entries = {}
++  }
++  snapshot = { at: now, path: file, entries }
++  return entries
++}
++
++/** Сколько живёт вердикт. Повторяет правило ядра: auth перепроверяем быстро. */
++const ttl = (status: string) => (status === "auth" ? AUTH_TTL : DEFAULT_TTL)
++
++const fresh = (entry: Entry | undefined, now: number): boolean => {
++  if (!entry || entry.status !== "ok" || typeof entry.checkedAt !== "number") return false
++  const age = now - entry.checkedAt
++  return age >= 0 && age < ttl("ok")
++}
++
++/**
++ * `true` — провайдер подтверждённо отдаёт logprobs.
++ *
++ * Проверяется запись именно этой модели, а если её нет — любая запись того же
++ * провайдера: поддержка logprobs почти всегда свойство эндпоинта, а не модели,
++ * и алиасы/варианты не должны гасить бейдж. Просроченные записи не считаются.
++ */
++export const supported = (providerID: string | undefined, modelID: string | undefined): boolean => {
++  if (!providerID) return false
++  const entries = readEntries()
++  const now = Date.now()
++  if (modelID && fresh(entries[`${providerID}/${modelID}`], now)) return true
++  const prefix = `${providerID}/`
++  return Object.keys(entries).some((key) => key.startsWith(prefix) && fresh(entries[key], now))
++}
++
++/** Сброс кэша в памяти — для тестов. */
++export const reset = () => {
++  snapshot = undefined
++}
++
++export const cacheFile = () => cachePath()
+diff --git a/packages/core/src/model.ts b/packages/core/src/model.ts
+index a2a2a30..7aaac1e 100644
+--- a/packages/core/src/model.ts
++++ b/packages/core/src/model.ts
+@@ -37,6 +37,7 @@ export const mergeCapabilities = (config: Partial<Capabilities>, base: Capabilit
+     input: [...(config.input ?? fallback.input)],
+     output: [...(config.output ?? fallback.output)],
+     temperature: config.temperature ?? base?.temperature,
++    logprobs: config.logprobs ?? base?.logprobs,
+   }
+ }
+ 
+diff --git a/packages/core/src/plugin/internal.ts b/packages/core/src/plugin/internal.ts
+index 68cf543..54d9a87 100644
+--- a/packages/core/src/plugin/internal.ts
++++ b/packages/core/src/plugin/internal.ts
+@@ -118,6 +118,7 @@ import { OptimizePlugin } from "./optimize.js"
+ import { VcsGitPlugin } from "./vcs/git.js"
+ import { VerbosityPlugin } from "./verbosity.js"
+ import { WarmingPlugin } from "./warming.js"
++import { TruthprobePlugin } from "./truthprobe.js"
+ import { WellKnownPlugin } from "../wellknown/plugin.js"
+ 
+ const services = [
+@@ -284,6 +285,7 @@ const pre = [
+   WebSearchTool.Plugin,
+   WriteTool.Plugin,
+   WarmingPlugin.Plugin,
++  TruthprobePlugin,
+ ] as const satisfies readonly InternalPlugin[]
+ 
+ const post = [
+diff --git a/packages/core/src/plugin/truthprobe.ts b/packages/core/src/plugin/truthprobe.ts
+new file mode 100644
+index 0000000..1916a70
+--- /dev/null
++++ b/packages/core/src/plugin/truthprobe.ts
+@@ -0,0 +1,170 @@
++/**
++ * TruthProbe: проверка провайдеров и автоматическое включение сбора logprobs.
++ *
++ * Плагин слушает `http.request` — единственное место, где видны и модель, и
++ * готовый URL с авторизацией. Запрос уходит своим чередом: хук только кладёт
++ * событие в очередь, а проверка выполняется в отдельной fiber, поэтому ответ
++ * модели никогда не ждёт проверки.
++ *
++ * Проверка — одна посылка на один токен с фиксированным текстом "ping".
++ * Данные пользователя в ней не участвуют. Вердикт кладётся в
++ * `<data>/truthprobe/capabilities.json` и, если провайдер отдаёт logprobs,
++ * включает `capabilities.logprobs` у модели: со следующего запроса протокол
++ * сам просит logprobs, и бейдж уверенности появляется без переменных окружения.
++ *
++ * Отключить проверку: OPENCODE_TRUTHPROBE_PROBE=off.
++ */
++import { define } from "@opencode/plugin/effect/plugin"
++import { Effect, Queue, Stream } from "effect"
++import fs from "node:fs"
++import path from "node:path"
++import { Global } from "@opencode/util/global"
++import type { SessionHooks } from "@opencode/plugin/effect/session"
++import * as Capability from "../truthprobe/capability.js"
++import type { PluginInternal } from "./internal.js"
++
++const PROBE_TIMEOUT_MS = 15_000
++const CHAT_PATH = "/chat/completions"
++
++type HttpRequest = SessionHooks["http.request"]
++
++const disabled = () => {
++  const env = process.env
++  const flag = (env.OPENCODE_TRUTHPROBE_PROBE ?? "").toLowerCase()
++  if (flag === "0" || flag === "off" || flag === "false" || flag === "no") return true
++  const master = (env.OPENCODE_TRUTHPROBE ?? "").toLowerCase()
++  return master === "0" || master === "off" || master === "false"
++}
++
++export const TruthprobePlugin = define({
++  id: "opencode.truthprobe",
++  effect: Effect.fn(function* (ctx) {
++    const global = yield* Global.Service
++    const directory = path.join(global.data, "truthprobe")
++    const file = path.join(directory, "capabilities.json")
++
++    // Протокол в пакете ai читает тот же файл: путь передаём один раз на процесс.
++    process.env.OPENCODE_TRUTHPROBE_CACHE ??= file
++
++    let state = Capability.parse(read())
++    const running = new Set<string>()
++    const enabled = new Set<string>()
++
++    function read() {
++      try {
++        return fs.readFileSync(file, "utf8")
++      } catch {
++        return undefined
++      }
++    }
++
++    function write(next: Capability.File) {
++      try {
++        fs.mkdirSync(directory, { recursive: true })
++        const temporary = `${file}.${process.pid}.tmp`
++        fs.writeFileSync(temporary, Capability.serialize(next))
++        fs.renameSync(temporary, file)
++      } catch {
++        // кэш — оптимизация: без него просто проверим ещё раз
++      }
++    }
++
++    /** Включает logprobs у модели, если пользователь не выставил флаг явно. */
++    const enable = Effect.fn("TruthprobePlugin.enable")(function* (providerID: string, modelID: string) {
++      const key = Capability.keyOf(providerID, modelID)
++      if (enabled.has(key)) return
++      enabled.add(key)
++      yield* ctx.model.transform((models) => {
++        models.update(providerID, modelID, (draft) => {
++          if (draft.capabilities?.logprobs !== undefined) return
++          draft.capabilities = { ...draft.capabilities, logprobs: true }
++        })
++      })
++      yield* ctx.model.reload()
++    })
++
++    const probe = Effect.fn("TruthprobePlugin.probe")(function* (event: HttpRequest) {
++      const providerID = event.model.providerID
++      const key = Capability.keyOf(providerID, event.model.id)
++      const url = event.request.url
++      const raw = yield* Effect.promise(() => event.request.clone().text()).pipe(
++        Effect.orElseSucceed(() => undefined as string | undefined),
++      )
++      const modelID = Capability.modelFromBody(raw) ?? event.model.id
++      const headers = new Headers(event.request.headers)
++      headers.delete("content-length")
++      headers.set("content-type", "application/json")
++      const body = JSON.stringify(Capability.probeBody(modelID))
++      const response = yield* Effect.promise(async () => {
++        const result = await fetch(url, {
++          method: "POST",
++          headers,
++          body,
++          signal: AbortSignal.timeout(PROBE_TIMEOUT_MS),
++        })
++        return { status: result.status, body: await result.text() }
++      }).pipe(Effect.orElseSucceed(() => undefined))
++      if (!response) {
++        yield* Effect.logDebug("truthprobe: probe could not reach the provider", { providerID, modelID })
++        return
++      }
++      const status = Capability.classify(response)
++      if (status === "error") {
++        // 429/5xx: не кэшируем, попробуем на следующем запросе
++        yield* Effect.logDebug("truthprobe: probe inconclusive", { providerID, modelID, code: response.status })
++        return
++      }
++      state = Capability.setEntry(state, key, {
++        status,
++        checkedAt: Date.now(),
++        endpoint: Capability.originOf(url),
++        model: modelID,
++        ...(status === "ok" ? {} : { detail: `${response.status} ${response.body.slice(0, 160)}` }),
++      })
++      write(state)
++      yield* Effect.logInfo(`truthprobe: ${key} → ${status} (${Capability.describe(status)})`)
++      if (status === "ok") yield* enable(providerID, event.model.id)
++    })
++
++    // Известные «да» включаем сразу: бейдж работает с первого же ответа.
++    const now = Date.now()
++    for (const [key, entry] of Object.entries(state.entries)) {
++      if (!Capability.enabled(entry, now)) continue
++      const [providerID, ...rest] = key.split("/")
++      if (!providerID || rest.length === 0) continue
++      yield* enable(providerID, rest.join("/"))
++    }
++
++    if (disabled()) return
++
++    // Очередь + одна fiber: хук не ждёт сети, проверки идут строго по одной.
++    const queue = yield* Queue.unbounded<HttpRequest>()
++    yield* Stream.fromQueue(queue).pipe(
++      Stream.runForEach((event) => {
++        const key = Capability.keyOf(event.model.providerID, event.model.id)
++        return Effect.gen(function* () {
++          const entry = Capability.getEntry(state, key)
++          if (Capability.fresh(entry, Date.now())) {
++            if (Capability.enabled(entry, Date.now())) yield* enable(event.model.providerID, event.model.id)
++            return
++          }
++          yield* probe(event)
++        }).pipe(
++          Effect.catchCause(() => Effect.void),
++          Effect.ensuring(Effect.sync(() => running.delete(key))),
++        )
++      }),
++      Effect.forkScoped,
++    )
++
++    yield* ctx.session.hook("http.request", (event) =>
++      Effect.gen(function* () {
++        if (!event.request.url.includes(CHAT_PATH)) return
++        const key = Capability.keyOf(event.model.providerID, event.model.id)
++        if (running.has(key)) return
++        running.add(key)
++        yield* Queue.offer(queue, event).pipe(Effect.asVoid)
++      }),
++    )
++  }),
++}) satisfies PluginInternal.InternalPlugin
+diff --git a/packages/core/src/truthprobe/capability.ts b/packages/core/src/truthprobe/capability.ts
+new file mode 100644
+index 0000000..5366f60
+--- /dev/null
++++ b/packages/core/src/truthprobe/capability.ts
+@@ -0,0 +1,212 @@
++/**
++ * TruthProbe: определение того, отдаёт ли провайдер logprobs.
++ *
++ * Модуль чистый: ни сети, ни файлов. Всё, что можно проверить тестом без
++ * поднятия opencode, живёт здесь. Плагин (plugin/truthprobe.ts) только
++ * склеивает это с сетью и с каталогом моделей.
++ */
++
++/** Результат проверки одного провайдера/модели. */
++export type Status = "ok" | "ignored" | "rejected" | "auth" | "unsupported" | "error"
++
++export interface Entry {
++  readonly status: Status
++  /** Когда проверяли, миллисекунды эпохи. */
++  readonly checkedAt: number
++  /** Происхождение эндпоинта: схема + хост, без пути и query. */
++  readonly endpoint?: string
++  /** Идентификатор модели, на которой проверяли. */
++  readonly model?: string
++  /** Короткая причина (код ответа или текст ошибки, обрезанный). */
++  readonly detail?: string
++}
++
++export interface File {
++  readonly version: 1
++  readonly entries: Readonly<Record<string, Entry>>
++}
++
++export const FILE_VERSION = 1 as const
++
++const DAY = 24 * 60 * 60 * 1000
++
++/** Сколько живёт результат. `auth` перепроверяем быстро: ключ могли добавить. */
++export const ttl = (status: Status): number => {
++  switch (status) {
++    case "ok":
++    case "ignored":
++    case "rejected":
++    case "unsupported":
++      return 7 * DAY
++    case "auth":
++      return 60 * 60 * 1000
++    case "error":
++      return 0
++  }
++}
++
++export const empty = (): File => ({ version: FILE_VERSION, entries: {} })
++
++export const keyOf = (providerID: string, modelID: string) => `${providerID}/${modelID}`
++
++const STATUSES: ReadonlySet<string> = new Set<Status>([
++  "ok",
++  "ignored",
++  "rejected",
++  "auth",
++  "unsupported",
++  "error",
++])
++
++const isEntry = (value: unknown): value is Entry => {
++  if (typeof value !== "object" || value === null) return false
++  const entry = value as Record<string, unknown>
++  return typeof entry.status === "string" && STATUSES.has(entry.status) && typeof entry.checkedAt === "number"
++}
++
++/**
++ * Разбор файла кэша. Битый файл или чужие поля не должны ломать запуск:
++ * всё непонятное молча отбрасывается.
++ */
++export const parse = (raw: string | undefined | null): File => {
++  if (!raw) return empty()
++  let data: unknown
++  try {
++    data = JSON.parse(raw)
++  } catch {
++    return empty()
++  }
++  if (typeof data !== "object" || data === null) return empty()
++  const entries = (data as { entries?: unknown }).entries
++  if (typeof entries !== "object" || entries === null) return empty()
++  const result: Record<string, Entry> = {}
++  for (const [key, value] of Object.entries(entries as Record<string, unknown>)) {
++    if (isEntry(value)) result[key] = value
++  }
++  return { version: FILE_VERSION, entries: result }
++}
++
++/** Стабильная сериализация: одинаковый вход даёт одинаковый файл. */
++export const serialize = (file: File): string => {
++  const entries = Object.keys(file.entries)
++    .sort()
++    .map((key) => [key, file.entries[key]] as const)
++  return `${JSON.stringify({ version: FILE_VERSION, entries: Object.fromEntries(entries) }, null, 2)}\n`
++}
++
++/** Запись результата без мутации входа. */
++export const setEntry = (file: File, key: string, entry: Entry): File => ({
++  version: FILE_VERSION,
++  entries: { ...file.entries, [key]: entry },
++})
++
++export const getEntry = (file: File, key: string): Entry | undefined => file.entries[key]
++
++/** Результат ещё актуален? `now` передаётся явно, чтобы тест не зависел от часов. */
++export const fresh = (entry: Entry | undefined, now: number): entry is Entry => {
++  if (!entry) return false
++  const limit = ttl(entry.status)
++  if (limit === 0) return false
++  const age = now - entry.checkedAt
++  return age >= 0 && age < limit
++}
++
++/** Можно ли включать сбор logprobs по этому результату. */
++export const enabled = (entry: Entry | undefined, now: number) => fresh(entry, now) && entry.status === "ok"
++
++/**
++ * Тело минимальной проверочной посылки. Фиксированный текст, один токен:
++ * ни вопроса пользователя, ни его данных здесь нет и быть не может.
++ */
++export const probeBody = (modelID: string, topK = 3) => ({
++  model: modelID,
++  messages: [{ role: "user" as const, content: "ping" }],
++  max_tokens: 1,
++  temperature: 0,
++  stream: false as const,
++  logprobs: true,
++  top_logprobs: topK,
++})
++
++/** Хост эндпоинта без пути: в кэше не должно быть ни query, ни ключей. */
++export const originOf = (url: string): string | undefined => {
++  try {
++    const parsed = new URL(url)
++    return `${parsed.protocol}//${parsed.host}`
++  } catch {
++    return undefined
++  }
++}
++
++/** Идентификатор модели из уже собранного тела запроса; нужен, когда modelID — алиас. */
++export const modelFromBody = (raw: string | undefined | null): string | undefined => {
++  if (!raw) return undefined
++  try {
++    const data = JSON.parse(raw) as { model?: unknown }
++    return typeof data.model === "string" && data.model.length > 0 ? data.model : undefined
++  } catch {
++    return undefined
++  }
++}
++
++export interface ProbeResponse {
++  readonly status: number
++  readonly body: string
++}
++
++/**
++ * Классификация ответа проверки.
++ *
++ * `ok` — в ответе реально есть `logprobs.content`;
++ * `ignored` — 200, но поля нет (шлюз молча вырезал);
++ * `rejected` — провайдер ругается именно на logprobs;
++ * `auth` — ключ не принят;
++ * `unsupported` — эндпоинт не про chat-completions или поля не знает;
++ * `error` — временная беда (429/5xx/сеть), результат не кэшируем.
++ */
++export const classify = (response: ProbeResponse): Status => {
++  const { status, body } = response
++  if (status >= 200 && status < 300) {
++    try {
++      const data = JSON.parse(body) as {
++        choices?: Array<{ logprobs?: { content?: unknown } | null }>
++      }
++      const content = data.choices?.[0]?.logprobs?.content
++      return Array.isArray(content) && content.length > 0 ? "ok" : "ignored"
++    } catch {
++      return "ignored"
++    }
++  }
++  if (status === 401 || status === 403) return "auth"
++  if (status === 429 || status >= 500) return "error"
++  if (status === 404 || status === 405 || status === 501) return "unsupported"
++  if (status === 400 || status === 422) return /logprob/i.test(body) ? "rejected" : "unsupported"
++  return "unsupported"
++}
++
++/** Человеческая строка для лога и статуса в TUI. */
++export const describe = (status: Status): string => {
++  switch (status) {
++    case "ok":
++      return "provider returns logprobs"
++    case "ignored":
++      return "provider accepted the request but returned no logprobs"
++    case "rejected":
++      return "provider rejects logprobs"
++    case "auth":
++      return "provider rejected the credential"
++    case "unsupported":
++      return "endpoint does not support logprobs probing"
++    case "error":
++      return "probe failed temporarily"
++  }
++}
++
++/** Строка бейджа: то, что печатает `opencode truthprobe status` и TUI. */
++export const summary = (entries: Readonly<Record<string, Entry>>, now: number): string[] =>
++  Object.entries(entries)
++    .sort(([a], [b]) => a.localeCompare(b))
++    .map(([key, entry]) => {
++      const stale = fresh(entry, now) ? "" : " (stale)"
++      return `${key}: ${entry.status} — ${describe(entry.status)}${stale}`
++    })
+diff --git a/packages/core/test/truthprobe-capability.test.ts b/packages/core/test/truthprobe-capability.test.ts
+new file mode 100644
+index 0000000..e23e561
+--- /dev/null
++++ b/packages/core/test/truthprobe-capability.test.ts
+@@ -0,0 +1,191 @@
++﻿import { describe, expect, test } from "bun:test"
++import * as Capability from "../src/truthprobe/capability.js"
++
++const NOW = 1_800_000_000_000
++const DAY = 24 * 60 * 60 * 1000
++
++describe("ttl", () => {
++  test("ok/ignored/rejected/unsupported Р¶РёРІСѓС‚ РЅРµРґРµР»СЋ", () => {
++    expect(Capability.ttl("ok")).toBe(7 * DAY)
++    expect(Capability.ttl("ignored")).toBe(7 * DAY)
++    expect(Capability.ttl("rejected")).toBe(7 * DAY)
++    expect(Capability.ttl("unsupported")).toBe(7 * DAY)
++  })
++  test("auth РїРµСЂРµРїСЂРѕРІРµСЂСЏРµРј С‡РµСЂРµР· С‡Р°СЃ", () => {
++    expect(Capability.ttl("auth")).toBe(60 * 60 * 1000)
++  })
++  test("error РЅРµ РєСЌС€РёСЂСѓРµС‚СЃСЏ РІРѕРІСЃРµ", () => {
++    expect(Capability.ttl("error")).toBe(0)
++  })
++})
++
++describe("fresh", () => {
++  test("СЃРІРµР¶Р°СЏ Р·Р°РїРёСЃСЊ Р¶РёРІС‘С‚", () => {
++    expect(Capability.fresh({ status: "ok", checkedAt: NOW - DAY }, NOW)).toBe(true)
++  })
++  test("РїСЂРѕСЃСЂРѕС‡РµРЅРЅР°СЏ вЂ” РЅРµС‚", () => {
++    expect(Capability.fresh({ status: "ok", checkedAt: NOW - 8 * DAY }, NOW)).toBe(false)
++  })
++  test("СЂРѕРІРЅРѕ РЅР° РіСЂР°РЅРёС†Рµ вЂ” СѓР¶Рµ РЅРµС‚", () => {
++    expect(Capability.fresh({ status: "ok", checkedAt: NOW - 7 * DAY }, NOW)).toBe(false)
++  })
++  test("error РЅРµ Р±С‹РІР°РµС‚ СЃРІРµР¶РёРј", () => {
++    expect(Capability.fresh({ status: "error", checkedAt: NOW }, NOW)).toBe(false)
++  })
++  test("undefined вЂ” РЅРµ СЃРІРµР¶РёР№", () => {
++    expect(Capability.fresh(undefined, NOW)).toBe(false)
++  })
++  test("Р·Р°РїРёСЃСЊ РёР· Р±СѓРґСѓС‰РµРіРѕ РЅРµ СЃС‡РёС‚Р°РµС‚СЃСЏ СЃРІРµР¶РµР№", () => {
++    expect(Capability.fresh({ status: "ok", checkedAt: NOW + DAY }, NOW)).toBe(false)
++  })
++})
++
++describe("enabled", () => {
++  test("С‚РѕР»СЊРєРѕ ok РІРєР»СЋС‡Р°РµС‚ СЃР±РѕСЂ", () => {
++    expect(Capability.enabled({ status: "ok", checkedAt: NOW }, NOW)).toBe(true)
++    for (const status of ["ignored", "rejected", "auth", "unsupported", "error"] as const) {
++      expect(Capability.enabled({ status, checkedAt: NOW }, NOW)).toBe(false)
++    }
++  })
++  test("СЃС‚Р°СЂС‹Р№ ok РЅРµ РІРєР»СЋС‡Р°РµС‚", () => {
++    expect(Capability.enabled({ status: "ok", checkedAt: NOW - 30 * DAY }, NOW)).toBe(false)
++  })
++})
++
++describe("parse/serialize", () => {
++  test("РїСѓСЃС‚РѕР№ Рё Р±РёС‚С‹Р№ РІС…РѕРґ РґР°СЋС‚ РїСѓСЃС‚РѕР№ С„Р°Р№Р»", () => {
++    expect(Capability.parse(undefined)).toEqual(Capability.empty())
++    expect(Capability.parse("")).toEqual(Capability.empty())
++    expect(Capability.parse("{РЅРµ json")).toEqual(Capability.empty())
++    expect(Capability.parse("null")).toEqual(Capability.empty())
++    expect(Capability.parse('{"entries":null}')).toEqual(Capability.empty())
++  })
++  test("С‡СѓР¶РёРµ Рё РЅРµРїРѕР»РЅС‹Рµ Р·Р°РїРёСЃРё РѕС‚Р±СЂР°СЃС‹РІР°СЋС‚СЃСЏ", () => {
++    const file = Capability.parse(
++      JSON.stringify({
++        entries: {
++          "p/m": { status: "ok", checkedAt: NOW },
++          "p/bad": { status: "nonsense", checkedAt: NOW },
++          "p/partial": { status: "ok" },
++          "p/x": null,
++        },
++      }),
++    )
++    expect(Object.keys(file.entries)).toEqual(["p/m"])
++  })
++  test("roundtrip СЃРѕС…СЂР°РЅСЏРµС‚ Р·Р°РїРёСЃСЊ Рё РІРµСЂСЃРёСЋ", () => {
++    const entry = { status: "ok" as const, checkedAt: NOW, endpoint: "https://x.test", model: "m" }
++    const file = Capability.setEntry(Capability.empty(), "p/m", entry)
++    expect(Capability.parse(Capability.serialize(file))).toEqual(file)
++    expect(file.version).toBe(1)
++  })
++  test("СЃРµСЂРёР°Р»РёР·Р°С†РёСЏ СЃС‚Р°Р±РёР»СЊРЅР° Рё СЃРѕСЂС‚РёСЂСѓРµС‚ РєР»СЋС‡Рё", () => {
++    let file = Capability.empty()
++    file = Capability.setEntry(file, "z/z", { status: "ok", checkedAt: 1 })
++    file = Capability.setEntry(file, "a/a", { status: "ignored", checkedAt: 2 })
++    const text = Capability.serialize(file)
++    expect(text.indexOf('"a/a"')).toBeLessThan(text.indexOf('"z/z"'))
++    expect(Capability.serialize(file)).toBe(text)
++  })
++  test("setEntry РЅРµ РјСѓС‚РёСЂСѓРµС‚ РІС…РѕРґ", () => {
++    const file = Capability.empty()
++    const next = Capability.setEntry(file, "p/m", { status: "ok", checkedAt: NOW })
++    expect(file.entries).toEqual({})
++    expect(next.entries["p/m"].status).toBe("ok")
++  })
++})
++
++describe("probeBody", () => {
++  test("РѕРґРёРЅ С‚РѕРєРµРЅ, С„РёРєСЃРёСЂРѕРІР°РЅРЅС‹Р№ С‚РµРєСЃС‚, logprobs РІРєР»СЋС‡РµРЅС‹", () => {
++    const body = Capability.probeBody("glm-5-free")
++    expect(body.model).toBe("glm-5-free")
++    expect(body.messages).toEqual([{ role: "user", content: "ping" }])
++    expect(body.max_tokens).toBe(1)
++    expect(body.stream).toBe(false)
++    expect(body.logprobs).toBe(true)
++    expect(body.top_logprobs).toBe(3)
++  })
++  test("topK РЅР°СЃС‚СЂР°РёРІР°РµС‚СЃСЏ", () => {
++    expect(Capability.probeBody("m", 1).top_logprobs).toBe(1)
++  })
++})
++
++describe("originOf", () => {
++  test("РѕС‚Р±СЂР°СЃС‹РІР°РµС‚ РїСѓС‚СЊ Рё query", () => {
++    expect(Capability.originOf("https://opencode.ai/inference/v1/chat/completions?x=1")).toBe(
++      "https://opencode.ai",
++    )
++  })
++  test("РјСѓСЃРѕСЂ вЂ” undefined", () => {
++    expect(Capability.originOf("not a url")).toBeUndefined()
++  })
++})
++
++describe("modelFromBody", () => {
++  test("РґРѕСЃС‚Р°С‘С‚ РјРѕРґРµР»СЊ", () => {
++    expect(Capability.modelFromBody('{"model":"gpt-5","messages":[]}')).toBe("gpt-5")
++  })
++  test("Р±РµР· РјРѕРґРµР»Рё вЂ” undefined", () => {
++    expect(Capability.modelFromBody('{"messages":[]}')).toBeUndefined()
++    expect(Capability.modelFromBody('{"model":42}')).toBeUndefined()
++    expect(Capability.modelFromBody("")).toBeUndefined()
++    expect(Capability.modelFromBody(undefined)).toBeUndefined()
++  })
++})
++
++describe("classify", () => {
++  const okBody = JSON.stringify({
++    choices: [{ logprobs: { content: [{ token: "Pa", logprob: -0.1, top_logprobs: [] }] } }],
++  })
++  test("200 СЃ logprobs вЂ” ok", () => {
++    expect(Capability.classify({ status: 200, body: okBody })).toBe("ok")
++  })
++  test("200 Р±РµР· logprobs вЂ” ignored", () => {
++    expect(Capability.classify({ status: 200, body: '{"choices":[{}]}' })).toBe("ignored")
++    expect(Capability.classify({ status: 200, body: '{"choices":[{"logprobs":null}]}' })).toBe("ignored")
++    expect(Capability.classify({ status: 200, body: '{"choices":[{"logprobs":{"content":[]}}]}' })).toBe("ignored")
++    expect(Capability.classify({ status: 200, body: "РЅРµ json" })).toBe("ignored")
++  })
++  test("401/403 вЂ” auth", () => {
++    expect(Capability.classify({ status: 401, body: "" })).toBe("auth")
++    expect(Capability.classify({ status: 403, body: "" })).toBe("auth")
++  })
++  test("429 Рё 5xx вЂ” РІСЂРµРјРµРЅРЅР°СЏ РѕС€РёР±РєР°, РЅРµ РєСЌС€РёСЂСѓРµРј", () => {
++    expect(Capability.classify({ status: 429, body: "" })).toBe("error")
++    expect(Capability.classify({ status: 500, body: "" })).toBe("error")
++    expect(Capability.classify({ status: 503, body: "" })).toBe("error")
++  })
++  test("400 СЃ СѓРїРѕРјРёРЅР°РЅРёРµРј logprobs вЂ” rejected", () => {
++    expect(
++      Capability.classify({ status: 400, body: '{"error":{"message":"Unsupported parameter: logprobs"}}' }),
++    ).toBe("rejected")
++  })
++  test("400 РїРѕ РґСЂСѓРіРѕР№ РїСЂРёС‡РёРЅРµ вЂ” unsupported, Р° РЅРµ rejected", () => {
++    expect(Capability.classify({ status: 400, body: '{"error":{"message":"bad temperature"}}' })).toBe("unsupported")
++  })
++  test("404/405 вЂ” СЌРЅРґРїРѕРёРЅС‚ РЅРµ С‚РѕС‚", () => {
++    expect(Capability.classify({ status: 404, body: "" })).toBe("unsupported")
++    expect(Capability.classify({ status: 405, body: "" })).toBe("unsupported")
++  })
++})
++
++describe("describe/summary", () => {
++  test("РєР°Р¶РґС‹Р№ СЃС‚Р°С‚СѓСЃ РёРјРµРµС‚ С‚РµРєСЃС‚", () => {
++    for (const status of ["ok", "ignored", "rejected", "auth", "unsupported", "error"] as const) {
++      expect(Capability.describe(status).length).toBeGreaterThan(0)
++    }
++  })
++  test("summary СЃРѕСЂС‚РёСЂСѓРµС‚ Рё РїРѕРјРµС‡Р°РµС‚ РїСЂРѕСЃСЂРѕС‡РµРЅРЅС‹Рµ", () => {
++    let file = Capability.empty()
++    file = Capability.setEntry(file, "z/z", { status: "ok", checkedAt: NOW })
++    file = Capability.setEntry(file, "a/a", { status: "rejected", checkedAt: NOW - 30 * DAY })
++    const lines = Capability.summary(file.entries, NOW)
++    expect(lines[0]).toContain("a/a: rejected")
++    expect(lines[0]).toContain("(stale)")
++    expect(lines[1]).toContain("z/z: ok")
++    expect(lines[1]).not.toContain("(stale)")
++  })
++  test("keyOf СЃРєР»РµРёРІР°РµС‚ РїСЂРѕРІР°Р№РґРµСЂР° Рё РјРѕРґРµР»СЊ", () => {
++    expect(Capability.keyOf("opencode", "glm-5-free")).toBe("opencode/glm-5-free")
++  })
++})
 -- 
 2.53.0
 

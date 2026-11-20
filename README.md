@@ -1,6 +1,6 @@
 # TruthProbe for opencode
 
-[![unit tests](https://img.shields.io/badge/unit%20tests-53%20pass-brightgreen)](docs/VALIDATION.md)
+[![unit tests](https://img.shields.io/badge/unit%20tests-85%20pass-brightgreen)](docs/VALIDATION.md)
 [![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![opencode base](https://img.shields.io/badge/opencode-007afb1-informational)](patches/truthprobe-0001.patch)
 
@@ -51,9 +51,12 @@ git clone https://github.com/sst/opencode && cd opencode
 git checkout 007afb1
 git am /path/to/patches/truthprobe-0001.patch
 bun install
-export OPENCODE_TRUTHPROBE=1
 bun run --cwd packages/cli src/index.ts
 ```
+
+Ключи и провайдеры проверяются сами: при первом запросе к chat-completions модели ядро
+отправляет одну посылку на один токен с текстом `ping` и, если провайдер вернул `logprobs`,
+включает их для этого провайдера. Переменные окружения не нужны.
 
 ### 2. Готовый бинарь
 
@@ -68,9 +71,31 @@ curl -LO <release>/opencode-truthprobe-windows-x64.exe
 
 ### Включение
 
+Автоматически. Плагин `opencode.truthprobe` слушает `http.request` — единственное место, где
+одновременно видны модель и уже авторизованный URL, — и параллельно отправляет одну
+проверочную посылку: `{"messages":[{"role":"user","content":"ping"}], "max_tokens":1, "logprobs":true}`.
+Данные переписки в ней не участвуют. Ответ модели проверку не ждёт: хук только кладёт событие
+в очередь, сеть работает в отдельной fiber.
+
+Вердикт пишется в `<data>/truthprobe/capabilities.json` (Linux: `~/.local/share/opencode/truthprobe/`,
+Windows: `%APPDATA%\opencode\truthprobe\`) и живёт: `ok`/`ignored`/`rejected`/`unsupported` — 7 дней,
+`auth` — час (ключ могли добавить), сетевые и 5xx — не кэшируются вовсе.
+
+| Статус | Значит | Что делает бейдж |
+| --- | --- | --- |
+| `ok` | в ответе реально был `logprobs.content` | включается и у следующих запросов |
+| `ignored` | 200, но поля нет — шлюз молча вырезал | не включается, повтор через 7 дней |
+| `rejected` | 400/422 с упоминанием `logprob` | не включается, повтор через 7 дней |
+| `auth` | 401/403 | не включается, перепроверка через час |
+| `unsupported` | 404/405/501 или иная 400 | не включается, повтор через 7 дней |
+
+Ручные способы остаются и старше автоматики:
+
+- `capabilities.logprobs: true` у модели в конфиге — решает пользователь, автопроверка не спорит;
 - `OPENCODE_TRUTHPROBE=1` — просим `logprobs` у всех chat-completions моделей;
-- либо `capabilities.logprobs: true` у конкретной модели в конфиге (переменная тогда не нужна);
-- любой другой провайдер без `logprobs` → бейджа просто не будет, ошибки тоже не будет.
+- `OPENCODE_TRUTHPROBE_PROBE=off` — выключить только автопроверку (сеть не трогаем).
+
+Посмотреть вердикты: `cat <data>/truthprobe/capabilities.json`.
 
 ## Как считается
 
@@ -93,11 +118,13 @@ score_answer   = 0.6 · globalGeo + 0.4 · mean(score_sentence)
 | Что | Как | Результат |
 | --- | --- | --- |
 | Скоринг и сегментация | `bun test test/score.test.ts` | **45 pass / 0 fail**, 104 expect |
+| Логика автопроверки (TTL, классификация ответов, кэш) | `bun test test/capability.test.ts` | **32 pass / 0 fail**, 70 expect |
 | Протокол OpenAI (гейт, тело запроса, разбор `choices[i].logprobs`) | `packages/ai/test/truthprobe.test.ts` | **8 pass / 0 fail** |
+| Автовключение без переменных окружения | мок + два прогона подряд | RUN1: проба → `{"status":"ok"}`; RUN2: **2 из 2** запросов с `logprobs: true, top_logprobs: 20` |
 | Регрессия вокруг событий текста | `test/session*.test.ts test/projector*.test.ts test/message*.test.ts` | **811 pass / 0 fail** |
 | Полный прогон core | `bun run script/test.ts` | 7 272 pass / 39 fail — все 39 падают и на чистой базе (сеть: GitLab OAuth, ripgrep) |
 | Патч на чистом дереве | `git am` в worktree `007afb1` | применяется без конфликтов, тесты 45 + 8 зелёные |
-| Типизация | schema / ai / core / client / tui | зелёная (132 / 356+321 / 2025 / 181 / 1942 файла) |
+| Типизация | schema / ai / core / client / tui | зелёная (132 / 357+322 / 2 030 / 181 / 1 942 файла) |
 | Сквозной прогон | мок-провайдер с настоящими `logprobs` | `logprobs: true, top_logprobs: 20` в запросе, `truthprobe` в базе |
 | Живой TUI | pty-проба | бейдж и блок спорных предложений отрендерились |
 | Windows-бинарь | `.exe` на моке | `status: "ok", score: 0.417, first 0.708, flagged: 1` |
@@ -106,7 +133,7 @@ score_answer   = 0.6 · globalGeo + 0.4 · mean(score_sentence)
 
 ```bash
 python3 scripts/mock-openai-logprobs.py 8899 &
-OPENCODE_TRUTHPROBE=1 OPENCODE_CONFIG=scripts/mock-opencode.json \
+OPENCODE_CONFIG=scripts/mock-opencode.json \
   bun run --cwd packages/cli src/index.ts run --model mock/mock-1 "capital of France?"
 python3 scripts/check-db.py                  # что попало в базу
 python3 scripts/tui-probe.py && python3 scripts/screen-dump.py /tmp/tui-probe.log
@@ -117,13 +144,16 @@ python3 scripts/tui-probe.py && python3 scripts/screen-dump.py /tmp/tui-probe.lo
 
 ## Устройство патча
 
-18 файлов, +1254/−27, три коммита поверх `007afb1`. Шов тонкий и аддитивный:
+24 файла, +1932/−27, четыре коммита поверх `007afb1`. Шов тонкий и аддитивный:
 
 | Слой | Файл | Что делает |
 | --- | --- | --- |
 | схема | `packages/schema/src/truthprobe.ts` | `Truthprobe.Info` — единственный новый тип |
 | схема | `session-message.ts`, `session-event.ts` | optional-поле `truthprobe` в текстовом парте и в `session.text.ended` |
 | протокол | `packages/ai/src/protocols/openai-chat.ts` | просит `logprobs`, парсит `choices[i].logprobs` в `providerMetadata` |
+| протокол | `packages/ai/src/protocols/truthprobe-capability.ts` | читает кэш вердиктов, чтобы включить сбор без конфига |
+| ядро | `plugin/truthprobe.ts` + `truthprobe/capability.ts` | автопроверка провайдера по `http.request`, кэш вердиктов |
+| ядро | `model.ts` | `mergeCapabilities` больше не теряет `logprobs` |
 | ядро | `session/runner/publish-llm-event.ts` | копит токены, считает score, кладёт в durable-событие |
 | ядро | `session/message-updater.ts` | переносит поле в парт сообщения |
 | клиент | `client/src/solid/data.ts` | **не теряет** поле при живом обновлении стора |
@@ -136,8 +166,10 @@ python3 scripts/tui-probe.py && python3 scripts/screen-dump.py /tmp/tui-probe.lo
 ## Структура
 
 ```
-src/truthprobe/           эталонная математика (типы, сегментация, скоринг)
+src/truthprobe/           эталонная математика (типы, сегментация, скоринг) и логика автопроверки
+src/opencode-tree/        эталонные копии файлов, которые живут в дереве opencode
 test/score.test.ts        45 тестов без сети и без зависимостей
+test/capability.test.ts   32 теста статусов, TTL и кэша автопроверки
 test/opencode-tree/       тесты, которые живут в дереве opencode
 patches/                  готовый git-am патч и python-патчеры для точечных правок
 scripts/                  мок-провайдер, probe, pty-проба TUI, эмулятор экрана, сборка
@@ -148,8 +180,10 @@ docs/                     приоритет, план встроенных мо
 
 - Только провайдеры с `logprobs` (семейство chat-completions). Responses API, Anthropic messages,
   Gemini generate-content — пока нет; план есть в [`docs/PLAN-BUILTIN.md`](docs/PLAN-BUILTIN.md).
-- Реальный шлюз `opencode.ai/inference` не проверен: нужен ключ. `scripts/probe-logprobs.py`
-  печатает `ok / ignored / rejected / auth / rate` и кэширует ответ на 7 дней.
+- Первый запрос к новому провайдеру ещё идёт без `logprobs`: вердикт появляется после пробы,
+  то есть со второго запроса. Первый ответ бейджа не получит.
+- Реальный шлюз `opencode.ai/inference` не проверен: нет ключа. Автопроверка справится сама —
+  `scripts/probe-logprobs.py` нужен только чтобы посмотреть вердикт вручную.
 - Порог `0.45` откалиброван на моке; на живых длинных ответах требует проверки.
 - Известная слабость подхода: уверенная ложь. Лечится не порогом, а вторым независимым сигналом.
 

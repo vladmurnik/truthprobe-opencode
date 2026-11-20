@@ -2,15 +2,16 @@
 
 Всё ниже — измеренное, не задуманное. Если чего-то не проверяли, это написано отдельным разделом.
 
-База: `sst/opencode` @ `007afb1`. Ветка `feat/truthprobe`, три коммита:
+База: `sst/opencode` @ `007afb1`. Ветка `feat/truthprobe`, четыре коммита:
 
 | Коммит | Что |
 | --- | --- |
 | `3ccda6c` | feat(truthprobe): score answers from token logprobs |
 | `a9db0da` | fix(tui): apply truthprobe metadata from session.text.ended events |
 | `2870f64` | test(truthprobe): cover segmentation, scoring and protocol parsing |
+| `f043425` | feat(truthprobe): probe providers and enable logprobs automatically |
 
-Итог: **18 файлов, +1254 / −27**. Патч — `patches/truthprobe-0001.patch` (1983 строки, `git am`).
+Итог: **24 файла, +1932 / −27**. Патч — `patches/truthprobe-0001.patch` (2798 строк, `git am`).
 
 ## 1. Слои патча
 
@@ -31,11 +32,17 @@
 | 13 | `packages/tui/src/routes/session/message-parts.tsx` | бейдж и блок спорных предложений |
 | 14 | `packages/core/test/truthprobe.test.ts` | 45 тестов |
 | 15 | `packages/ai/test/truthprobe.test.ts` | 8 тестов |
+| 16 | `packages/core/src/plugin/truthprobe.ts` | автопроверка провайдера по `http.request` |
+| 17 | `packages/core/src/truthprobe/capability.ts` | статусы, TTL, классификация, кэш |
+| 18 | `packages/ai/src/protocols/truthprobe-capability.ts` | чтение кэша вердиктов в протоколе |
+| 19 | `packages/core/src/model.ts` | `mergeCapabilities` проносит `logprobs` |
+| 20 | `packages/core/test/truthprobe-capability.test.ts` | 32 теста |
 
 ## 2. Тесты
 
 ```
 45 pass / 0 fail   104 expect   packages/core/test/truthprobe.test.ts
+32 pass / 0 fail    70 expect   packages/core/test/truthprobe-capability.test.ts
  8 pass / 0 fail    23 expect   packages/ai/test/truthprobe.test.ts
 ```
 
@@ -57,6 +64,18 @@
   состав полей `truthprobeBody`, разбор `content[] → {token, logprob, top}`, сохранение `logprob: 0`,
   отсутствие `top` при пустом `top_logprobs`.
 
+Что покрыто (автопроверка, `truthprobe-capability.test.ts`):
+
+- `ttl`: 7 дней для `ok`/`ignored`/`rejected`/`unsupported`, час для `auth`, ноль для `error`.
+- `fresh` / `enabled`: границы TTL, запись из будущего, `error` никогда не свежий, включает только `ok`.
+- `parse` / `serialize`: битый JSON, `null`, чужие и неполные записи отбрасываются, стабильный порядок
+  ключей, `setEntry` не мутирует вход.
+- `probeBody`: ровно один токен, фиксированный `ping`, `logprobs: true`, настраиваемый `topK`.
+- `classify`: `ok` только при непустом `logprobs.content`; `ignored` при 200 без поля; `auth` на 401/403;
+  `error` на 429/5xx (не кэшируется); `rejected` только если в 400/422 упомянут `logprob`;
+  `unsupported` на 404/405/501 и на «другую» 400.
+- `originOf` / `modelFromBody`: в кэш не попадают путь, query и ключи; модель читается из тела.
+
 ## 3. Полные прогоны
 
 | Пакет | Команда | Результат |
@@ -65,12 +84,13 @@
 | ai (весь) | `bun test --timeout 30000` | **2 276 pass / 0 fail / 29 skip**, 9 377 expect, 7.7 s |
 | schema | `bun test` | **95 pass / 0 fail**, 231 ms |
 | регрессия сессий | `test/session*.test.ts test/projector*.test.ts test/message*.test.ts` | **811 pass / 0 fail**, 30 s |
-| типизация | schema / ai / core / client / tui | 132 / 356+321 / 2025 / 181 / 1942 файла, 0 ошибок |
+| типизация | schema / ai / core / client / tui | 132 / 357+322 / 2 030 / 181 / 1 942 файла, 0 ошибок |
 
-Отдельно проверено, что **патч самодостаточен**: на чистом worktree `007afb1` (18 файлов,
-+1254/−27, без моих рабочих копий) `git am patches/truthprobe-0001.patch` применяется без
-конфликтов, `typecheck` пакетов ai и core — 0 ошибок, тесты в применённом дереве — **45 pass / 0 fail**
-и **8 pass / 0 fail**. То есть зелёные тесты не зависят от локального состояния моей машины.
+Отдельно проверено, что **патч самодостаточен**: на чистом worktree `007afb1` (24 файла,
++1932/−27, без моих рабочих копий) `git am patches/truthprobe-0001.patch` применяется без
+конфликтов, `typecheck` пакетов ai и core — 0 ошибок, тесты в применённом дереве — **45 pass / 0 fail**,
+**32 pass / 0 fail** и **8 pass / 0 fail**. То есть зелёные тесты не зависят от локального состояния
+моей машины.
 
 ## 4. Про 39 падений в полном прогоне core
 
@@ -113,6 +133,32 @@
   "flagged": 1
 }
 ```
+
+### 5.1 Автопроверка провайдера (без единой переменной окружения)
+
+Мок поднимался на `:8899`, кэш `~/.local/share/opencode/truthprobe/` удалялся, `OPENCODE_TRUTHPROBE`,
+`OPENCODE_TRUTHPROBE_CACHE` и `OPENCODE_TRUTHPROBE_PROBE` снимались из окружения. Два прогона подряд:
+
+```
+RUN1 (кэш пуст)
+  stream=2 with-logprobs=0 probes=1
+  проба: {"logprobs": true, "top_logprobs": 3, "stream": false}
+  кэш:   {"mock/mock-1": {"status":"ok","endpoint":"http://127.0.0.1:8899","model":"mock-1"}}
+
+RUN2 (кэш прогрет)
+  stream=2 with-logprobs=2 probes=0
+  оба запроса: {"logprobs": true, "top_logprobs": 20, "stream": true}
+```
+
+То есть вердикт переживает перезапуск процесса: второй прогон просит `logprobs` с первого же
+запроса и ничего не переспрашивает. `truthprobe` при этом доезжает до `session_part`
+(`status: ok`) — бейдж работает без ручной настройки.
+
+Побочно найдено и исправлено: `Model.mergeCapabilities` не пробрасывал `logprobs`, поэтому
+`capabilities.logprobs` из конфига молча терялось.
+
+Кэш проверяется по `providerID/modelID`, а если такой записи нет — по любой свежей записи того же
+провайдера: поддержка logprobs — свойство эндпоинта, и алиас модели не должен гасить бейдж.
 
 ## 6. Живой рендер TUI (pty)
 
@@ -164,7 +210,11 @@
 ## 9. Как включить
 
 ```bash
-export OPENCODE_TRUTHPROBE=1        # гейт в протоколе
-# или capabilities.logprobs: true у модели в конфиге
-bun run --cwd packages/cli src/index.ts
+bun run --cwd packages/cli src/index.ts     # ничего не настраиваем: провайдер проверяется сам
+# посмотреть вердикты:
+cat ~/.local/share/opencode/truthprobe/capabilities.json
 ```
+
+Ручные переключатели (все опциональны): `capabilities.logprobs: true` у модели в конфиге,
+`OPENCODE_TRUTHPROBE=1` для принудительного сбора у всех chat-completions моделей,
+`OPENCODE_TRUTHPROBE_PROBE=off` чтобы выключить только автопроверку.

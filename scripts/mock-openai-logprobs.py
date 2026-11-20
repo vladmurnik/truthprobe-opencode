@@ -22,7 +22,8 @@ import os
 import sys
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
-LOG = "/tmp/mock/requests.jsonl"
+_default_log = os.path.expanduser("~/mockwork/requests.jsonl")
+LOG = os.environ.get("MOCK_LOG") or _default_log
 
 # (токен, logprob, альтернативы). Первое предложение — уверенное, второе — сомнительное.
 ANSWER = [
@@ -66,8 +67,12 @@ class Handler(BaseHTTPRequestHandler):
             body = json.loads(raw)
         except Exception:
             body = {}
-        os.makedirs("/tmp/mock", exist_ok=True)
-        with open(LOG, "a", encoding="utf-8") as handle:
+        try:
+            os.makedirs(os.path.dirname(LOG), exist_ok=True)
+            handle = open(LOG, "a", encoding="utf-8")
+        except OSError:
+            handle = None
+        if handle is not None:
             handle.write(
                 json.dumps(
                     {
@@ -81,6 +86,54 @@ class Handler(BaseHTTPRequestHandler):
                 )
                 + "\n"
             )
+            handle.close()
+
+        # TruthProbe проверяет поддержку logprobs одной нестримовой посылкой:
+        # отвечаем JSON, а не SSE. MOCK_MODE=ignored имитирует шлюз, который
+        # молча вырезает logprobs, MOCK_MODE=rejected — отказ на параметр.
+        if os.environ.get("MOCK_MODE") == "rejected":
+            payload = json.dumps({"error": {"message": "Unsupported parameter: logprobs"}}).encode()
+            self.send_response(400)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(payload)))
+            self.end_headers()
+            self.wfile.write(payload)
+            return
+
+        if not body.get("stream"):
+            first = ANSWER[0]
+            content = [
+                {
+                    "token": first[0],
+                    "logprob": first[1],
+                    "bytes": None,
+                    "top_logprobs": [
+                        {"token": alt, "logprob": value, "bytes": None} for alt, value in first[2]
+                    ],
+                }
+            ]
+            choice = {
+                "index": 0,
+                "message": {"role": "assistant", "content": first[0].strip()},
+                "finish_reason": "length",
+            }
+            if body.get("logprobs") and os.environ.get("MOCK_MODE") != "ignored":
+                choice["logprobs"] = {"content": content}
+            payload = json.dumps(
+                {
+                    "id": "mock-1",
+                    "object": "chat.completion",
+                    "created": 0,
+                    "model": body.get("model") or "mock-1",
+                    "choices": [choice],
+                }
+            ).encode()
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(payload)))
+            self.end_headers()
+            self.wfile.write(payload)
+            return
 
         self.send_response(200)
         self.send_header("Content-Type", "text/event-stream")
