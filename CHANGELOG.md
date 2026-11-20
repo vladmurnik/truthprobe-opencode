@@ -1,3 +1,26 @@
+# 0.3.2 — 2026-11-19
+
+Desktop-приложение можно поставить отдельно от opencode: своё имя, свой каталог данных, без чужого
+автообновления.
+
+**Добавлено**
+
+- `OPENCODE_DESKTOP_APP` и `OPENCODE_DESKTOP_APP_ID` на сборке задают имя приложения, AppUserModelID,
+  каталог `userData`, имя установщика и заголовок окна. Значения запекаются в бандл через
+  `electron.vite.config.ts`, поэтому патчить готовый `out/main/index.js` не нужно.
+- Заголовок окна и вкладки больше не литерал `OpenCode`: он приходит из `packages/app/src/brand.ts`
+  (Electron берёт заголовок из `document.title`, а не из опции `BrowserWindow`).
+- Собранное так приложение не пишет `app-update.yml` — автообновление opencode его не перезапишет.
+
+**Проверено**
+
+- Сборка `TruthProbe` из дерева `feat/truthprobe`: `dist/win-unpacked/TruthProbe.exe`,
+  `resources/opencode-cli.exe` (наш патченный CLI), `app-update.yml` отсутствует.
+- Запуск: 5 процессов `TruthProbe` + 1 `opencode-cli`, заголовок окна `TruthProbe`,
+  данные в `%APPDATA%\ai.truthprobe.desktop`.
+- Типизация: app (2 445 файлов), desktop (3 569, 2 проекта) — 0 ошибок.
+- Патч: 37 файлов, +2139/−34, 3 292 строки, семь коммитов поверх `007afb1`.
+
 # 0.3.1 — 2026-11-19
 
 Спорные предложения видны и в desktop-приложении, не только в терминале.

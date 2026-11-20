@@ -2,7 +2,7 @@
 
 Всё ниже — измеренное, не задуманное. Если чего-то не проверяли, это написано отдельным разделом.
 
-База: `sst/opencode` @ `007afb1`. Ветка `feat/truthprobe`, шесть коммитов:
+База: `sst/opencode` @ `007afb1`. Ветка `feat/truthprobe`, семь коммитов:
 
 | Коммит | Что |
 | --- | --- |
@@ -12,8 +12,9 @@
 | `f043425` | feat(truthprobe): probe providers and enable logprobs automatically |
 | `3126939` | feat(truthprobe): show confidence in the desktop session UI |
 | `335305a` | feat(truthprobe): list doubtful sentences in the desktop footer |
+| `6017d75` | feat(desktop): let a fork brand the desktop app |
 
-Итог: **29 файлов, +2084 / −27**. Патч — `patches/truthprobe-0001.patch` (3080 строк, `git am`).
+Итог: **37 файлов, +2139 / −34**. Патч — `patches/truthprobe-0001.patch` (3292 строки, `git am`).
 
 ## 1. Слои патча
 
@@ -99,10 +100,10 @@
 | schema | `bun test` | **95 pass / 0 fail**, 231 ms |
 | регрессия сессий | `test/session*.test.ts test/projector*.test.ts test/message*.test.ts` | **811 pass / 0 fail**, 30 s |
 | типизация | schema / ai / core / client / tui | 132 / 357+322 / 2 030 / 181 / 1 942 файла, 0 ошибок |
-| типизация UI | session-ui / app / desktop | 382 / 2 443 / 3 567 файлов (desktop — 2 проекта), 0 ошибок |
+| типизация UI | session-ui / app / desktop | 382 / 2 445 / 3 569 файлов (desktop — 2 проекта), 0 ошибок |
 
-Отдельно проверено, что **патч самодостаточен**: на чистом worktree `007afb1` (29 файлов,
-+2084/−27, без моих рабочих копий) `git am patches/truthprobe-0001.patch` применяется без
+Отдельно проверено, что **патч самодостаточен**: на чистом worktree `007afb1` (37 файлов,
++2139/−34, без моих рабочих копий) `git am patches/truthprobe-0001.patch` применяется без
 конфликтов, `typecheck` пакетов ai и core — 0 ошибок, тесты в применённом дереве — **45 pass / 0 fail**,
 **32 pass / 0 fail** и **8 pass / 0 fail**. То есть зелёные тесты не зависят от локального состояния
 моей машины.
@@ -233,3 +234,27 @@ cat ~/.local/share/opencode/truthprobe/capabilities.json
 Ручные переключатели (все опциональны): `capabilities.logprobs: true` у модели в конфиге,
 `OPENCODE_TRUTHPROBE=1` для принудительного сбора у всех chat-completions моделей,
 `OPENCODE_TRUTHPROBE_PROBE=off` чтобы выключить только автопроверку.
+
+## 10. Отдельное desktop-приложение
+
+Сборка форка как самостоятельной программы проверена тем же рецептом, что и портативная папка:
+
+```bash
+cd packages/desktop
+export OPENCODE_TARGET=windows-x64 OPENCODE_CHANNEL=dev \
+       OPENCODE_DESKTOP_APP=TruthProbe OPENCODE_DESKTOP_APP_ID=ai.truthprobe.desktop
+bun x electron-vite build
+bun x electron-builder --win --x64 --publish never --dir --config electron-builder.config.ts
+```
+
+| Что | Результат |
+| --- | --- |
+| артефакт | `dist/win-unpacked/TruthProbe.exe`, `resources/opencode-cli.exe` (наш CLI), `app-update.yml` нет |
+| заголовок окна | `TruthProbe` (проверено `MainWindowTitle` после запуска) |
+| данные | `%APPDATA%\ai.truthprobe.desktop`, сайдкар CLI в `cli/<version>-x64/` |
+| процессы | 5 × `TruthProbe` + 1 × `opencode-cli` |
+
+Без `--config` electron-builder берёт свои умолчания и кладёт исполняемый файл под именем npm-пакета —
+это не сборка форка, а случайная. Переменные читаются в `src/main/constants.ts` (брэнд
+`OPENCODE_DESKTOP_APP(_ID)`) и в `electron-builder.config.ts` (`brand()`: appId, productName,
+`publish: null`).

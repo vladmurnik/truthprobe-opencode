@@ -100,6 +100,25 @@ the same tree:
 bun run dev:desktop
 ```
 
+#### As a standalone app
+
+The same tree builds a self-contained program with its own name, its own data directory and no
+upstream auto-update. Two variables are enough:
+
+```bash
+cd packages/desktop
+export OPENCODE_TARGET=windows-x64 OPENCODE_CHANNEL=dev \
+       OPENCODE_DESKTOP_APP=TruthProbe OPENCODE_DESKTOP_APP_ID=ai.truthprobe.desktop
+bun x electron-vite build
+bun x electron-builder --win --x64 --publish never --dir --config electron-builder.config.ts
+```
+
+`--config` is required: without it electron-builder falls back to its defaults and names the executable
+after the npm package. The result is `dist/win-unpacked` (a portable folder, ~830 MB) that can live
+anywhere and run `TruthProbe.exe`. The window title, the AppUserModelID, the
+`%APPDATA%\ai.truthprobe.desktop` directory and the installer name all come from those two variables;
+unset, the build stays plain opencode.
+
 ### How it turns on
 
 Automatically. The `opencode.truthprobe` plugin listens on `http.request` — the only place where the
@@ -162,10 +181,11 @@ States: `ok` — tokens matched the text; `partial` — offsets drifted; `unavai
 | Full core run | `bun run script/test.ts` | 7 272 pass / 39 fail — the same 39 fail on a clean base (network: GitLab OAuth, ripgrep) |
 | Patch on a clean tree | `git am` in a `007afb1` worktree | applies without conflicts, tests 45 + 8 green |
 | Typecheck | schema / ai / core / client / tui | green (132 / 357+322 / 2 030 / 181 / 1 942 files) |
-| Typecheck of the UI packages | session-ui / app / desktop | green (382 / 2 443 / 3 567 files, desktop 2 projects) |
+| Typecheck of the UI packages | session-ui / app / desktop | green (382 / 2 445 / 3 569 files, desktop 2 projects) |
 | End-to-end run | mock provider with real `logprobs` | `logprobs: true, top_logprobs: 20` in the request, `truthprobe` in the database |
 | Live TUI | pty probe | badge and the doubtful-sentence block rendered |
 | Desktop UI | session-ui chip in the shared Electron component | green typecheck of desktop (3 567 files); `confidence NN%` chip and the doubtful-sentence list in the footer |
+| Standalone desktop app | build with `OPENCODE_DESKTOP_APP`/`OPENCODE_DESKTOP_APP_ID` | `TruthProbe.exe`, window title `TruthProbe`, userData `ai.truthprobe.desktop`, CLI sidecar beside it, no `app-update.yml` |
 | Windows binary | `.exe` against the mock | `status: "ok", score: 0.417, first: 0.708, flagged: 1` |
 
 Reproduce without keys:
@@ -183,7 +203,7 @@ reproduction — [`docs/SMOKE-E2E.md`](docs/SMOKE-E2E.md).
 
 ## Anatomy of the patch
 
-29 files, +2084/−27, six commits on top of `007afb1`. The seam is thin and additive:
+37 files, +2139/−34, seven commits on top of `007afb1`. The seam is thin and additive:
 
 | Layer | File | What it does |
 | --- | --- | --- |
@@ -196,6 +216,8 @@ reproduction — [`docs/SMOKE-E2E.md`](docs/SMOKE-E2E.md).
 | core | `session/runner/publish-llm-event.ts` | accumulates tokens, computes the score, puts it on the durable event |
 | core | `session/message-updater.ts` | moves the field onto the message part |
 | client | `client/src/solid/data.ts` | **does not drop** the field on live store updates |
+| desktop | `desktop/src/main/constants.ts`, `electron.vite.config.ts`, `electron-builder.config.ts` | build branding: name, AppUserModelID, userData, installer, no upstream updater |
+| app | `app/src/brand.ts`, `app.tsx`, `session/route.tsx` | window and tab title from the same value |
 | TUI | `tui/src/routes/session/message-parts.tsx` | badge and the doubtful-sentence block |
 | desktop | `session-ui/src/message/message-content.tsx` | `confidence` chip in the answer footer, shared by the desktop app and the web UI |
 | desktop | `session-ui/src/message/doubtful.ts` | doubtful-sentence list: numbering, percentage, 96-char truncation |

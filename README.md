@@ -98,6 +98,25 @@ curl -LO <release>/opencode-truthprobe-windows-x64.exe
 bun run dev:desktop
 ```
 
+#### Отдельно от opencode
+
+Приложение можно собрать как самостоятельную программу — со своим именем, своим каталогом данных
+и без чужого автообновления. Достаточно двух переменных на сборке:
+
+```bash
+cd packages/desktop
+export OPENCODE_TARGET=windows-x64 OPENCODE_CHANNEL=dev \
+       OPENCODE_DESKTOP_APP=TruthProbe OPENCODE_DESKTOP_APP_ID=ai.truthprobe.desktop
+bun x electron-vite build
+bun x electron-builder --win --x64 --publish never --dir --config electron-builder.config.ts
+```
+
+`--config` обязателен: без него electron-builder берёт свои умолчания и исполняемый файл называется
+по имени npm-пакета. Результат — `dist/win-unpacked` (портативная папка, ~830 MB): её можно положить
+куда угодно и запускать `TruthProbe.exe`. Заголовок окна, AppUserModelID, каталог
+`%APPDATA%\ai.truthprobe.desktop` и имя установщика берутся из этих двух переменных; без них сборка
+остаётся обычным opencode.
+
 ### Включение
 
 Автоматически. Плагин `opencode.truthprobe` слушает `http.request` — единственное место, где
@@ -155,10 +174,11 @@ score_answer   = 0.6 · globalGeo + 0.4 · mean(score_sentence)
 | Полный прогон core | `bun run script/test.ts` | 7 272 pass / 39 fail — все 39 падают и на чистой базе (сеть: GitLab OAuth, ripgrep) |
 | Патч на чистом дереве | `git am` в worktree `007afb1` | применяется без конфликтов, тесты 45 + 8 зелёные |
 | Типизация | schema / ai / core / client / tui | зелёная (132 / 357+322 / 2 030 / 181 / 1 942 файла) |
-| Типизация UI-пакетов | session-ui / app / desktop | зелёная (382 / 2 443 / 3 567 файлов, desktop — 2 проекта) |
+| Типизация UI-пакетов | session-ui / app / desktop | зелёная (382 / 2 445 / 3 569 файлов, desktop — 2 проекта) |
 | Сквозной прогон | мок-провайдер с настоящими `logprobs` | `logprobs: true, top_logprobs: 20` в запросе, `truthprobe` в базе |
 | Живой TUI | pty-проба | бейдж и блок спорных предложений отрендерились |
 | Desktop UI | чип `confidence` в общем компоненте `@opencode/session-ui` | типизация desktop (3 567 файлов) зелёная; чип `confidence NN%` и список спорных предложений в футере |
+| Отдельное desktop-приложение | сборка с `OPENCODE_DESKTOP_APP`/`OPENCODE_DESKTOP_APP_ID` | `TruthProbe.exe`, заголовок окна `TruthProbe`, userData `ai.truthprobe.desktop`, сайдкар CLI рядом, `app-update.yml` нет |
 | Windows-бинарь | `.exe` на моке | `status: "ok", score: 0.417, first 0.708, flagged: 1` |
 
 Воспроизвести без ключей:
@@ -176,7 +196,7 @@ python3 scripts/tui-probe.py && python3 scripts/screen-dump.py /tmp/tui-probe.lo
 
 ## Устройство патча
 
-29 файлов, +2084/−27, шесть коммитов поверх `007afb1`. Шов тонкий и аддитивный:
+37 файлов, +2139/−34, семь коммитов поверх `007afb1`. Шов тонкий и аддитивный:
 
 | Слой | Файл | Что делает |
 | --- | --- | --- |
@@ -189,6 +209,8 @@ python3 scripts/tui-probe.py && python3 scripts/screen-dump.py /tmp/tui-probe.lo
 | ядро | `session/runner/publish-llm-event.ts` | копит токены, считает score, кладёт в durable-событие |
 | ядро | `session/message-updater.ts` | переносит поле в парт сообщения |
 | клиент | `client/src/solid/data.ts` | **не теряет** поле при живом обновлении стора |
+| desktop | `desktop/src/main/constants.ts`, `electron.vite.config.ts`, `electron-builder.config.ts` | брэнд сборки: имя, AppUserModelID, userData, установщик, отказ от чужого updater'а |
+| app | `app/src/brand.ts`, `app.tsx`, `session/route.tsx` | заголовок окна и вкладки из того же значения |
 | TUI | `tui/src/routes/session/message-parts.tsx` | бейдж + блок спорных предложений |
 | desktop | `session-ui/src/message/message-content.tsx` | чип `confidence` в футере ответа — общий для desktop-приложения и веба |
 | desktop | `session-ui/src/message/doubtful.ts` | список спорных предложений: нумерация, процент, обрезка до 96 символов |

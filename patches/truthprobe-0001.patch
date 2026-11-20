@@ -1,7 +1,7 @@
 From 3ccda6cdf3320c8fbcfbb2c8656c34a2827932af Mon Sep 17 00:00:00 2001
 From: truthprobe <truthprobe@local>
 Date: Thu, 19 Nov 2026 00:59:59 +0300
-Subject: [PATCH 1/6] feat(truthprobe): score answers from token logprobs
+Subject: [PATCH 1/7] feat(truthprobe): score answers from token logprobs
 
 - schema: Truthprobe.Info, capabilities.logprobs, AssistantText.truthprobe, optional truthprobe on session.text.ended
 - ai/openai-chat: request logprobs/top_logprobs when enabled, parse choice-level logprobs into providerMetadata
@@ -1192,7 +1192,7 @@ index 6a844d7..f21811e 100644
 From a9db0dab3c3392b40e8c9366e3455be1f37b7dcf Mon Sep 17 00:00:00 2001
 From: adik <adik@local>
 Date: Thu, 19 Nov 2026 01:12:00 +0300
-Subject: [PATCH 2/6] fix(tui): apply truthprobe metadata from
+Subject: [PATCH 2/7] fix(tui): apply truthprobe metadata from
  session.text.ended events
 
 The solid client store only copied event.data.text into the in-memory
@@ -1222,7 +1222,7 @@ index 8b6d247..7368d0c 100644
 From 2870f64a9bcb19d1e1701d85101c5074646cdcac Mon Sep 17 00:00:00 2001
 From: adik <adik@local>
 Date: Thu, 19 Nov 2026 03:08:36 +0300
-Subject: [PATCH 3/6] test(truthprobe): cover segmentation, scoring and
+Subject: [PATCH 3/7] test(truthprobe): cover segmentation, scoring and
  protocol parsing
 
 - send logprobs from every chat-completions model that declares the capability
@@ -1985,7 +1985,7 @@ index eed85f3..5bde799 100755
 From f04342565c0963f466c9bae21dc1b0d9158bab44 Mon Sep 17 00:00:00 2001
 From: TruthProbe <truthprobe@local>
 Date: Thu, 19 Nov 2026 09:40:19 +0300
-Subject: [PATCH 4/6] feat(truthprobe): probe providers and enable logprobs
+Subject: [PATCH 4/7] feat(truthprobe): probe providers and enable logprobs
  automatically
 
 Adding a provider key no longer needs an environment variable.
@@ -2800,7 +2800,7 @@ index 0000000..e23e561
 From 3126939707e7c7c305f8b3c2a89d196dc1b5acd9 Mon Sep 17 00:00:00 2001
 From: adik <adik@local>
 Date: Thu, 19 Nov 2026 13:34:58 +0300
-Subject: [PATCH 5/6] feat(truthprobe): show confidence in the desktop session
+Subject: [PATCH 5/7] feat(truthprobe): show confidence in the desktop session
  UI
 
 ---
@@ -2897,7 +2897,7 @@ index be526b4..659538f 100644
 From 335305a2e846ae50c7d31cec6a750b74a4d385a6 Mon Sep 17 00:00:00 2001
 From: TruthProbe <truthprobe@localhost>
 Date: Thu, 19 Nov 2026 13:44:43 +0300
-Subject: [PATCH 6/6] feat(truthprobe): list doubtful sentences in the desktop
+Subject: [PATCH 6/7] feat(truthprobe): list doubtful sentences in the desktop
  footer
 
 ---
@@ -3075,6 +3075,218 @@ index b44a4df..2a7ef9d 100644
          <Show when={sources()} fallback={<Show when={props.showCopy}>{copyFooter()}</Show>}>
            {(value) => (
              <div data-slot="text-part-footer">
+-- 
+2.53.0
+
+
+From 6017d751fc1a7a9bf1eac92e2b40b161e0c48b49 Mon Sep 17 00:00:00 2001
+From: TruthProbe <truthprobe@localhost>
+Date: Thu, 19 Nov 2026 14:33:06 +0300
+Subject: [PATCH 7/7] feat(desktop): let a fork brand the desktop app
+
+A fork that ships its own Electron application sets OPENCODE_DESKTOP_APP and
+OPENCODE_DESKTOP_APP_ID before building. The window title, the AppUserModelID,
+the userData directory, the installer product name and the bundle identity then
+all follow those two values, and the packaged app stops subscribing to the
+upstream updater. Unset, the build is byte-identical in behaviour to before.
+
+The document title moves out of hard-coded strings into app/src/brand.ts, since
+Electron takes the window title from document.title rather than the BrowserWindow
+option.
+---
+ packages/app/src/app.tsx                      |  3 +-
+ packages/app/src/brand.ts                     |  4 +++
+ packages/app/src/session/route.tsx            |  3 +-
+ packages/desktop/electron-builder.config.ts   | 28 ++++++++++++++++++-
+ packages/desktop/electron.vite.config.ts      |  6 ++++
+ packages/desktop/src/main/constants.ts        | 12 ++++++--
+ .../desktop/src/main/windows/appearance.ts    |  3 +-
+ packages/desktop/src/main/windows/early.ts    |  3 +-
+ 8 files changed, 55 insertions(+), 7 deletions(-)
+ create mode 100644 packages/app/src/brand.ts
+
+diff --git a/packages/app/src/app.tsx b/packages/app/src/app.tsx
+index 7808353..dc70394 100644
+--- a/packages/app/src/app.tsx
++++ b/packages/app/src/app.tsx
+@@ -1,4 +1,5 @@
+ import "@/index.css"
++import { APP_TITLE } from "./brand"
+ import { VoiceProvider } from "@/voice/context"
+ import { VoiceOverlay } from "@/voice/composer"
+ import { DialogProvider } from "@opencode/ui/context/dialog"
+@@ -57,7 +58,7 @@ export function AppBaseProviders(
+ ) {
+   return (
+     <MetaProvider>
+-      <Title>OpenCode</Title>
++      <Title>{APP_TITLE}</Title>
+       <Font />
+       <ThemeProvider onThemeApplied={(mode, scheme) => props.onThemeApplied?.(mode, scheme)}>
+         <LanguageProvider locale={props.locale} onNativeTranslations={props.onNativeTranslations}>
+diff --git a/packages/app/src/brand.ts b/packages/app/src/brand.ts
+new file mode 100644
+index 0000000..57c8543
+--- /dev/null
++++ b/packages/app/src/brand.ts
+@@ -0,0 +1,4 @@
++/** Desktop application name; a fork sets OPENCODE_DESKTOP_APP at build time (see electron.vite.config.ts). */
++const env = import.meta.env as unknown as Record<string, string | undefined>
++
++export const APP_TITLE = env.OPENCODE_DESKTOP_APP || "OpenCode"
+diff --git a/packages/app/src/session/route.tsx b/packages/app/src/session/route.tsx
+index 99fbce2..8a03ed0 100644
+--- a/packages/app/src/session/route.tsx
++++ b/packages/app/src/session/route.tsx
+@@ -6,6 +6,7 @@ import { makeEventListener } from "@solid-primitives/event-listener"
+ import { DataProvider } from "@opencode/session-ui/context"
+ import { SessionUserMessage } from "@opencode/session-ui/message"
+ import { TextShimmer } from "@opencode/ui/text-shimmer"
++import { APP_TITLE } from "@/brand"
+ import { CommentsProvider } from "@/composer/comments"
+ import { readPromptPresentation } from "@/composer/comment-note"
+ import { FileProvider } from "@/workspaces/files/model"
+@@ -291,7 +292,7 @@ function SessionDocumentTitle(props: { title: () => string | undefined }) {
+   // Keyed: <Title> reads its text inside a meta effect, which would hit a stale Show accessor once the session is deleted.
+   return (
+     <Show when={props.title()} keyed>
+-      {(value) => <Title>{`${value} · OpenCode`}</Title>}
++      {(value) => <Title>{`${value} · ${APP_TITLE}`}</Title>}
+     </Show>
+   )
+ }
+diff --git a/packages/desktop/electron-builder.config.ts b/packages/desktop/electron-builder.config.ts
+index d147662..38f901b 100644
+--- a/packages/desktop/electron-builder.config.ts
++++ b/packages/desktop/electron-builder.config.ts
+@@ -208,7 +208,29 @@ const getBase = (appId: string): Configuration => {
+   }
+ }
+ 
+-export function getConfig() {
++/**
++ * A fork that ships its own desktop application sets OPENCODE_DESKTOP_APP and
++ * OPENCODE_DESKTOP_APP_ID before packing. The packaged app then carries its own bundle id and
++ * product name, keeps its own userData directory, and never subscribes to OpenCode's updater.
++ */
++function brand(config: Configuration): Configuration {
++  const name = process.env.OPENCODE_DESKTOP_APP?.trim()
++  const id = process.env.OPENCODE_DESKTOP_APP_ID?.trim()
++
++  if (!name && !id) return config
++
++  const appId = id ?? config.appId ?? ""
++
++  return {
++    ...config,
++    appId,
++    ...(name ? { productName: name, protocols: { name, schemes: ["opencode"] } } : {}),
++    publish: null,
++    extraMetadata: { ...(config.extraMetadata ?? {}), ...(name ? { productName: name } : {}), desktopName: `${appId}.desktop` },
++  }
++}
++
++function getConfigRaw(): Configuration {
+   const channel = resolveChannel()
+   const appId = APP_IDS[channel]
+   const base = getBase(appId)
+@@ -274,4 +296,8 @@ export function getConfig() {
+   }
+ }
+ 
++export function getConfig() {
++  return brand(getConfigRaw())
++}
++
+ export default getConfig()
+diff --git a/packages/desktop/electron.vite.config.ts b/packages/desktop/electron.vite.config.ts
+index 22aef74..729c2ac 100644
+--- a/packages/desktop/electron.vite.config.ts
++++ b/packages/desktop/electron.vite.config.ts
+@@ -45,6 +45,10 @@ export default defineConfig(({ command }) => {
+       define: {
+         // Local renderer/server mode still uses the dev application identity and updater policy.
+         "import.meta.env.OPENCODE_CHANNEL": JSON.stringify(channel === "local" ? "dev" : channel),
++        // A fork that ships its own desktop application sets these before building; they are
++        // replaced inline, so the packaged app carries the name without patching the bundle.
++        "process.env.OPENCODE_DESKTOP_APP": JSON.stringify(process.env.OPENCODE_DESKTOP_APP ?? ""),
++        "process.env.OPENCODE_DESKTOP_APP_ID": JSON.stringify(process.env.OPENCODE_DESKTOP_APP_ID ?? ""),
+       },
+       build: {
+         minify: command === "build",
+@@ -107,6 +111,8 @@ export default defineConfig(({ command }) => {
+       },
+       define: {
+         "import.meta.env.OPENCODE_VERSION": JSON.stringify(process.env.OPENCODE_VERSION),
++        // Forked desktop builds name their windows after their own product.
++        "import.meta.env.OPENCODE_DESKTOP_APP": JSON.stringify(process.env.OPENCODE_DESKTOP_APP ?? ""),
+         "import.meta.env.VITE_OPENCODE_CHANNEL": JSON.stringify(channel),
+         "import.meta.env.OPENCODE_TEST_ONBOARDING": JSON.stringify(
+           command === "serve" && process.env.OPENCODE_TEST_ONBOARDING === "1",
+diff --git a/packages/desktop/src/main/constants.ts b/packages/desktop/src/main/constants.ts
+index 7997267..141cec5 100644
+--- a/packages/desktop/src/main/constants.ts
++++ b/packages/desktop/src/main/constants.ts
+@@ -20,7 +20,15 @@ const appIDs: Record<string, string> = {
+   prod: "ai.opencode.desktop",
+ }
+ 
++// Forked builds bake their own identity in at build time (electron.vite.config.ts passes
++// OPENCODE_DESKTOP_APP / OPENCODE_DESKTOP_APP_ID through `define`), so the app name in the
++// window title, the userData directory and the AppUserModelID all follow one setting.
++const override = (value: string | undefined, fallback: string) => (value && value.length > 0 ? value : fallback)
++
+ // Local renderer/server mode keeps the dev application identity.
+-export const APP_NAME = app.isPackaged ? appNames[CHANNEL] : "OpenCode Dev"
++export const APP_NAME = override(process.env.OPENCODE_DESKTOP_APP, app.isPackaged ? appNames[CHANNEL] : "OpenCode Dev")
+ 
+-export const APP_ID = app.isPackaged ? appIDs[CHANNEL] : "ai.opencode.desktop.dev"
++export const APP_ID = override(
++  process.env.OPENCODE_DESKTOP_APP_ID,
++  app.isPackaged ? appIDs[CHANNEL] : "ai.opencode.desktop.dev",
++)
+diff --git a/packages/desktop/src/main/windows/appearance.ts b/packages/desktop/src/main/windows/appearance.ts
+index 6373bc7..01dd29f 100644
+--- a/packages/desktop/src/main/windows/appearance.ts
++++ b/packages/desktop/src/main/windows/appearance.ts
+@@ -13,6 +13,7 @@ import type { DesktopPaths } from "../paths"
+ import { BACKGROUND_COLOR_KEY, PINCH_ZOOM_ENABLED_KEY, ZOOM_LEVEL_KEY } from "../storage/keys"
+ import { getStore } from "../storage/store"
+ import { platformFrame, savedBackgroundColor, storedBackgroundColor, storedZoomLevel, titlebarOverlay, tone } from "./defaults"
++import { APP_NAME } from "../constants"
+ 
+ const titlebarThemes = new WeakMap<BrowserWindow, Partial<TitlebarTheme>>()
+ 
+@@ -26,7 +27,7 @@ let backgroundColor: string | undefined
+ 
+ export function windowAppearance(path: Path.Path, paths: DesktopPaths.Resolved) {
+   return {
+-    title: "OpenCode",
++    title: APP_NAME,
+     icon: iconPath(path, paths),
+     backgroundColor: backgroundColor ?? storedBackgroundColor(),
+     ...platformFrame(tone(), storedZoomLevel()),
+diff --git a/packages/desktop/src/main/windows/early.ts b/packages/desktop/src/main/windows/early.ts
+index 9688672..de655d5 100644
+--- a/packages/desktop/src/main/windows/early.ts
++++ b/packages/desktop/src/main/windows/early.ts
+@@ -18,6 +18,7 @@ import { cancelRendererAssetsServed, registerRendererProtocol } from "./protocol
+ import { persistedWindowIDs } from "./registry"
+ import { loadWindow } from "./scheme"
+ import { allowRendererPermissions, wireNavigationPolicy, wireRendererHeaders } from "./security"
++import { APP_NAME } from "../constants"
+ import {
+   manageWindowState,
+   readWindowState,
+@@ -95,7 +96,7 @@ export function createEarlyWindow() {
+     height: state.height,
+     show: !deferReveal,
+     autoHideMenuBar: true,
+-    title: "OpenCode",
++    title: APP_NAME,
+     icon: path.join(icons, `icon.${process.platform === "win32" ? "ico" : "png"}`),
+     backgroundColor: storedBackgroundColor(),
+     ...platformFrame(tone(), zoom),
 -- 
 2.53.0
 
