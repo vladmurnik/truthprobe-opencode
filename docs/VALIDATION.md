@@ -339,10 +339,14 @@ SchemaError: Expected Truthprobe.Level | undefined
 19.11.2026 прогон GitHub Actions
 [`44593481931`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44593481931)
 (коммит `ee82265`) завершился **success**: 7 job'ов из 7 на hosted-раннерах.
+20.11.2026 то же самое повторено на патче с per-model весами —
+[`44678633546`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44678633546)
+(коммит `9aa333a`), тоже **7 из 7**: сборка, установщики и truthprobe-тесты не сломались от
+изменений в скорере.
 
 | Job | Раннер | Что доказывает |
 | --- | --- | --- |
-| `patched tree` | `ubuntu-latest`, `windows-latest` | клон opencode на `007afb1`, `git am` патча, `bun install`, typecheck 4 пакетов, 97 truthprobe-тестов |
+| `patched tree` | `ubuntu-latest`, `windows-latest` | клон opencode на `007afb1`, `git am` патча, `bun install`, typecheck 4 пакетов, 109 truthprobe-тестов |
 | `installer dry-run` | `ubuntu-latest`, `windows-latest` | `install.sh` / `install.ps1 -DryRun`: клон, `git apply --check`, 14 коммитов, без установки в систему |
 | `repo tests` | `ubuntu-latest` | юнит-тесты репозитория TruthProbe |
 | `end-to-end verdict` | `ubuntu-latest` | мок-провайдер с logprobs → вердикт в SQLite |

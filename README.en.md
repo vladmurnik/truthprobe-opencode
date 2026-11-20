@@ -236,17 +236,20 @@ reproduction — [`docs/SMOKE-E2E.md`](docs/SMOKE-E2E.md).
 | Scorer swap `TRUTHPROBE_SCORER=linear:weights.json` | score moved `0.7595 → 0.9992`, so the custom scorer is really used |
 | Windows installer, `install.ps1 -Dir <empty> -DryRun` | clean clone, `git apply --check` passed, 14 commits applied |
 | Desktop build | app 246 MB, bundled CLI 279 MB |
-| CI on foreign machines | GitHub Actions [run `44593481931`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44593481931) | **all 7 jobs success** on hosted `ubuntu-latest` and `windows-latest` runners |
+| CI on foreign machines | GitHub Actions [run `44593481931`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44593481931) and [run `44678633546`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44678633546) | **all 7 jobs success** in both, on hosted `ubuntu-latest` and `windows-latest` runners |
 | Per-model weights at runtime | two mock runs with different bundles, same answer | `0.9997 · safe` when weights exist for `mock/mock-1`, `0.0003 · unreliable` when they only exist for `other/model` — selection by `providerID/modelID` really works |
 | `collect.py` against a live gateway | 2 prompts, `freepi/particle` | rows with `meanLp -0.063 / -0.125`, `minLp -0.409 / -0.945`, `fracLow 0.00 / 0.06` — features computed by the same formula as in the runtime |
 
 **Not tested, and we will not pretend otherwise:**
 
 - **Clean machines — verified through CI only.** GitHub-hosted `ubuntu-latest` and `windows-latest`
-  runners are clean VMs, and on 19.11.2026 all 7 jobs passed there: installer dry-runs, patch
-  application, typecheck, truthprobe tests, e2e through the mock provider, CLI build. There is still no
-  Hyper-V/VirtualBox/VMware/Windows Sandbox on the dev machine, so a human watching a one-click install
-  on a fresh OS has not happened.
+  runners are clean VMs, and all 7 jobs passed there twice — on 19.11.2026
+  ([run `44593481931`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44593481931)) and
+  on 20.11.2026 with the per-model weights
+  ([run `44678633546`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44678633546)):
+  installer dry-runs, patch application, typecheck, truthprobe tests, e2e through the mock provider,
+  CLI build. There is still no Hyper-V/VirtualBox/VMware/Windows Sandbox on the dev machine, so a human
+  watching a one-click install on a fresh OS has not happened.
 - **Linux and macOS.** `install.sh` is now exercised in CI (`installer-dry-run` on `ubuntu-latest`);
   macOS is not — the matrix only has ubuntu and windows.
 - **Cloud providers with keys.** OpenAI, Anthropic, Gemini — never measured; the support claim rests on
