@@ -9,7 +9,7 @@
 
 | Что | Доказательство |
 | --- | --- |
-| Оценка ответа по logprobs (первый токен + весь ответ) | `packages/core/src/truthprobe/*`, 110 тестов, `docs/VALIDATION.md` |
+| Оценка ответа по logprobs (первый токен + весь ответ) | `packages/core/src/truthprobe/*`, 111 тестов, `docs/VALIDATION.md` |
 | Веса калибровки на модель (`WeightsBundle`, `bundleScorer`, `scoreAnswer(..., model)`) | мок-прогон: `0.99966 · safe` при весах для `mock/mock-1`, `0.000335 · unreliable` при весах только у `other/model` |
 | Читаемый вердикт в UI | `packages/session-ui/src/message/confidence.tsx`, маркеры `confidence-meter`/`doubtful-list` в собранном `app.asar` |
 | Сбор калибровочных строк | `scripts/collect.py` (признаки считаются ровно как в рантайме, reasoning-префикс вырезается) |
@@ -143,7 +143,7 @@ Neptune» при эталоне `jupiter` — модели ответили на
 
 ## Что считаем регрессией
 
-- Любой тест truthprobe краснеет (сейчас 110 pass).
+- Любой тест truthprobe краснеет (сейчас 111 pass).
 - `scripts/evaluate.py` перестаёт считать ту же формулу, что рантайм (уже случалось: 0.388 против 0.597).
 - `git am` патча перестаёт давать побайтово то же дерево, что dev-ветка.
 - Ответ без logprobs начинает показывать число вместо `unavailable`.

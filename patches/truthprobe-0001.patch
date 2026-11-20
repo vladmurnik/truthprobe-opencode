@@ -9447,7 +9447,7 @@ index 998bf44..3e7db3f 100644
 2.53.0
 
 
-From c5810241a21b855a02b14e33753e707995f4f1a1 Mon Sep 17 00:00:00 2001
+From 0360b612d487da3d131c60188e29a296ff2224b6 Mon Sep 17 00:00:00 2001
 From: vladmurnik <vladmurnik@users.noreply.github.com>
 Date: Fri, 20 Nov 2026 20:23:10 +0300
 Subject: [PATCH 18/18] feat(truthprobe): carry digit density as a feature
@@ -9460,9 +9460,9 @@ Subject: [PATCH 18/18] feat(truthprobe): carry digit density as a feature
  packages/core/src/truthprobe/score.ts              | 14 ++++++++++++++
  packages/core/src/truthprobe/scorer.ts             |  8 ++++++--
  packages/core/src/truthprobe/types.ts              |  9 +++++++++
- .../core/test/truthprobe-scorer-bundle.test.ts     |  6 +++---
+ .../core/test/truthprobe-scorer-bundle.test.ts     |  8 ++++----
  packages/core/test/truthprobe-scorer.test.ts       |  9 +++++++--
- 5 files changed, 39 insertions(+), 7 deletions(-)
+ 5 files changed, 40 insertions(+), 8 deletions(-)
 
 diff --git a/packages/core/src/truthprobe/score.ts b/packages/core/src/truthprobe/score.ts
 index c420c6f..f0e4fc7 100644
@@ -9584,7 +9584,7 @@ index 210f267..7890599 100644
  
  export const DEFAULT_SCORE_OPTIONS: Required<Omit<ScoreOptions, "scorer">> = {
 diff --git a/packages/core/test/truthprobe-scorer-bundle.test.ts b/packages/core/test/truthprobe-scorer-bundle.test.ts
-index 57691fb..2a0085a 100644
+index 57691fb..427223d 100644
 --- a/packages/core/test/truthprobe-scorer-bundle.test.ts
 +++ b/packages/core/test/truthprobe-scorer-bundle.test.ts
 @@ -3,14 +3,14 @@ import { describe, expect, test } from "bun:test"
@@ -9593,9 +9593,10 @@ index 57691fb..2a0085a 100644
  
 -const strong: LinearWeights = { bias: 6, meanLp: 0, minLp: 0, meanPhi: 6, fracLow: 0 }
 -const weak: LinearWeights = { bias: -6, meanLp: 0, minLp: 0, meanPhi: -6, fracLow: 0 }
+-const features = { meanLp: -1, minLp: -2, meanPhi: 0.5, fracLow: 0.25, tokens: 12 }
 +const strong: LinearWeights = { bias: 6, meanLp: 0, minLp: 0, meanPhi: 6, fracLow: 0, digitDensity: 0 }
 +const weak: LinearWeights = { bias: -6, meanLp: 0, minLp: 0, meanPhi: -6, fracLow: 0, digitDensity: 0 }
- const features = { meanLp: -1, minLp: -2, meanPhi: 0.5, fracLow: 0.25, tokens: 12 }
++const features = { meanLp: -1, minLp: -2, meanPhi: 0.5, fracLow: 0.25, digitDensity: 0.1, tokens: 12 }
  
  describe("parseWeightsBundle", () => {
    test("плоские веса становятся global, моделей нет", () => {
