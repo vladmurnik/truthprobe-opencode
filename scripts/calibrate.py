@@ -191,6 +191,14 @@ def fit_by_model(rows: list[dict], min_rows: int = 20) -> dict:
                 "note": f"меньше {min_rows} строк — используется global",
             }
             continue
+        if positives == 0 or positives == len(group):
+            bundle["models"][name] = {
+                "rows": len(group),
+                "positives": positives,
+                "weights": None,
+                "note": "в группе один класс — веса не обучаются, используется global",
+            }
+            continue
         cv_auroc, cv_ece = cross_validate(group)
         bundle["models"][name] = {
             "rows": len(group),
@@ -237,6 +245,16 @@ def main() -> int:
         if len(rows) < 20:
             print("\nслишком мало строк для обучения весов (нужно >= 20)")
             return 1
+        if positives == 0 or positives == len(rows):
+            # Один класс: sigmoid выучит константу, AUROC/ECE станут бессмысленными,
+            # а веса — вредными. Лучше честно отказаться, чем записать такой файл.
+            print(
+                f"\nотказ: в наборе только один класс (правда {positives}, ложь {len(rows) - positives}).\n"
+                "Для калибровки нужны ОБЕ метки: 0 — модель ошиблась/выдумала, 1 — ответила верно.\n"
+                "Возьмите вопросы, на которых часть моделей ошибается, или добавьте более слабые модели.",
+                file=sys.stderr,
+            )
+            return 2
         cv_auroc, cv_ece = cross_validate(rows)
         print(f"\nlinear-скорер, out-of-fold ({len(rows)} строк, 5 фолдов):")
         print(f"  AUROC {cv_auroc:.3f}   ECE {cv_ece:.3f}")
@@ -254,8 +272,8 @@ def main() -> int:
                 with open(args.out, "w", encoding="utf-8", newline="\n") as handle:
                     handle.write(text + "\n")
                 print(f"\nбандл весов записан: {args.out}")
-                print(f"включить глобальную часть: TRUTHPROBE_SCORER=linear:{args.out}")
-                print("рантайм пока берёт global; выбор по модели — открытый пункт docs/FREELLMAPI.md")
+                print(f"включить: TRUTHPROBE_SCORER=linear:{args.out}")
+                print("рантайм берёт models[providerID/modelID], а при его отсутствии — global")
             else:
                 print("\nбандл весов:")
                 print(text)

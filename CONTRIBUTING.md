@@ -1,60 +1,65 @@
-# Как контрибьютить
+# Как внести изменение
 
-Проект держится на двух вещах: **чистая математика** (её можно проверять без сети и без модели)
-и **тонкий шов** в ядре opencode (его легко пережить при обновлении upstream).
+TruthProbe — это патч поверх [sst/opencode](https://github.com/sst/opencode), а не форк.
+Правки живут в пропатченном дереве, из него пересобирается `patches/truthprobe-0001.patch`,
+и уже этот файл является результатом репозитория.
 
-## Быстрый цикл
-
-```bash
-bun test test/score.test.ts        # 45 тестов, без зависимостей и без сети
-```
-
-Тесты дерева opencode живут в самом дереве и запускаются только там:
+## Быстрый старт
 
 ```bash
-bash scripts/run-opencode-tests.sh # эталонные исходники → дерево, typecheck, оба набора тестов
+git clone https://github.com/vladmurnik/truthprobe-opencode
+cd truthprobe-opencode
+make setup          # клон opencode на BASE, git am патча, bun install, тесты
+make test           # юнит-тесты самого репозитория (~2 c, без клонирования)
+make preview        # мок-провайдер + один запрос через CLI, видно вердикт
 ```
 
-## Если меняешь формулы
+Windows (PowerShell):
 
-1. Меняй `src/truthprobe/score.ts` (это эталон; в ядро он копируется скриптом).
-2. Добавь тест, который падает на старом поведении и проходит на новом.
-3. Прогони `bun test`, затем `bash scripts/run-opencode-tests.sh`.
-4. Обнови `docs/VALIDATION.md`: там записаны измеренные числа, а не обещания.
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\dev-setup.ps1
+```
 
-Порог `riskyThreshold = 0.45` подобран на моке и двух реальных ответах. Если у тебя есть
-размеченный набор (верные/неверные предложения), присылай кривую precision/recall — порог
-обсуждаем числом, не вкусом.
+Нужны: `git`, [`bun`](https://bun.sh) ≥ 1.2, `python3` (для мок-провайдера и скриптов).
+Docker нужен только для FreeLLMAPI — см. `docs/FREELLMAPI.md`.
 
-## Если добавляешь провайдера
+## Цикл изменения
 
-`logprobs` есть не везде. Порядок:
+1. **`make setup`** — появляется `.worktree/opencode` с применённым патчем.
+2. Правите код там (карта файлов — `docs/DEVELOPMENT.md`).
+3. **`make test`** — тесты репозитория; в дереве: `bun test test/truthprobe`.
+4. Коммитите в `.worktree/opencode` (один коммит = одна мысль, сообщение в стиле `feat(truthprobe): …`).
+5. **`make patch`** — пересобирает `patches/truthprobe-0001.patch` из `BASE..HEAD`.
+6. **`make verify`** — тесты + проверка, что патч ложится на чистую базу.
+7. Коммит в этом репозитории: патч + (если менялись) reference-копии в `src/truthprobe/`,
+   тесты в `test/`, документация.
 
-- OpenAI-совместимый `/chat/completions` → достаточно `capabilities.logprobs: true`, менять нечего.
-- Responses API / Anthropic messages / Gemini generate-content → нужен отдельный разборщик
-  в соответствующем протоколе (см. `docs/PLAN-BUILTIN.md`), возвращающий те же `TokenLogprob[]`.
-- Провайдер вообще не отдаёт вероятности → честный статус `unavailable`, без выдуманных чисел.
+`BASE` — коммит sst/opencode, на который нарезан патч (`007afb1b…`). Менять его можно,
+но тогда надо перегенерировать патч и прогнать `make verify` на новой базе.
 
-## Если обновляешь upstream
+## Правила, которые здесь не обсуждаются
 
-Патч прибит к базе `007afb1`. Порядок rebase:
+- **Числа только измеренные.** Любая цифра в README/docs должна иметь команду, которой её получили.
+  Не измерено — так и пишем: «не проверено», с причиной.
+- **Никаких выдуманных метрик.** `AUROC`/`ECE` на синтетике — свойство синтетики; подписывайте это явно.
+- **Деградация вместо падения.** Нет `logprobs`, битый файл весов, чужая модель — скорер откатывается
+  на geometric и печатает одно предупреждение, но не ломает сессию.
+- **Тесты на поведение, а не на реализацию.** Проверяем «плохой ответ получает меньший score»,
+  а не «функция вызвана дважды».
+- **Патч остаётся `git am`-совместимым**: только коммиты, без merge-коммитов и без бинарников.
+
+## Перед pull request
 
 ```bash
-git clone https://github.com/sst/opencode && cd opencode
-git checkout <new-base>
-git am ../patches/truthprobe-0001.patch     # ожидаемо упадёт на конфликтах
-# правь только 6 точек: openai-chat.ts, publish-llm-event.ts, message-updater.ts,
-# message-parts.tsx, client/src/solid/data.ts, схема события
-git am --continue
-bun run --cwd packages/core typecheck && cd packages/core && bun test test/truthprobe.test.ts
-git format-patch <new-base> --stdout > ../patches/truthprobe-0001.patch
+make verify                       # тесты + патч ложится на чистую базу
+bun test test                     # тот же прогон, что в CI (job «repo tests»)
 ```
 
-Если после обновления бейдж исчез — сначала проверь `packages/client/src/solid/data.ts`:
-именно там терялись поля события `session.text.ended` (это уже случалось один раз).
+Если меняли математику скорера — приложите в описании PR пару строк «до/после» на фиксированных
+токенах: это дешевле, чем потом искать, почему изменились проценты.
 
-## Стиль
+## Где спросить
 
-- Комментарии по-русски там, где объясняют «почему», код — по-английски.
-- Никаких новых зависимостей в ядре: скоринг — чистые функции, ноль импортов из внешних пакетов.
-- Не логируй ни текст ответов, ни ключи, ни токены пользователя.
+- `docs/DEVELOPMENT.md` — карта «что где менять».
+- `docs/VALIDATION.md` — что и как измерялось, включая прогоны CI.
+- `docs/FREELLMAPI.md` — сбор калибровочных данных на многих моделях.
