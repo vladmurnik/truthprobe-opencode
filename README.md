@@ -88,6 +88,38 @@ irm https://raw.githubusercontent.com/vladmurnik/truthprobe-opencode/master/inst
 задаётся локально в нём. Каталог можно назвать своим: `bash install.sh my-opencode`
 (`.\install.ps1 -Dir my-opencode`).
 
+Флаги установщика:
+
+| флаг | что делает |
+| --- | --- |
+| `--dir DIR` | куда ставить (`-Dir` в PowerShell) |
+| `--dry-run` | скачать и проверить, что патч ложится; зависимости не ставить |
+| `--uninstall` | снять коммиты патча и вернуть дерево к базовому коммиту |
+| `--scorer FILE` | положить свои веса скорера в `.truthprobe/weights.json` |
+
+### Сменный скорер
+
+Проценты по умолчанию считает встроенная эвристика `geometric`
+(`0.4·геом.среднее + 0.3·худший токен + 0.3·уверенность первого токена`). Её можно заменить
+своей моделью, не пересобирая патч:
+
+```bash
+# 1. обучить линейную модель на размеченных предложениях
+python3 scripts/calibrate.py labeled.jsonl --fit --out truthprobe-weights.json
+
+# 2. включить её
+export TRUTHPROBE_SCORER=linear:/path/to/truthprobe-weights.json
+```
+
+Формат набора и метрики — [`docs/CALIBRATION.md`](docs/CALIBRATION.md). Веса проверяются при
+загрузке: нет файла, битый JSON или нечисловой коэффициент — печатается одно предупреждение и
+включается встроенная формула, оценка не ломается. Признаки, которые видит модель:
+`meanLp` (ln геом. среднего), `minLp` (ln худшего токена), `meanPhi` (уверенность первого токена
+по top-K), `fracLow` (доля токенов с вероятностью ниже 0.5).
+
+Свой скорер на другом языке — через `scripts/calibrate.py --fit` получить веса либо подставить
+свою формулу в `packages/core/src/truthprobe/scorer.ts` (там один интерфейс `Scorer`).
+
 ### Патч вручную
 
 ```bash

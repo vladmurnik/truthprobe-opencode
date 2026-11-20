@@ -256,3 +256,16 @@ curl -fsSL https://raw.githubusercontent.com/vladmurnik/truthprobe-opencode/mast
    отказ на грязном дереве, `git am --abort`, `--dry-run`.
 5. **Расхождение ru/en README.** Митигация: таблицы уровней и моделей генерируются
    скриптами (`--md`), руками правится только текст вокруг.
+
+
+## Статус на 19.11.2026
+
+- T1 (матрица моделей) — **сделано**: `docs/MODEL-SUPPORT.md`, `scripts/probe-logprobs.py --md`.
+- T3 (шкала уровней) — **сделано**: `packages/core/src/truthprobe/levels.ts`, env-пороги.
+- T4 (подсветка предложений) — **сделано**: плашки в session-ui, маркер в TUI.
+- T2 (один скрипт установки) — **сделано**: `install.sh` / `install.ps1` с `--dir`, `--dry-run`,
+  `--uninstall`, `--scorer`, проверкой `git apply --check` и самопроверкой версии.
+- T5 (сменный скорер) — **частично**: `scorer.ts` с `geometric` и `linear:<weights.json>`,
+  `calibrate.py --fit`; отложено: `module:<path>` и `http:<url>` (нужен async-контракт,
+  сейчас `Scorer.score` синхронный) и настоящая калибровка на размеченных данных.
+- T6 (калибровка AUROC/ECE) — **заблокировано**: нет размеченного набора.
