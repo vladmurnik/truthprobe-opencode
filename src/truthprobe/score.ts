@@ -1,0 +1,208 @@
+/**
+ * TruthProbe — скоринг уверенности по token logprobs.
+ *
+ * Все функции чистые: нет I/O, нет состояния, детерминированный результат.
+ * Это позволяет покрыть всю математику юнит-тестами на записанных фикстурах
+ * и использовать модуль и в ядре OpenCode, и в офлайн-калибровке (T8).
+ */
+
+import { splitSentences, type Sentence } from "./sentences";
+import {
+  DEFAULT_SCORE_OPTIONS,
+  type AnswerScore,
+  type ScoreOptions,
+  type SentenceScore,
+  type TokenLogprob,
+} from "./types";
+
+const PUNCT_ONLY = /^[\s\p{P}\p{S}]+$/u;
+
+/** Токен несёт смысл: не пробелы, не чистая пунктуация/символы. */
+export function isContentToken(token: string, minChars = 2): boolean {
+  if (!token) return false;
+  if (!/\S/.test(token)) return false;
+  if (PUNCT_ONLY.test(token)) return false;
+  return token.replace(/\s/g, "").length >= minChars;
+}
+
+/**
+ * Нормированная энтропия распределения на первом токене.
+ *
+ * q_i = exp(lp_i) / Σ exp(lp_j) по доступному top-K; H = -Σ q_i ln q_i / ln K.
+ * Если top-K нет (провайдер не вернул) — деградируем к 1 - p(token),
+ * то есть φ = p(token).
+ */
+export function normalizedEntropy(t: TokenLogprob, topK = 20): number {
+  const top = (t.top ?? []).filter((x) => Number.isFinite(x.logprob));
+  if (top.length < 2) return clamp01(1 - Math.exp(t.logprob));
+
+  const probs = top.map((x) => Math.exp(x.logprob));
+  const sum = probs.reduce((a, b) => a + b, 0);
+  if (!(sum > 0)) return 1;
+
+  let h = 0;
+  for (const p of probs) {
+    const q = p / sum;
+    if (q > 0) h -= q * Math.log(q);
+  }
+  const k = Math.max(2, Math.min(topK, top.length));
+  return clamp01(h / Math.log(k));
+}
+
+/** φ = уверенность по первому токену, 0..1. */
+export function phi(t: TokenLogprob, topK = 20): number {
+  return clamp01(1 - normalizedEntropy(t, topK));
+}
+
+function clamp01(x: number): number {
+  if (!Number.isFinite(x)) return 0;
+  return Math.min(1, Math.max(0, x));
+}
+
+interface TokenWithOffset extends TokenLogprob {
+  start: number;
+  end: number;
+}
+
+/** Привязывает токены к символьным смещениям исходного текста. */
+export function tokensWithOffsets(tokens: TokenLogprob[]): TokenWithOffset[] {
+  const out: TokenWithOffset[] = [];
+  let pos = 0;
+  for (const t of tokens) {
+    const len = t.token.length;
+    out.push({ ...t, start: pos, end: pos + len });
+    pos += len;
+  }
+  return out;
+}
+
+/**
+ * Предложение, которому принадлежит диапазон токена.
+ *
+ * Токен может начинаться с пробела, который сегментатор уже «съел» как
+ * хвост предыдущего предложения (например « Плохо» сразу после точки),
+ * поэтому проверяем пересечение диапазонов, а не только начало токена.
+ */
+function sentenceAt(sentences: Sentence[], start: number, end: number): Sentence | null {
+  for (const s of sentences) {
+    if (start < s.end && end > s.start) return s;
+    if (s.start >= end) break;
+  }
+  return null;
+}
+
+function geometricMean(lps: number[]): number {
+  if (lps.length === 0) return 0;
+  return clamp01(Math.exp(lps.reduce((a, b) => a + b, 0) / lps.length));
+}
+
+/**
+ * Считает уверенность по всему ответу.
+ *
+ * @param text  финальный текст ответа (тот же, чьи токены пришли в `tokens`)
+ * @param tokens logprobs по токенам в порядке генерации
+ */
+export function scoreAnswer(
+  text: string,
+  tokens: TokenLogprob[],
+  options: ScoreOptions = {},
+): AnswerScore {
+  const opt = { ...DEFAULT_SCORE_OPTIONS, ...options };
+
+  if (!tokens.length) {
+    return {
+      status: "unavailable",
+      score: null,
+      risk: null,
+      first: null,
+      sentences: [],
+      flagged: 0,
+      reason: "no logprobs in response",
+    };
+  }
+
+  const withOffsets = tokensWithOffsets(tokens);
+  const sentences = splitSentences(text);
+
+  // Дрейф смещений: если конкатенация токенов не совпала с текстом,
+  // привязка к предложениям ненадёжна — сигнализируем partial.
+  const totalLen = withOffsets.length ? withOffsets[withOffsets.length - 1].end : 0;
+  const offsetDrift = Math.abs(totalLen - text.length) > 2;
+
+  const content = withOffsets.filter(
+    (t) =>
+      isContentToken(t.token, opt.minTokenChars) &&
+      (offsetDrift || sentenceAt(sentences, t.start, t.end) !== null),
+  );
+
+  if (!content.length) {
+    return {
+      status: "unavailable",
+      score: null,
+      risk: null,
+      first: null,
+      sentences: [],
+      flagged: 0,
+      reason: "no content tokens",
+    };
+  }
+
+  const firstToken = content[0];
+  const first = {
+    score: phi(firstToken, opt.topK),
+    entropy: normalizedEntropy(firstToken, opt.topK),
+    token: firstToken.token,
+  };
+
+  // Группировка по предложениям (если дрейф — всё в одно «предложение»).
+  const buckets = new Map<number, TokenWithOffset[]>();
+  for (const t of content) {
+    const s = offsetDrift ? null : sentenceAt(sentences, t.start, t.end);
+    if (!s) continue;
+    const arr = buckets.get(s.i) ?? [];
+    arr.push(t);
+    buckets.set(s.i, arr);
+  }
+
+  const scored: SentenceScore[] = [];
+  for (const [i, arr] of [...buckets.entries()].sort((a, b) => a[0] - b[0])) {
+    const s = sentences[i];
+    const lps = arr.map((t) => t.logprob);
+    const geo = geometricMean(lps);
+    const startPhi = phi(arr[0], opt.topK);
+    // Один «придуманный» токен важнее общего среднего: именно он выдаёт
+    // сфабрикованную сущность/число, поэтому худший токен получает свой вес.
+    const worst = clamp01(Math.exp(Math.min(...lps)));
+    const score = clamp01(0.4 * geo + 0.3 * worst + 0.3 * startPhi);
+    const risk = clamp01(1 - score);
+    scored.push({
+      i,
+      start: s.start,
+      end: s.end,
+      text: s.text,
+      score,
+      risk,
+      meanLp: Math.exp(lps.reduce((a, b) => a + b, 0) / lps.length),
+      minLp: Math.min(...lps),
+      phi: startPhi,
+      tokens: arr.length,
+      flag: risk >= opt.riskyThreshold,
+    });
+  }
+
+  const globalGeo = geometricMean(content.map((t) => t.logprob));
+  const meanSentence = scored.length
+    ? scored.reduce((a, s) => a + s.score, 0) / scored.length
+    : globalGeo;
+  const score = clamp01(opt.globalWeight * globalGeo + (1 - opt.globalWeight) * meanSentence);
+
+  return {
+    status: offsetDrift ? "partial" : "ok",
+    score,
+    risk: clamp01(1 - score),
+    first,
+    sentences: scored,
+    flagged: scored.filter((s) => s.flag).length,
+    ...(offsetDrift ? { reason: "token/text offset drift" } : {}),
+  };
+}

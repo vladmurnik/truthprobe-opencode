@@ -1,0 +1,1983 @@
+From 3ccda6cdf3320c8fbcfbb2c8656c34a2827932af Mon Sep 17 00:00:00 2001
+From: truthprobe <truthprobe@local>
+Date: Thu, 19 Nov 2026 00:59:59 +0300
+Subject: [PATCH 1/3] feat(truthprobe): score answers from token logprobs
+
+- schema: Truthprobe.Info, capabilities.logprobs, AssistantText.truthprobe, optional truthprobe on session.text.ended
+- ai/openai-chat: request logprobs/top_logprobs when enabled, parse choice-level logprobs into providerMetadata
+- core: accumulate tokens per text block, score at text end and publish it with the durable text.ended event
+- core/truthprobe: segmentation + scoring (phi_first, mean/min logprob per sentence)
+- tui: first-sentence confidence badge and doubtful-sentence summary
+---
+ packages/ai/src/protocols/openai-chat.ts      |  61 +++++-
+ packages/ai/src/schema/options.ts             |   2 +
+ packages/client/src/effect/api/api.ts         |  23 ++
+ .../client/src/promise/generated/types.ts     | 108 ++++++++--
+ packages/core/src/session/message-updater.ts  |   1 +
+ .../src/session/runner/publish-llm-event.ts   |  53 ++++-
+ packages/core/src/truthprobe/score.ts         | 201 ++++++++++++++++++
+ packages/core/src/truthprobe/sentences.ts     | 133 ++++++++++++
+ packages/core/src/truthprobe/types.ts         |  81 +++++++
+ packages/core/test/truthprobe.test.ts         |  90 ++++++++
+ packages/schema/src/index.ts                  |   1 +
+ packages/schema/src/model.ts                  |   2 +
+ packages/schema/src/session-event.ts          |   3 +
+ packages/schema/src/session-message.ts        |   3 +
+ packages/schema/src/truthprobe.ts             |  50 +++++
+ .../tui/src/routes/session/message-parts.tsx  |  34 ++-
+ 16 files changed, 819 insertions(+), 27 deletions(-)
+ create mode 100644 packages/core/src/truthprobe/score.ts
+ create mode 100644 packages/core/src/truthprobe/sentences.ts
+ create mode 100644 packages/core/src/truthprobe/types.ts
+ create mode 100755 packages/core/test/truthprobe.test.ts
+ create mode 100644 packages/schema/src/truthprobe.ts
+
+diff --git a/packages/ai/src/protocols/openai-chat.ts b/packages/ai/src/protocols/openai-chat.ts
+index ee1c562..b34de98 100644
+--- a/packages/ai/src/protocols/openai-chat.ts
++++ b/packages/ai/src/protocols/openai-chat.ts
+@@ -39,6 +39,19 @@ const ADAPTER = "openai-chat"
+ const RESERVED_REASONING_FIELDS = new Set(["role", "content", "refusal", "tool_calls"])
+ export const DEFAULT_BASE_URL = "https://api.openai.com/v1"
+ export const PATH = "/chat/completions"
++/** Сколько альтернатив просим в top_logprobs для TruthProbe. */
++const TRUTHPROBE_TOP_K = 20
++
++/**
++ * TruthProbe включён, если модель объявила `capabilities.logprobs`,
++ * иначе — по переменной окружения OPENCODE_TRUTHPROBE=1.
++ */
++const truthprobeEnabled = (model: { capabilities?: { logprobs?: boolean } }) => {
++  if (model.capabilities?.logprobs !== undefined) return model.capabilities.logprobs
++  const env = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env
++  const flag = env?.OPENCODE_TRUTHPROBE
++  return flag === "1" || flag === "on" || flag === "true"
++}
+ 
+ // =============================================================================
+ // Request Body Schema
+@@ -241,6 +254,8 @@ export const bodyFields = {
+   max_tokens: Schema.optional(Schema.Number),
+   temperature: Schema.optional(Schema.Number),
+   top_p: Schema.optional(Schema.Number),
++  logprobs: Schema.optional(Schema.Boolean),
++  top_logprobs: Schema.optional(Schema.Number),
+   frequency_penalty: Schema.optional(Schema.Number),
+   presence_penalty: Schema.optional(Schema.Number),
+   seed: Schema.optional(Schema.Number),
+@@ -304,6 +319,23 @@ export const OpenAIChatToolCallDelta = Schema.Struct({
+ })
+ type OpenAIChatToolCallDelta = Schema.Schema.Type<typeof OpenAIChatToolCallDelta>
+ 
++export const OpenAIChatTokenLogprob = Schema.Struct({
++  token: Schema.String,
++  logprob: Schema.Number,
++  top_logprobs: optionalArray(
++    Schema.Struct({
++      token: Schema.String,
++      logprob: Schema.Number,
++    }),
++  ),
++})
++export type OpenAIChatTokenLogprob = typeof OpenAIChatTokenLogprob.Type
++
++export const OpenAIChatLogprobs = Schema.Struct({
++  content: optionalArray(OpenAIChatTokenLogprob),
++})
++export type OpenAIChatLogprobs = typeof OpenAIChatLogprobs.Type
++
+ export const OpenAIChatDelta = Schema.StructWithRest(
+   Schema.Struct({
+     content: optionalNull(Schema.String),
+@@ -315,6 +347,7 @@ export const OpenAIChatDelta = Schema.StructWithRest(
+     // GitHub Copilot's opaque reasoning state, which must be replayed for multi-turn reasoning.
+     reasoning_opaque: optionalNull(Schema.String),
+     tool_calls: optionalNull(Schema.Array(OpenAIChatToolCallDelta)),
++    logprobs: optionalNull(OpenAIChatLogprobs),
+   }),
+   [Schema.Record(Schema.String, Schema.Unknown)],
+ )
+@@ -326,6 +359,8 @@ export const OpenAIChatChoice = Schema.StructWithRest(
+     native_finish_reason: optionalNull(Schema.String),
+     // Moonshot streams usage on `choice.usage` instead of top-level `usage`.
+     usage: optionalNull(OpenAIChatUsage),
++    // Streaming OpenAI sends token logprobs beside `delta`, not inside it.
++    logprobs: optionalNull(OpenAIChatLogprobs),
+   }),
+   [Schema.Record(Schema.String, Schema.Unknown)],
+ )
+@@ -866,6 +901,19 @@ const lowerOptions = (request: LLMRequest, supportsStore: boolean, hasActiveTool
+   }
+ }
+ 
++/** Приводит logprobs дельты к компактному виду для providerMetadata. */
++const truthprobeFromDelta = (logprobs: OpenAIChatLogprobs | null | undefined) => {
++  const content = logprobs?.content
++  if (!content || content.length === 0) return undefined
++  return content.map((token) => ({
++    token: token.token,
++    logprob: token.logprob,
++    ...(token.top_logprobs?.length
++      ? { top: token.top_logprobs.map((top) => ({ token: top.token, logprob: top.logprob })) }
++      : {}),
++  }))
++}
++
+ export const fromRequest = Effect.fn("OpenAIChat.fromRequest")(function* (
+   request: LLMRequest,
+   options: LoweringOptions = {},
+@@ -908,6 +956,8 @@ export const fromRequest = Effect.fn("OpenAIChat.fromRequest")(function* (
+       : { max_tokens: request.maxTokens }),
+     temperature: request.temperature,
+     top_p: request.topP,
++    // TruthProbe: только для моделей, у которых провайдер отдаёт logprobs.
++    ...(truthprobeEnabled(request.model) ? { logprobs: true, top_logprobs: TRUTHPROBE_TOP_K } : {}),
+     frequency_penalty: request.frequencyPenalty,
+     presence_penalty: request.presencePenalty,
+     seed: request.seed,
+@@ -1202,7 +1252,16 @@ const step = (state: ParserState, event: OpenAIChatEvent) =>
+     // Reasoning is one response-wide channel: it stays open alongside text and
+     // refusal output so late reasoning deltas and details join the same block,
+     // and `finishEvents` closes it once with the complete metadata.
+-    if (delta?.content) lifecycle = Lifecycle.textDelta(lifecycle, events, "text-0", delta.content)
++    if (delta?.content) {
++      const tokens = truthprobeFromDelta(choice?.logprobs ?? delta?.logprobs)
++      lifecycle = Lifecycle.textDelta(
++        lifecycle,
++        events,
++        "text-0",
++        delta.content,
++        tokens === undefined ? undefined : { truthprobe: { tokens } },
++      )
++    }
+ 
+     if (delta?.refusal) lifecycle = Lifecycle.textDelta(lifecycle, events, "text-0", delta.refusal)
+ 
+diff --git a/packages/ai/src/schema/options.ts b/packages/ai/src/schema/options.ts
+index 5e58b80..8dddc39 100644
+--- a/packages/ai/src/schema/options.ts
++++ b/packages/ai/src/schema/options.ts
+@@ -287,6 +287,8 @@ export interface Capabilities {
+       }
+   readonly structuredOutput?: boolean
+   readonly temperature?: boolean
++  /** Streams token logprobs (`logprobs` + `top_logprobs`) for confidence scoring. Unset: follow OPENCODE_TRUTHPROBE. */
++  readonly logprobs?: boolean
+   readonly topP?: boolean
+   readonly topK?: boolean
+   /** Accepts mid-conversation system messages. Anthropic Messages detects it from the model ID when unset. */
+diff --git a/packages/client/src/effect/api/api.ts b/packages/client/src/effect/api/api.ts
+index 54d8d8c..78c1bed 100644
+--- a/packages/client/src/effect/api/api.ts
++++ b/packages/client/src/effect/api/api.ts
+@@ -1100,6 +1100,29 @@ export type ExperimentalSessionLogOutput =
+             readonly ordinal: number
+             readonly text: string
+             readonly native?: SessionMessage.Native | undefined
++            readonly truthprobe?:
++              | {
++                  readonly status: "ok" | "partial" | "unavailable"
++                  readonly score: number | null
++                  readonly risk: number | null
++                  readonly first: { readonly score: number; readonly entropy: number; readonly token: string } | null
++                  readonly sentences: ReadonlyArray<{
++                    readonly i: number
++                    readonly start: number
++                    readonly end: number
++                    readonly text: string
++                    readonly score: number
++                    readonly risk: number
++                    readonly meanLp: number
++                    readonly minLp: number
++                    readonly phi: number
++                    readonly tokens: number
++                    readonly flag: boolean
++                  }>
++                  readonly flagged: number
++                  readonly reason?: string | undefined
++                }
++              | undefined
+           }
+         }
+       | {
+diff --git a/packages/client/src/promise/generated/types.ts b/packages/client/src/promise/generated/types.ts
+index c7e7fc7..8dff3cd 100644
+--- a/packages/client/src/promise/generated/types.ts
++++ b/packages/client/src/promise/generated/types.ts
+@@ -103,6 +103,26 @@ export type ShellID = string
+ 
+ export type SessionMessageNative = { [x: string]: JsonValue }
+ 
++export type TruthprobeFirst = {
++  score: number | "Infinity" | "-Infinity" | "NaN"
++  entropy: number | "Infinity" | "-Infinity" | "NaN"
++  token: string
++}
++
++export type TruthprobeSentence = {
++  i: number | "Infinity" | "-Infinity" | "NaN"
++  start: number | "Infinity" | "-Infinity" | "NaN"
++  end: number | "Infinity" | "-Infinity" | "NaN"
++  text: string
++  score: number | "Infinity" | "-Infinity" | "NaN"
++  risk: number | "Infinity" | "-Infinity" | "NaN"
++  meanLp: number | "Infinity" | "-Infinity" | "NaN"
++  minLp: number | "Infinity" | "-Infinity" | "NaN"
++  phi: number | "Infinity" | "-Infinity" | "NaN"
++  tokens: number | "Infinity" | "-Infinity" | "NaN"
++  flag: boolean
++}
++
+ export type SessionMessageToolStateStreaming = { status: "streaming"; input: string }
+ 
+ export type SessionMessageToolStateRunning = {
+@@ -170,6 +190,22 @@ export type SessionInboxSyntheticPayload1 = { text: string; description?: string
+ 
+ export type SessionMessageNative1 = { [x: string]: any }
+ 
++export type TruthprobeFirst1 = { score: number; entropy: number; token: string }
++
++export type TruthprobeSentence1 = {
++  i: number
++  start: number
++  end: number
++  text: string
++  score: number
++  risk: number
++  meanLp: number
++  minLp: number
++  phi: number
++  tokens: number
++  flag: boolean
++}
++
+ export type ToolFileContent1 = { type: "file"; uri: string; mime: string; name?: string | undefined }
+ 
+ export type SessionMessageToolStateRunning1 = {
+@@ -565,8 +601,6 @@ export type ShellInfo1 = {
+   time: { started: number; completed?: number }
+ }
+ 
+-export type SessionMessageAssistantText = { type: "text"; text: string; native?: SessionMessageNative }
+-
+ export type SessionMessageAssistantReasoning = {
+   type: "reasoning"
+   text: string
+@@ -574,6 +608,16 @@ export type SessionMessageAssistantReasoning = {
+   time?: { created: number; completed?: number }
+ }
+ 
++export type TruthprobeInfo = {
++  status: "ok" | "partial" | "unavailable"
++  score: number | "Infinity" | "-Infinity" | "NaN" | null
++  risk: number | "Infinity" | "-Infinity" | "NaN" | null
++  first: TruthprobeFirst | null
++  sentences: Array<TruthprobeSentence>
++  flagged: number | "Infinity" | "-Infinity" | "NaN"
++  reason?: string
++}
++
+ export type ToolContent = ToolTextContent | ToolFileContent
+ 
+ export type SessionMessageAssistantRetry = { attempt: number; at: number; error: SessionStructuredError }
+@@ -684,8 +728,6 @@ export type EventLogSynced = { type: "log.synced"; aggregateID: string; seq?: Ev
+ 
+ export type LocationRef = { directory: AbsolutePath; workspaceID?: WorkspaceID }
+ 
+-export type SessionMessageAssistantText1 = { type: "text"; text: string; native?: SessionMessageNative1 }
+-
+ export type SessionMessageAssistantReasoning1 = {
+   type: "reasoning"
+   text: string
+@@ -693,6 +735,16 @@ export type SessionMessageAssistantReasoning1 = {
+   time?: { created: number; completed?: number }
+ }
+ 
++export type TruthprobeInfo1 = {
++  status: "ok" | "partial" | "unavailable"
++  score: number | null
++  risk: number | null
++  first: TruthprobeFirst1 | null
++  sentences: Array<TruthprobeSentence1>
++  flagged: number
++  reason?: string
++}
++
+ export type ToolContent1 = ToolTextContent | ToolFileContent1
+ 
+ export type ModelCompatibility = {
+@@ -727,6 +779,7 @@ export type ModelCapabilities = {
+   input: Array<string>
+   output: Array<string>
+   temperature?: boolean
++  logprobs?: boolean
+ }
+ 
+ export type ModelCost = {
+@@ -1171,6 +1224,13 @@ export type SessionInboxUserPayload1 = {
+   metadata?: { [x: string]: any }
+ }
+ 
++export type SessionMessageAssistantText = {
++  type: "text"
++  text: string
++  native?: SessionMessageNative
++  truthprobe?: TruthprobeInfo
++}
++
+ export type SessionMessageToolStateCompleted = {
+   status: "completed"
+   input: { [x: string]: JsonValue }
+@@ -1519,22 +1579,6 @@ export type SessionTextStarted = {
+   data: { sessionID: SessionID; assistantMessageID: SessionMessageID; ordinal: number }
+ }
+ 
+-export type SessionTextEnded = {
+-  id: EventID
+-  created: number
+-  metadata?: { [x: string]: any }
+-  type: "session.text.ended"
+-  durable: { aggregateID: string; seq: EventSeq; version: 1 }
+-  location?: LocationRef
+-  data: {
+-    sessionID: SessionID
+-    assistantMessageID: SessionMessageID
+-    ordinal: number
+-    text: string
+-    native?: SessionMessageNative1
+-  }
+-}
+-
+ export type SessionReasoningStarted = {
+   id: EventID
+   created: number
+@@ -2165,6 +2209,30 @@ export type ExperimentalMcpEvent = {
+   }
+ }
+ 
++export type SessionTextEnded = {
++  id: EventID
++  created: number
++  metadata?: { [x: string]: any }
++  type: "session.text.ended"
++  durable: { aggregateID: string; seq: EventSeq; version: 1 }
++  location?: LocationRef
++  data: {
++    sessionID: SessionID
++    assistantMessageID: SessionMessageID
++    ordinal: number
++    text: string
++    native?: SessionMessageNative1
++    truthprobe?: TruthprobeInfo1
++  }
++}
++
++export type SessionMessageAssistantText1 = {
++  type: "text"
++  text: string
++  native?: SessionMessageNative1
++  truthprobe?: TruthprobeInfo1
++}
++
+ export type SessionToolSuccess = {
+   id: EventID
+   created: number
+diff --git a/packages/core/src/session/message-updater.ts b/packages/core/src/session/message-updater.ts
+index 1e89db3..c3a15f2 100644
+--- a/packages/core/src/session/message-updater.ts
++++ b/packages/core/src/session/message-updater.ts
+@@ -307,6 +307,7 @@ export function update(adapter: Adapter, event: SessionEvent.DurableEvent) {
+         return adapter.updateAssistantPart(event.data.assistantMessageID, { type: "text" }, (match) => {
+           match.text = event.data.text
+           match.native = castDraft(event.data.native)
++          if (event.data.truthprobe !== undefined) match.truthprobe = castDraft(event.data.truthprobe)
+         })
+       },
+       "session.tool.input.started": (event) => {
+diff --git a/packages/core/src/session/runner/publish-llm-event.ts b/packages/core/src/session/runner/publish-llm-event.ts
+index 417650e..9402901 100644
+--- a/packages/core/src/session/runner/publish-llm-event.ts
++++ b/packages/core/src/session/runner/publish-llm-event.ts
+@@ -16,6 +16,8 @@ import { Money } from "@opencode/schema/money"
+ import { contentFilterError } from "../to-session-error.js"
+ import type { Tool } from "../../tool.js"
+ import { stringify } from "../../tool/runtime.js"
++import { scoreAnswer } from "../../truthprobe/score.js"
++import type { TokenLogprob } from "../../truthprobe/types.js"
+ 
+ type Input = {
+   readonly sessionID: SessionSchema.ID
+@@ -269,7 +271,36 @@ export const createLLMEventPublisher = (bus: Pick<Bus.Interface, "publish">, inp
+         }),
+       true,
+     )
+-  const text = contentFragments("text", SessionEvent.Text)
++  // TruthProbe: logprobs каждой текстовой дельты приходят в providerMetadata.
++  const truthprobeTokens = new Map<string, TokenLogprob[]>()
++  const truthprobeText = new Map<string, string>()
++  const scoredText = new Map<string, ReturnType<typeof scoreAnswer>>()
++  const text = fragments(
++    "text",
++    (_id, value, ordinal, native) =>
++      Effect.gen(function* () {
++        const scored = scoredText.get(_id)
++        scoredText.delete(_id)
++        yield* bus.publish(SessionEvent.Text.Ended, {
++          sessionID: input.sessionID,
++          assistantMessageID: yield* currentAssistantMessageID(),
++          ordinal,
++          text: value,
++          native,
++          ...(scored === undefined ? {} : { truthprobe: scored }),
++        })
++      }),
++    (_id, value, ordinal) =>
++      Effect.gen(function* () {
++        yield* bus.publish(SessionEvent.Text.Delta, {
++          sessionID: input.sessionID,
++          assistantMessageID: yield* currentAssistantMessageID(),
++          ordinal,
++          delta: value,
++        })
++      }),
++    true,
++  )
+   const reasoning = contentFragments("reasoning", SessionEvent.Reasoning)
+   const toolInput = fragments("tool input", (id, value) =>
+     Effect.gen(function* () {
+@@ -445,12 +476,28 @@ export const createLLMEventPublisher = (bus: Pick<Bus.Interface, "publish">, inp
+           ordinal: startedTextOrdinal,
+         })
+         return
+-      case "text-delta":
++      case "text-delta": {
++        const tokens = (
++          event.providerMetadata?.truthprobe as unknown as { tokens?: TokenLogprob[] } | undefined
++        )?.tokens
++        if (tokens?.length) {
++          const accumulated = truthprobeTokens.get(event.id)
++          if (accumulated) accumulated.push(...tokens)
++          else truthprobeTokens.set(event.id, [...tokens])
++        }
++        if (event.text) truthprobeText.set(event.id, (truthprobeText.get(event.id) ?? "") + event.text)
+         yield* text.append(event.id, event.text, native(event.providerMetadata))
+         return
+-      case "text-end":
++      }
++      case "text-end": {
++        const tokens = truthprobeTokens.get(event.id)
++        const value = event.text ?? truthprobeText.get(event.id) ?? ""
++        truthprobeTokens.delete(event.id)
++        truthprobeText.delete(event.id)
++        if (tokens?.length) scoredText.set(event.id, scoreAnswer(value, tokens))
+         yield* text.end(event.id, native(event.providerMetadata), event.text)
+         return
++      }
+       case "reasoning-start":
+         outputStarted = true
+         const startedReasoningOrdinal = yield* reasoning.start(event.id, native(event.providerMetadata))
+diff --git a/packages/core/src/truthprobe/score.ts b/packages/core/src/truthprobe/score.ts
+new file mode 100644
+index 0000000..c0bd923
+--- /dev/null
++++ b/packages/core/src/truthprobe/score.ts
+@@ -0,0 +1,201 @@
++/**
++ * TruthProbe — скоринг уверенности по token logprobs.
++ *
++ * Все функции чистые: нет I/O, нет состояния, детерминированный результат.
++ * Это позволяет покрыть всю математику юнит-тестами на записанных фикстурах
++ * и использовать модуль и в ядре OpenCode, и в офлайн-калибровке (T8).
++ */
++
++import { splitSentences, type Sentence } from "./sentences.js";
++import {
++  DEFAULT_SCORE_OPTIONS,
++  type AnswerScore,
++  type ScoreOptions,
++  type SentenceScore,
++  type TokenLogprob,
++} from "./types.js";
++
++const PUNCT_ONLY = /^[\s\p{P}\p{S}]+$/u;
++
++/** Токен несёт смысл: не пробелы, не чистая пунктуация/символы. */
++export function isContentToken(token: string, minChars = 2): boolean {
++  if (!token) return false;
++  if (!/\S/.test(token)) return false;
++  if (PUNCT_ONLY.test(token)) return false;
++  return token.replace(/\s/g, "").length >= minChars;
++}
++
++/**
++ * Нормированная энтропия распределения на первом токене.
++ *
++ * q_i = exp(lp_i) / Σ exp(lp_j) по доступному top-K; H = -Σ q_i ln q_i / ln K.
++ * Если top-K нет (провайдер не вернул) — деградируем к 1 - p(token),
++ * то есть φ = p(token).
++ */
++export function normalizedEntropy(t: TokenLogprob, topK = 20): number {
++  const top = (t.top ?? []).filter((x) => Number.isFinite(x.logprob));
++  if (top.length < 2) return clamp01(1 - Math.exp(t.logprob));
++
++  const probs = top.map((x) => Math.exp(x.logprob));
++  const sum = probs.reduce((a, b) => a + b, 0);
++  if (!(sum > 0)) return 1;
++
++  let h = 0;
++  for (const p of probs) {
++    const q = p / sum;
++    if (q > 0) h -= q * Math.log(q);
++  }
++  const k = Math.max(2, Math.min(topK, top.length));
++  return clamp01(h / Math.log(k));
++}
++
++/** φ = уверенность по первому токену, 0..1. */
++export function phi(t: TokenLogprob, topK = 20): number {
++  return clamp01(1 - normalizedEntropy(t, topK));
++}
++
++function clamp01(x: number): number {
++  if (!Number.isFinite(x)) return 0;
++  return Math.min(1, Math.max(0, x));
++}
++
++interface TokenWithOffset extends TokenLogprob {
++  start: number;
++  end: number;
++}
++
++/** Привязывает токены к символьным смещениям исходного текста. */
++export function tokensWithOffsets(tokens: TokenLogprob[]): TokenWithOffset[] {
++  const out: TokenWithOffset[] = [];
++  let pos = 0;
++  for (const t of tokens) {
++    const len = t.token.length;
++    out.push({ ...t, start: pos, end: pos + len });
++    pos += len;
++  }
++  return out;
++}
++
++function sentenceAt(sentences: Sentence[], pos: number): Sentence | null {
++  for (const s of sentences) {
++    if (pos >= s.start && pos < s.end) return s;
++    if (s.start > pos) break;
++  }
++  return null;
++}
++
++function geometricMean(lps: number[]): number {
++  if (lps.length === 0) return 0;
++  return clamp01(Math.exp(lps.reduce((a, b) => a + b, 0) / lps.length));
++}
++
++/**
++ * Считает уверенность по всему ответу.
++ *
++ * @param text  финальный текст ответа (тот же, чьи токены пришли в `tokens`)
++ * @param tokens logprobs по токенам в порядке генерации
++ */
++export function scoreAnswer(
++  text: string,
++  tokens: TokenLogprob[],
++  options: ScoreOptions = {},
++): AnswerScore {
++  const opt = { ...DEFAULT_SCORE_OPTIONS, ...options };
++
++  if (!tokens.length) {
++    return {
++      status: "unavailable",
++      score: null,
++      risk: null,
++      first: null,
++      sentences: [],
++      flagged: 0,
++      reason: "no logprobs in response",
++    };
++  }
++
++  const withOffsets = tokensWithOffsets(tokens);
++  const sentences = splitSentences(text);
++
++  // Дрейф смещений: если конкатенация токенов не совпала с текстом,
++  // привязка к предложениям ненадёжна — сигнализируем partial.
++  const totalLen = withOffsets.length ? withOffsets[withOffsets.length - 1].end : 0;
++  const offsetDrift = Math.abs(totalLen - text.length) > 2;
++
++  const content = withOffsets.filter(
++    (t) =>
++      isContentToken(t.token, opt.minTokenChars) &&
++      (offsetDrift || sentenceAt(sentences, t.start) !== null),
++  );
++
++  if (!content.length) {
++    return {
++      status: "unavailable",
++      score: null,
++      risk: null,
++      first: null,
++      sentences: [],
++      flagged: 0,
++      reason: "no content tokens",
++    };
++  }
++
++  const firstToken = content[0];
++  const first = {
++    score: phi(firstToken, opt.topK),
++    entropy: normalizedEntropy(firstToken, opt.topK),
++    token: firstToken.token,
++  };
++
++  // Группировка по предложениям (если дрейф — всё в одно «предложение»).
++  const buckets = new Map<number, TokenWithOffset[]>();
++  for (const t of content) {
++    const s = offsetDrift ? null : sentenceAt(sentences, t.start);
++    if (!s) continue;
++    const arr = buckets.get(s.i) ?? [];
++    arr.push(t);
++    buckets.set(s.i, arr);
++  }
++
++  const scored: SentenceScore[] = [];
++  for (const [i, arr] of [...buckets.entries()].sort((a, b) => a[0] - b[0])) {
++    const s = sentences[i];
++    const lps = arr.map((t) => t.logprob);
++    const geo = geometricMean(lps);
++    const startPhi = phi(arr[0], opt.topK);
++    // Один «придуманный» токен важнее общего среднего: именно он выдаёт
++    // сфабрикованную сущность/число, поэтому худший токен получает свой вес.
++    const worst = clamp01(Math.exp(Math.min(...lps)));
++    const score = clamp01(0.4 * geo + 0.3 * worst + 0.3 * startPhi);
++    const risk = clamp01(1 - score);
++    scored.push({
++      i,
++      start: s.start,
++      end: s.end,
++      text: s.text,
++      score,
++      risk,
++      meanLp: Math.exp(lps.reduce((a, b) => a + b, 0) / lps.length),
++      minLp: Math.min(...lps),
++      phi: startPhi,
++      tokens: arr.length,
++      flag: risk >= opt.riskyThreshold,
++    });
++  }
++
++  const globalGeo = geometricMean(content.map((t) => t.logprob));
++  const meanSentence = scored.length
++    ? scored.reduce((a, s) => a + s.score, 0) / scored.length
++    : globalGeo;
++  const score = clamp01(opt.globalWeight * globalGeo + (1 - opt.globalWeight) * meanSentence);
++
++  return {
++    status: offsetDrift ? "partial" : "ok",
++    score,
++    risk: clamp01(1 - score),
++    first,
++    sentences: scored,
++    flagged: scored.filter((s) => s.flag).length,
++    ...(offsetDrift ? { reason: "token/text offset drift" } : {}),
++  };
++}
+diff --git a/packages/core/src/truthprobe/sentences.ts b/packages/core/src/truthprobe/sentences.ts
+new file mode 100644
+index 0000000..dd84e4e
+--- /dev/null
++++ b/packages/core/src/truthprobe/sentences.ts
+@@ -0,0 +1,133 @@
++/**
++ * TruthProbe — сегментация ответа на предложения.
++ *
++ * Задача не «идеальная лингвистика», а стабильные смещения: токены привязываются
++ * к предложениям по символьным позициям, поэтому сегментатор обязан возвращать
++ * корректные `start`/`end` в исходной строке и не включать блоки кода.
++ */
++
++export interface Sentence {
++  i: number;
++  start: number;
++  end: number;
++  text: string;
++}
++
++const FENCE = /^\s*(```|~~~)/;
++
++/** Диапазоны [start, end) блоков кода, включая сами fences. */
++export function codeRanges(text: string): Array<[number, number]> {
++  const ranges: Array<[number, number]> = [];
++  let offset = 0;
++  let open: number | null = null;
++
++  for (const line of text.split("\n")) {
++    const lineStart = offset;
++    const lineEnd = offset + line.length;
++    if (FENCE.test(line)) {
++      if (open === null) open = lineStart;
++      else {
++        ranges.push([open, lineEnd]);
++        open = null;
++      }
++    }
++    offset = lineEnd + 1; // + "\n"
++  }
++  if (open !== null) ranges.push([open, text.length]); // незакрытый fence (стрим ещё идёт)
++  return ranges;
++}
++
++const TERMINATORS = new Set([".", "!", "?", "…", "。", "！", "？"]);
++const ABBREVIATIONS = new Set([
++  "т", "е", "д", "п", "др", "см", "г", "гг", "в", "вв", "рис", "табл", "стр",
++  "e.g", "i.e", "etc", "vs", "cf", "al", "no", "fig", "approx",
++]);
++
++function isExcluded(ranges: Array<[number, number]>, pos: number): boolean {
++  for (const [a, b] of ranges) if (pos >= a && pos < b) return true;
++  return false;
++}
++
++/** Предыдущее «слово» перед позицией index (для отсечения сокращений). */
++function wordBefore(text: string, index: number): string {
++  let i = index - 1;
++  while (i >= 0 && /[A-Za-zА-Яа-яЁё.]/.test(text[i])) i--;
++  return text.slice(i + 1, index).replace(/^\.+|\.+$/g, "").toLowerCase();
++}
++
++/** Сокращение ли это: проверяем и целое слово, и последний сегмент «т.е.» → «е». */
++function isAbbreviation(text: string, index: number): boolean {
++  const word = wordBefore(text, index);
++  if (ABBREVIATIONS.has(word)) return true;
++  const last = word.split(".").pop() ?? "";
++  return last.length > 0 && ABBREVIATIONS.has(last);
++}
++
++/**
++ * Режет текст на предложения. Границы:
++ *  - терминатор `. ! ? …` + пробел/конец строки;
++ *  - пустая строка (абзац);
++ *  - начало markdown-пункта списка;
++ *  - блоки кода целиком выброшены.
++ */
++export function splitSentences(text: string): Sentence[] {
++  const excluded = codeRanges(text);
++  const out: Sentence[] = [];
++  let start = 0;
++
++  const push = (end: number, nextStart: number) => {
++    let s = start;
++    let e = end;
++    while (s < e && /\s/.test(text[s])) s++;
++    while (e > s && /\s/.test(text[e - 1])) e--;
++    const body = text.slice(s, e);
++    if (body.length > 0 && /\S/.test(body) && !isExcluded(excluded, s)) {
++      out.push({ i: out.length, start: s, end: e, text: body });
++    }
++    start = nextStart;
++  };
++
++  for (let i = 0; i < text.length; i++) {
++    if (isExcluded(excluded, i)) {
++      // перепрыгиваем весь блок кода целиком
++      const range = excluded.find(([a, b]) => i >= a && i < b)!;
++      push(i, range[1]);
++      i = range[1] - 1;
++      continue;
++    }
++
++    const ch = text[i];
++
++    // пустая строка
++    if (ch === "\n") {
++      let j = i + 1;
++      while (j < text.length && (text[j] === " " || text[j] === "\t")) j++;
++      if (j < text.length && text[j] === "\n") {
++        push(i, j);
++        i = j - 1;
++        continue;
++      }
++      continue;
++    }
++
++    if (!TERMINATORS.has(ch)) continue;
++
++    const next = text[i + 1];
++    const prev = text[i - 1];
++    const atEnd = i + 1 >= text.length;
++    const boundaryAfter = atEnd || next === "\n" || /\s/.test(next);
++    if (!boundaryAfter) continue;
++    // «3.14», «v1.2»
++    if (/\d/.test(prev ?? "") && /\d/.test(next ?? "")) continue;
++    // «т.е.», «e.g.»
++    if (isAbbreviation(text, i)) continue;
++
++    let end = i + 1;
++    while (end < text.length && (text[end] === " " || text[end] === "\t")) end++;
++    push(end, end);
++    i = end - 1;
++  }
++
++  push(text.length, text.length);
++  return out;
++}
+diff --git a/packages/core/src/truthprobe/types.ts b/packages/core/src/truthprobe/types.ts
+new file mode 100644
+index 0000000..96e8626
+--- /dev/null
++++ b/packages/core/src/truthprobe/types.ts
+@@ -0,0 +1,81 @@
++/**
++ * TruthProbe — типы данных.
++ *
++ * Всё, что здесь описано, — контракт между слоем провайдера (который собирает
++ * logprobs из стрима), слоем скоринга (чистые функции) и UI/плагинами.
++ */
++
++/** Один альтернативный токен из `top_logprobs`. */
++export interface TopLogprob {
++  token: string;
++  logprob: number;
++}
++
++/** Один сгенерированный токен с вероятностью (и, опционально, top-K). */
++export interface TokenLogprob {
++  token: string;
++  logprob: number;
++  top?: TopLogprob[];
++}
++
++/** Оценка одного предложения. */
++export interface SentenceScore {
++  /** Порядковый номер предложения в ответе, с нуля. */
++  i: number;
++  /** Смещение начала в исходном тексте (включительно). */
++  start: number;
++  /** Смещение конца (исключительно). */
++  end: number;
++  /** Исходный текст предложения. */
++  text: string;
++  /** 0..1, выше — увереннее. */
++  score: number;
++  /** 1 - score. */
++  risk: number;
++  /** Геометрическое среднее вероятностей содержательных токенов. */
++  meanLp: number;
++  /** Минимальный logprob среди содержательных токенов (худший токен). */
++  minLp: number;
++  /** Уверенность по первому содержательному токену предложения. */
++  phi: number;
++  /** Сколько содержательных токенов попало в предложение. */
++  tokens: number;
++  /** score < 1 - riskyThreshold. */
++  flag: boolean;
++}
++
++/** Итог по всему ответу. */
++export interface AnswerScore {
++  status: "ok" | "partial" | "unavailable";
++  /** 0..1 или null, если сигнала нет. */
++  score: number | null;
++  risk: number | null;
++  /** Уверенность по первому содержательному токену всего ответа. */
++  first: { score: number; entropy: number; token: string } | null;
++  sentences: SentenceScore[];
++  /** Количество предложений с flag = true. */
++  flagged: number;
++  /** Причина недоступности (для UI). */
++  reason?: string;
++}
++
++export interface ScoreOptions {
++  /** Размер top-K, по которому считалась энтропия. */
++  topK?: number;
++  /** Порог риска для подсветки. */
++  riskyThreshold?: number;
++  /** Порог «шатко» (жёлтый), если понадобится третий уровень. */
++  shakyThreshold?: number;
++  /** Минимальная длина содержательного токена, чтобы считать его значимым. */
++  minTokenChars?: number;
++  /** Доля веса whole-answer, отданная глобальному геом. среднему. */
++  globalWeight?: number;
++}
++
++export const DEFAULT_SCORE_OPTIONS: Required<ScoreOptions> = {
++  topK: 20,
++  riskyThreshold: 0.45,
++  shakyThreshold: 0.3,
++  minTokenChars: 2,
++  globalWeight: 0.6,
++};
+diff --git a/packages/core/test/truthprobe.test.ts b/packages/core/test/truthprobe.test.ts
+new file mode 100755
+index 0000000..eed85f3
+--- /dev/null
++++ b/packages/core/test/truthprobe.test.ts
+@@ -0,0 +1,90 @@
++import { describe, expect, test } from "bun:test"
++import { scoreAnswer, phi, normalizedEntropy } from "../src/truthprobe/score.js"
++import { splitSentences } from "../src/truthprobe/sentences.js"
++import type { TokenLogprob } from "../src/truthprobe/types.js"
++
++const tokens = (values: Array<[string, number]>): TokenLogprob[] =>
++  values.map(([token, logprob]) => ({
++    token,
++    logprob,
++    top: [
++      { token, logprob },
++      { token: " other", logprob: logprob - 1 },
++    ],
++  }))
++
++describe("truthprobe.score", () => {
++  test("sentences are split on terminators and keep code fences out", () => {
++    const parts = splitSentences("Первое предложение. Второе!\n\n```js\nconst a = 1;\n```\nТретье?")
++    expect(parts.map((part) => part.text.trim())).toEqual([
++      "Первое предложение.",
++      "Второе!",
++      "Третье?",
++    ])
++  })
++
++  test("phi is 1 for a single certain alternative and drops with entropy", () => {
++    const certain: TokenLogprob = { token: "да", logprob: 0, top: [{ token: "да", logprob: 0 }] }
++    const split: TokenLogprob = {
++      token: "да",
++      logprob: -0.7,
++      top: [
++        { token: "да", logprob: -0.7 },
++        { token: "нет", logprob: -0.7 },
++      ],
++    }
++    expect(phi(certain)).toBe(1)
++    expect(phi(split)).toBeLessThan(0.2)
++    expect(normalizedEntropy(certain)).toBe(0)
++  })
++
++  test("a confident answer scores above a hesitant one", () => {
++    const text = "Москва — столица России. Население около 13 миллионов человек."
++    const confident = scoreAnswer(text, tokens([
++      ["Москва", -0.01],
++      [" —", -0.02],
++      [" столица", -0.01],
++      [" России", -0.03],
++      [".", -0.05],
++      [" Население", -0.02],
++      [" около", -0.01],
++      [" 13", -0.02],
++      [" миллионов", -0.01],
++      [" человек", -0.02],
++      [".", -0.01],
++    ]))
++    const hesitant = scoreAnswer(text, tokens([
++      ["Москва", -2.4],
++      [" —", -1.9],
++      [" столица", -2.2],
++      [" России", -1.8],
++      [".", -0.4],
++      [" Население", -2.1],
++      [" около", -1.7],
++      [" 13", -2.6],
++      [" миллионов", -1.9],
++      [" человек", -2.0],
++      [".", -0.3],
++    ]))
++    expect(confident.status).not.toBe("unavailable")
++    expect(hesitant.status).not.toBe("unavailable")
++    expect(confident.score!).toBeGreaterThan(hesitant.score!)
++    expect(hesitant.flagged).toBeGreaterThan(0)
++  })
++
++  test("missing tokens degrade to unavailable instead of throwing", () => {
++    const result = scoreAnswer("Любой текст.", [])
++    expect(result.status).toBe("unavailable")
++    expect(result.score).toBeNull()
++    expect(result.reason).toBeTruthy()
++  })
++
++  test("offset drift marks the result partial but still scores", () => {
++    const result = scoreAnswer("Совсем другой текст, который не совпадает.", tokens([
++      ["Что-то", -0.1],
++      [" иное", -0.2],
++    ]))
++    expect(result.status).toBe("partial")
++    expect(result.score).not.toBeNull()
++  })
++})
+diff --git a/packages/schema/src/index.ts b/packages/schema/src/index.ts
+index 8d61a45..97d7ac1 100644
+--- a/packages/schema/src/index.ts
++++ b/packages/schema/src/index.ts
+@@ -12,6 +12,7 @@ export { LLM } from "./llm.js"
+ export { Location } from "./location.js"
+ export { Mcp } from "./mcp.js"
+ export { Model } from "./model.js"
++export { Truthprobe } from "./truthprobe.js"
+ export { Money } from "./money.js"
+ export { Permission } from "./permission.js"
+ export { PermissionSaved } from "./permission-saved.js"
+diff --git a/packages/schema/src/model.ts b/packages/schema/src/model.ts
+index dd89613..3be842c 100644
+--- a/packages/schema/src/model.ts
++++ b/packages/schema/src/model.ts
+@@ -84,6 +84,8 @@ export const Capabilities = Schema.Struct({
+   output: Schema.Array(Schema.String),
+   /** Whether the model accepts a sampling temperature. Unknown when unset. */
+   temperature: Schema.Boolean.pipe(optional),
++  /** Whether the provider streams token logprobs (TruthProbe). Unknown when unset. */
++  logprobs: Schema.Boolean.pipe(optional),
+ })
+   .annotate({ identifier: "Model.Capabilities" })
+   .pipe(
+diff --git a/packages/schema/src/session-event.ts b/packages/schema/src/session-event.ts
+index ee3a239..6c6ec53 100644
+--- a/packages/schema/src/session-event.ts
++++ b/packages/schema/src/session-event.ts
+@@ -11,6 +11,7 @@ import { SessionID } from "./session-id.js"
+ import { SessionMetadata } from "./session-metadata.js"
+ import { Location } from "./location.js"
+ import { SessionMessage } from "./session-message.js"
++import { Truthprobe } from "./truthprobe.js"
+ import { Revert } from "./session-revert.js"
+ import { Shell as ShellSchema } from "./shell.js"
+ import { SessionError } from "./session-error.js"
+@@ -437,6 +438,8 @@ export namespace Text {
+       ordinal: NonNegativeInt,
+       text: Schema.String,
+       native: SessionMessage.Native.pipe(optional),
++      // Measured confidence from token logprobs, attached when the provider returns them.
++      truthprobe: Truthprobe.Info.pipe(optional),
+     },
+   })
+   export type Ended = typeof Ended.Type
+diff --git a/packages/schema/src/session-message.ts b/packages/schema/src/session-message.ts
+index 5c1755c..3ef7277 100644
+--- a/packages/schema/src/session-message.ts
++++ b/packages/schema/src/session-message.ts
+@@ -5,6 +5,7 @@ import { optional } from "./schema.js"
+ import { Content } from "./tool.js"
+ import { Location } from "./location.js"
+ import { Model } from "./model.js"
++import { Truthprobe } from "./truthprobe.js"
+ import { Project } from "./project.js"
+ import { Attachment, Prompt } from "./prompt.js"
+ import { DateTimeUtcFromMillis, PositiveInt, RelativePath, statics } from "./schema.js"
+@@ -187,6 +188,8 @@ export const AssistantText = Schema.Struct({
+   type: Schema.tag("text"),
+   text: Schema.String,
+   native: Native.pipe(optional),
++  /** Оценка уверенности модели по token logprobs. */
++  truthprobe: Truthprobe.Info.pipe(optional),
+ }).annotate({ identifier: "Session.Message.Assistant.Text" })
+ 
+ export interface AssistantReasoning extends Schema.Schema.Type<typeof AssistantReasoning> {}
+diff --git a/packages/schema/src/truthprobe.ts b/packages/schema/src/truthprobe.ts
+new file mode 100644
+index 0000000..f0ec23c
+--- /dev/null
++++ b/packages/schema/src/truthprobe.ts
+@@ -0,0 +1,50 @@
++export * as Truthprobe from "./truthprobe.js"
++
++import { Schema } from "effect"
++import { optional } from "./schema.js"
++
++/**
++ * TruthProbe: уверенность модели по token logprobs.
++ *
++ * Схема намеренно совпадает с внутренним типом скоринга (packages/core/src/truthprobe),
++ * чтобы результат scoreAnswer() уходил в событие без преобразований.
++ */
++export interface First extends Schema.Schema.Type<typeof First> {}
++export const First = Schema.Struct({
++  /** Уверенность по первому содержательному токену ответа, 0..1. */
++  score: Schema.Number,
++  /** Нормированная энтропия top-K первого токена, 0..1. */
++  entropy: Schema.Number,
++  token: Schema.String,
++}).annotate({ identifier: "Truthprobe.First" })
++
++export interface Sentence extends Schema.Schema.Type<typeof Sentence> {}
++export const Sentence = Schema.Struct({
++  /** Порядковый номер предложения, с нуля. */
++  i: Schema.Number,
++  /** Смещение начала в тексте ответа. */
++  start: Schema.Number,
++  /** Смещение конца (исключительно). */
++  end: Schema.Number,
++  text: Schema.String,
++  /** 0..1, выше — увереннее. */
++  score: Schema.Number,
++  risk: Schema.Number,
++  meanLp: Schema.Number,
++  minLp: Schema.Number,
++  phi: Schema.Number,
++  tokens: Schema.Number,
++  /** score ниже порога: предложение спорное. */
++  flag: Schema.Boolean,
++}).annotate({ identifier: "Truthprobe.Sentence" })
++
++export interface Info extends Schema.Schema.Type<typeof Info> {}
++export const Info = Schema.Struct({
++  status: Schema.Literals(["ok", "partial", "unavailable"]),
++  score: Schema.NullOr(Schema.Number),
++  risk: Schema.NullOr(Schema.Number),
++  first: Schema.NullOr(First),
++  sentences: Schema.Array(Sentence),
++  flagged: Schema.Number,
++  reason: optional(Schema.String),
++}).annotate({ identifier: "Truthprobe.Info" })
+diff --git a/packages/tui/src/routes/session/message-parts.tsx b/packages/tui/src/routes/session/message-parts.tsx
+index 6a844d7..f21811e 100644
+--- a/packages/tui/src/routes/session/message-parts.tsx
++++ b/packages/tui/src/routes/session/message-parts.tsx
+@@ -1,4 +1,4 @@
+-import { createMemo, createSignal, Match, Show, Switch } from "solid-js"
++import { createMemo, createSignal, For, Match, Show, Switch } from "solid-js"
+ import { RGBA, TextAttributes, type MouseEvent } from "@opentui/core"
+ import { useRenderer, type JSX } from "@opentui/solid"
+ import type {
+@@ -180,8 +180,21 @@ export function TextPart(props: {
+   const theme = useTheme()
+   const { currentSyntax: syntax } = useThemes()
+   const plugins = usePlugin()
++  const probe = createMemo(() => props.part.truthprobe)
++  const flagged = createMemo(() => (props.part.truthprobe?.sentences ?? []).filter((item) => item.flag))
++  const pct = (value: unknown) => (typeof value === "number" ? `${Math.round(value * 100)}%` : "?")
+   return (
+-    <Show when={props.part.text.trim()}>
++    <>
++      <Show when={probe()}>
++        <box paddingLeft={3} flexShrink={0}>
++          <text fg={theme.text.muted}>
++            {probe()?.status === "unavailable"
++              ? `confidence unavailable${probe()?.reason ? ` · ${probe()?.reason}` : ""}`
++              : `first-sentence confidence ${pct(probe()?.first?.score)}${probe()?.status === "partial" ? " · partial match" : ""}`}
++          </text>
++        </box>
++      </Show>
++      <Show when={props.part.text.trim()}>
+       <box paddingLeft={3} flexShrink={0}>
+         {/* Configure custom nodes before parsing; apply content before streaming so completion keeps the final tokens. */}
+         <markdown
+@@ -197,7 +210,22 @@ export function TextPart(props: {
+           bg={theme.background.base}
+         />
+       </box>
+-    </Show>
++      </Show>
++      <Show when={flagged().length > 0}>
++        <box paddingLeft={3} flexShrink={0} flexDirection="column">
++          <text fg={theme.text.muted}>
++            {`answer confidence ${pct(probe()?.score)} · ${flagged().length} doubtful sentence${flagged().length > 1 ? "s" : ""}`}
++          </text>
++          <For each={flagged()}>
++            {(sentence) => (
++              <text fg={theme.text.feedback.warning.base}>
++                {`  ! #${Number(sentence.i) + 1} ${pct(sentence.score)}: ${sentence.text.length > 96 ? `${sentence.text.slice(0, 93)}...` : sentence.text}`}
++              </text>
++            )}
++          </For>
++        </box>
++      </Show>
++    </>
+   )
+ }
+ 
+-- 
+2.53.0
+
+
+From a9db0dab3c3392b40e8c9366e3455be1f37b7dcf Mon Sep 17 00:00:00 2001
+From: adik <adik@local>
+Date: Thu, 19 Nov 2026 01:12:00 +0300
+Subject: [PATCH 2/3] fix(tui): apply truthprobe metadata from
+ session.text.ended events
+
+The solid client store only copied event.data.text into the in-memory
+assistant text part, so the live TUI never saw the durable truthprobe
+payload until a full session refetch. Copy it through.
+---
+ packages/client/src/solid/data.ts | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/packages/client/src/solid/data.ts b/packages/client/src/solid/data.ts
+index 8b6d247..7368d0c 100644
+--- a/packages/client/src/solid/data.ts
++++ b/packages/client/src/solid/data.ts
+@@ -1097,6 +1097,8 @@ export function createData(config: CreateDataInput) {
+       case "session.text.ended":
+         message.editText(event.data.sessionID, event.data.assistantMessageID, (text) => {
+           text.text = event.data.text
++          // truthprobe: durable confidence metadata published with the finished text
++          if (event.data.truthprobe !== undefined) text.truthprobe = event.data.truthprobe
+         })
+         return
+       case "session.tool.input.started":
+-- 
+2.53.0
+
+
+From 2870f64a9bcb19d1e1701d85101c5074646cdcac Mon Sep 17 00:00:00 2001
+From: adik <adik@local>
+Date: Thu, 19 Nov 2026 03:08:36 +0300
+Subject: [PATCH 3/3] test(truthprobe): cover segmentation, scoring and
+ protocol parsing
+
+- send logprobs from every chat-completions model that declares the capability
+- attribute a token to the sentence it overlaps (leading space at a boundary)
+- split CJK sentences without whitespace, and allow an abbreviation split
+  when the next word starts a new sentence
+- expose truthprobeBody/truthprobeEnabled/truthprobeFromDelta for unit tests
+- 45 core tests + 8 protocol tests
+---
+ packages/ai/src/protocols/openai-chat.ts  |  23 +-
+ packages/ai/test/truthprobe.test.ts       |  98 +++++
+ packages/core/src/truthprobe/score.ts     |  21 +-
+ packages/core/src/truthprobe/sentences.ts |  23 +-
+ packages/core/test/truthprobe.test.ts     | 434 ++++++++++++++++++----
+ 5 files changed, 516 insertions(+), 83 deletions(-)
+ create mode 100644 packages/ai/test/truthprobe.test.ts
+
+diff --git a/packages/ai/src/protocols/openai-chat.ts b/packages/ai/src/protocols/openai-chat.ts
+index b34de98..019deba 100644
+--- a/packages/ai/src/protocols/openai-chat.ts
++++ b/packages/ai/src/protocols/openai-chat.ts
+@@ -40,19 +40,26 @@ const RESERVED_REASONING_FIELDS = new Set(["role", "content", "refusal", "tool_c
+ export const DEFAULT_BASE_URL = "https://api.openai.com/v1"
+ export const PATH = "/chat/completions"
+ /** Сколько альтернатив просим в top_logprobs для TruthProbe. */
+-const TRUTHPROBE_TOP_K = 20
++export const TRUTHPROBE_TOP_K = 20
+ 
+ /**
+  * TruthProbe включён, если модель объявила `capabilities.logprobs`,
+  * иначе — по переменной окружения OPENCODE_TRUTHPROBE=1.
+  */
+-const truthprobeEnabled = (model: { capabilities?: { logprobs?: boolean } }) => {
++export const truthprobeEnabled = (model: { capabilities?: { logprobs?: boolean } }) => {
+   if (model.capabilities?.logprobs !== undefined) return model.capabilities.logprobs
+   const env = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env
+   const flag = env?.OPENCODE_TRUTHPROBE
+   return flag === "1" || flag === "on" || flag === "true"
+ }
+ 
++/**
++ * Поля запроса, которые включает TruthProbe. Отдельная функция, чтобы
++ * поведение «просим logprobs» покрывалось тестом без сборки всего тела.
++ */
++export const truthprobeBody = (model: { capabilities?: { logprobs?: boolean } }) =>
++  truthprobeEnabled(model) ? { logprobs: true, top_logprobs: TRUTHPROBE_TOP_K } : {}
++
+ // =============================================================================
+ // Request Body Schema
+ // =============================================================================
+@@ -901,8 +908,16 @@ const lowerOptions = (request: LLMRequest, supportsStore: boolean, hasActiveTool
+   }
+ }
+ 
++export interface TruthprobeToken {
++  token: string
++  logprob: number
++  top?: Array<{ token: string; logprob: number }>
++}
++
+ /** Приводит logprobs дельты к компактному виду для providerMetadata. */
+-const truthprobeFromDelta = (logprobs: OpenAIChatLogprobs | null | undefined) => {
++export const truthprobeFromDelta = (
++  logprobs: { content?: OpenAIChatLogprobs["content"] } | null | undefined,
++): TruthprobeToken[] | undefined => {
+   const content = logprobs?.content
+   if (!content || content.length === 0) return undefined
+   return content.map((token) => ({
+@@ -957,7 +972,7 @@ export const fromRequest = Effect.fn("OpenAIChat.fromRequest")(function* (
+     temperature: request.temperature,
+     top_p: request.topP,
+     // TruthProbe: только для моделей, у которых провайдер отдаёт logprobs.
+-    ...(truthprobeEnabled(request.model) ? { logprobs: true, top_logprobs: TRUTHPROBE_TOP_K } : {}),
++    ...truthprobeBody(request.model),
+     frequency_penalty: request.frequencyPenalty,
+     presence_penalty: request.presencePenalty,
+     seed: request.seed,
+diff --git a/packages/ai/test/truthprobe.test.ts b/packages/ai/test/truthprobe.test.ts
+new file mode 100644
+index 0000000..df39d87
+--- /dev/null
++++ b/packages/ai/test/truthprobe.test.ts
+@@ -0,0 +1,98 @@
++import { afterEach, describe, expect, test } from "bun:test"
++import {
++  TRUTHPROBE_TOP_K,
++  truthprobeBody,
++  truthprobeEnabled,
++  truthprobeFromDelta,
++} from "../src/protocols/openai-chat.js"
++
++const original = process.env.OPENCODE_TRUTHPROBE
++
++afterEach(() => {
++  if (original === undefined) delete process.env.OPENCODE_TRUTHPROBE
++  else process.env.OPENCODE_TRUTHPROBE = original
++})
++
++describe("openai-chat.truthprobeEnabled", () => {
++  test("capabilities win over the environment", () => {
++    process.env.OPENCODE_TRUTHPROBE = "1"
++    expect(truthprobeEnabled({ capabilities: { logprobs: false } })).toBe(false)
++    delete process.env.OPENCODE_TRUTHPROBE
++    expect(truthprobeEnabled({ capabilities: { logprobs: true } })).toBe(true)
++  })
++
++  test("environment flag accepts 1/on/true only", () => {
++    for (const value of ["1", "on", "true"]) {
++      process.env.OPENCODE_TRUTHPROBE = value
++      expect(truthprobeEnabled({})).toBe(true)
++    }
++    for (const value of ["0", "off", "false", "", "yes"]) {
++      process.env.OPENCODE_TRUTHPROBE = value
++      expect(truthprobeEnabled({})).toBe(false)
++    }
++    delete process.env.OPENCODE_TRUTHPROBE
++    expect(truthprobeEnabled({})).toBe(false)
++    expect(truthprobeEnabled({ capabilities: {} })).toBe(false)
++  })
++})
++
++describe("openai-chat.truthprobeBody", () => {
++  test("requests logprobs with the configured top-k", () => {
++    expect(TRUTHPROBE_TOP_K).toBeGreaterThan(1)
++    expect(truthprobeBody({ capabilities: { logprobs: true } })).toEqual({
++      logprobs: true,
++      top_logprobs: TRUTHPROBE_TOP_K,
++    })
++  })
++
++  test("adds nothing when the model cannot return logprobs", () => {
++    expect(truthprobeBody({ capabilities: { logprobs: false } })).toEqual({})
++    delete process.env.OPENCODE_TRUTHPROBE
++    expect(truthprobeBody({})).toEqual({})
++  })
++})
++
++describe("openai-chat.truthprobeFromDelta", () => {
++  test("missing or empty content yields undefined", () => {
++    expect(truthprobeFromDelta(undefined)).toBeUndefined()
++    expect(truthprobeFromDelta(null)).toBeUndefined()
++    expect(truthprobeFromDelta({ content: [] } as never)).toBeUndefined()
++  })
++
++  test("keeps token, logprob and top alternatives", () => {
++    const parsed = truthprobeFromDelta({
++      content: [
++        {
++          token: "Paris",
++          logprob: -0.02,
++          bytes: [80, 97],
++          top_logprobs: [
++            { token: "Paris", logprob: -0.02 },
++            { token: "Lyon", logprob: -3.9 },
++          ],
++        },
++      ],
++    } as never)
++    expect(parsed).toEqual([
++      {
++        token: "Paris",
++        logprob: -0.02,
++        top: [
++          { token: "Paris", logprob: -0.02 },
++          { token: "Lyon", logprob: -3.9 },
++        ],
++      },
++    ])
++  })
++
++  test("tokens without top_logprobs stay lean", () => {
++    const parsed = truthprobeFromDelta({ content: [{ token: " ok", logprob: -0.4 }] } as never)
++    expect(parsed).toEqual([{ token: " ok", logprob: -0.4 }])
++    expect(parsed![0]).not.toHaveProperty("top")
++  })
++
++  test("logprob 0 survives (not treated as falsy)", () => {
++    const parsed = truthprobeFromDelta({ content: [{ token: "a", logprob: 0, top_logprobs: [] }] } as never)
++    expect(parsed![0].logprob).toBe(0)
++  })
++})
+diff --git a/packages/core/src/truthprobe/score.ts b/packages/core/src/truthprobe/score.ts
+index c0bd923..2f47b52 100644
+--- a/packages/core/src/truthprobe/score.ts
++++ b/packages/core/src/truthprobe/score.ts
+@@ -6,14 +6,14 @@
+  * и использовать модуль и в ядре OpenCode, и в офлайн-калибровке (T8).
+  */
+ 
+-import { splitSentences, type Sentence } from "./sentences.js";
++import { splitSentences, type Sentence } from "./sentences";
+ import {
+   DEFAULT_SCORE_OPTIONS,
+   type AnswerScore,
+   type ScoreOptions,
+   type SentenceScore,
+   type TokenLogprob,
+-} from "./types.js";
++} from "./types";
+ 
+ const PUNCT_ONLY = /^[\s\p{P}\p{S}]+$/u;
+ 
+@@ -76,10 +76,17 @@ export function tokensWithOffsets(tokens: TokenLogprob[]): TokenWithOffset[] {
+   return out;
+ }
+ 
+-function sentenceAt(sentences: Sentence[], pos: number): Sentence | null {
++/**
++ * Предложение, которому принадлежит диапазон токена.
++ *
++ * Токен может начинаться с пробела, который сегментатор уже «съел» как
++ * хвост предыдущего предложения (например « Плохо» сразу после точки),
++ * поэтому проверяем пересечение диапазонов, а не только начало токена.
++ */
++function sentenceAt(sentences: Sentence[], start: number, end: number): Sentence | null {
+   for (const s of sentences) {
+-    if (pos >= s.start && pos < s.end) return s;
+-    if (s.start > pos) break;
++    if (start < s.end && end > s.start) return s;
++    if (s.start >= end) break;
+   }
+   return null;
+ }
+@@ -125,7 +132,7 @@ export function scoreAnswer(
+   const content = withOffsets.filter(
+     (t) =>
+       isContentToken(t.token, opt.minTokenChars) &&
+-      (offsetDrift || sentenceAt(sentences, t.start) !== null),
++      (offsetDrift || sentenceAt(sentences, t.start, t.end) !== null),
+   );
+ 
+   if (!content.length) {
+@@ -150,7 +157,7 @@ export function scoreAnswer(
+   // Группировка по предложениям (если дрейф — всё в одно «предложение»).
+   const buckets = new Map<number, TokenWithOffset[]>();
+   for (const t of content) {
+-    const s = offsetDrift ? null : sentenceAt(sentences, t.start);
++    const s = offsetDrift ? null : sentenceAt(sentences, t.start, t.end);
+     if (!s) continue;
+     const arr = buckets.get(s.i) ?? [];
+     arr.push(t);
+diff --git a/packages/core/src/truthprobe/sentences.ts b/packages/core/src/truthprobe/sentences.ts
+index dd84e4e..00f735c 100644
+--- a/packages/core/src/truthprobe/sentences.ts
++++ b/packages/core/src/truthprobe/sentences.ts
+@@ -55,6 +55,15 @@ function wordBefore(text: string, index: number): string {
+   return text.slice(i + 1, index).replace(/^\.+|\.+$/g, "").toLowerCase();
+ }
+ 
++/** Первое слово после позиции index (без учёта пробелов и переносов). */
++function wordAfter(text: string, index: number): string {
++  let i = index + 1;
++  while (i < text.length && /[\s"'«»()\[\]]/.test(text[i])) i++;
++  let end = i;
++  while (end < text.length && /[A-Za-zА-Яа-яЁё0-9]/.test(text[end])) end++;
++  return text.slice(i, end);
++}
++
+ /** Сокращение ли это: проверяем и целое слово, и последний сегмент «т.е.» → «е». */
+ function isAbbreviation(text: string, index: number): boolean {
+   const word = wordBefore(text, index);
+@@ -63,6 +72,12 @@ function isAbbreviation(text: string, index: number): boolean {
+   return last.length > 0 && ABBREVIATIONS.has(last);
+ }
+ 
++/** Начинается ли после позиции новое предложение (слово с заглавной буквы). */
++function startsSentence(text: string, index: number): boolean {
++  const word = wordAfter(text, index);
++  return word.length > 0 && /^[A-ZА-ЯЁ]/.test(word);
++}
++
+ /**
+  * Режет текст на предложения. Границы:
+  *  - терминатор `. ! ? …` + пробел/конец строки;
+@@ -112,15 +127,17 @@ export function splitSentences(text: string): Sentence[] {
+ 
+     if (!TERMINATORS.has(ch)) continue;
+ 
++    const cjk = ch === "。" || ch === "！" || ch === "？";
+     const next = text[i + 1];
+     const prev = text[i - 1];
+     const atEnd = i + 1 >= text.length;
+-    const boundaryAfter = atEnd || next === "\n" || /\s/.test(next);
++    // В CJK пробелов между предложениями нет, терминатор достаточен сам по себе.
++    const boundaryAfter = cjk || atEnd || next === "\n" || /\s/.test(next);
+     if (!boundaryAfter) continue;
+     // «3.14», «v1.2»
+     if (/\d/.test(prev ?? "") && /\d/.test(next ?? "")) continue;
+-    // «т.е.», «e.g.»
+-    if (isAbbreviation(text, i)) continue;
++    // «т.е.», «e.g.» — если только дальше не начинается новое предложение.
++    if (isAbbreviation(text, i) && !startsSentence(text, i)) continue;
+ 
+     let end = i + 1;
+     while (end < text.length && (text[end] === " " || text[end] === "\t")) end++;
+diff --git a/packages/core/test/truthprobe.test.ts b/packages/core/test/truthprobe.test.ts
+index eed85f3..5bde799 100755
+--- a/packages/core/test/truthprobe.test.ts
++++ b/packages/core/test/truthprobe.test.ts
+@@ -1,90 +1,386 @@
+ import { describe, expect, test } from "bun:test"
+-import { scoreAnswer, phi, normalizedEntropy } from "../src/truthprobe/score.js"
+-import { splitSentences } from "../src/truthprobe/sentences.js"
++import {
++  isContentToken,
++  normalizedEntropy,
++  phi,
++  scoreAnswer,
++  tokensWithOffsets,
++} from "../src/truthprobe/score.js"
++import { codeRanges, splitSentences } from "../src/truthprobe/sentences.js"
+ import type { TokenLogprob } from "../src/truthprobe/types.js"
+ 
+-const tokens = (values: Array<[string, number]>): TokenLogprob[] =>
+-  values.map(([token, logprob]) => ({
+-    token,
+-    logprob,
+-    top: [
+-      { token, logprob },
+-      { token: " other", logprob: logprob - 1 },
+-    ],
+-  }))
+-
+-describe("truthprobe.score", () => {
+-  test("sentences are split on terminators and keep code fences out", () => {
+-    const parts = splitSentences("Первое предложение. Второе!\n\n```js\nconst a = 1;\n```\nТретье?")
+-    expect(parts.map((part) => part.text.trim())).toEqual([
+-      "Первое предложение.",
+-      "Второе!",
+-      "Третье?",
+-    ])
++/** Токен с двумя альтернативами: сам токен и «шум» на дельту ниже. */
++const token = (text: string, logprob: number, delta = 1): TokenLogprob => ({
++  token: text,
++  logprob,
++  top: [
++    { token: text, logprob },
++    { token: " other", logprob: logprob - delta },
++  ],
++})
++
++/** Собирает токены из пар, как их вернул бы провайдер. */
++const tokens = (values: Array<[string, number]>, delta = 1): TokenLogprob[] =>
++  values.map(([text, logprob]) => token(text, logprob, delta))
++
++/** Нарезает текст на токены по границам слов, чтобы смещения совпадали. */
++const slice = (text: string, size = 4): string[] => {
++  const out: string[] = []
++  for (let i = 0; i < text.length; i += size) out.push(text.slice(i, i + size))
++  return out
++}
++
++/** Ровные токены с заданным logprob на весь текст. */
++const flat = (text: string, logprob: number): TokenLogprob[] =>
++  slice(text).map((part) => token(part, logprob))
++
++describe("truthprobe.isContentToken", () => {
++  test("keeps ordinary words", () => {
++    expect(isContentToken("Paris")).toBe(true)
++    expect(isContentToken("Париж")).toBe(true)
++    expect(isContentToken(" 13")).toBe(true)
++  })
++
++  test("drops whitespace, punctuation and symbols", () => {
++    expect(isContentToken("")).toBe(false)
++    expect(isContentToken("   ")).toBe(false)
++    expect(isContentToken("\n")).toBe(false)
++    expect(isContentToken(".")).toBe(false)
++    expect(isContentToken(" ... ")).toBe(false)
++    expect(isContentToken("—")).toBe(false)
++    expect(isContentToken("()[]{}")).toBe(false)
++    expect(isContentToken("«»")).toBe(false)
++  })
++
++  test("drops tokens below minChars", () => {
++    expect(isContentToken("a")).toBe(false)
++    expect(isContentToken(" a ")).toBe(false)
++    expect(isContentToken("a", 1)).toBe(true)
++  })
++})
++
++describe("truthprobe.normalizedEntropy / phi", () => {
++  test("certain token has zero entropy and full phi", () => {
++    const certain = { token: "да", logprob: 0, top: [{ token: "да", logprob: 0 }] }
++    expect(normalizedEntropy(certain)).toBe(0)
++    expect(phi(certain)).toBe(1)
+   })
+ 
+-  test("phi is 1 for a single certain alternative and drops with entropy", () => {
+-    const certain: TokenLogprob = { token: "да", logprob: 0, top: [{ token: "да", logprob: 0 }] }
+-    const split: TokenLogprob = {
+-      token: "да",
+-      logprob: -0.7,
++  test("no top-k degrades to the token probability", () => {
++    expect(phi({ token: "x", logprob: -0.5 })).toBeCloseTo(Math.exp(-0.5), 6)
++    expect(phi({ token: "x", logprob: 0 })).toBe(1)
++  })
++
++  test("two equal alternatives give zero phi", () => {
++    const split = { token: "да", logprob: -0.7, top: [{ token: "да", logprob: -0.7 }, { token: "нет", logprob: -0.7 }] }
++    expect(normalizedEntropy(split)).toBeCloseTo(1, 6)
++    expect(phi(split)).toBeCloseTo(0, 6)
++  })
++
++  test("phi is monotone in the winner probability", () => {
++    const build = (lp: number) => ({
++      token: "a",
++      logprob: lp,
++      top: [
++        { token: "a", logprob: lp },
++        { token: "b", logprob: -3 },
++        { token: "c", logprob: -4 },
++      ],
++    })
++    const values = [0, -0.5, -1, -2, -4].map((lp) => phi(build(lp)))
++    for (let i = 1; i < values.length; i++) expect(values[i]).toBeLessThanOrEqual(values[i - 1])
++    expect(values[0]).toBeGreaterThan(0.7)
++  })
++
++  test("entropy is normalised by ln(K) of the available alternatives", () => {
++    const four = {
++      token: "a",
++      logprob: 0,
+       top: [
+-        { token: "да", logprob: -0.7 },
+-        { token: "нет", logprob: -0.7 },
++        { token: "a", logprob: 0 },
++        { token: "b", logprob: 0 },
++        { token: "c", logprob: 0 },
++        { token: "d", logprob: 0 },
+       ],
+     }
+-    expect(phi(certain)).toBe(1)
+-    expect(phi(split)).toBeLessThan(0.2)
+-    expect(normalizedEntropy(certain)).toBe(0)
++    expect(normalizedEntropy(four)).toBeCloseTo(1, 6)
++    expect(normalizedEntropy(four, 4)).toBeCloseTo(1, 6)
+   })
+ 
+-  test("a confident answer scores above a hesitant one", () => {
+-    const text = "Москва — столица России. Население около 13 миллионов человек."
+-    const confident = scoreAnswer(text, tokens([
+-      ["Москва", -0.01],
+-      [" —", -0.02],
+-      [" столица", -0.01],
+-      [" России", -0.03],
+-      [".", -0.05],
+-      [" Население", -0.02],
+-      [" около", -0.01],
+-      [" 13", -0.02],
+-      [" миллионов", -0.01],
+-      [" человек", -0.02],
+-      [".", -0.01],
+-    ]))
+-    const hesitant = scoreAnswer(text, tokens([
+-      ["Москва", -2.4],
+-      [" —", -1.9],
+-      [" столица", -2.2],
+-      [" России", -1.8],
+-      [".", -0.4],
+-      [" Население", -2.1],
+-      [" около", -1.7],
+-      [" 13", -2.6],
+-      [" миллионов", -1.9],
+-      [" человек", -2.0],
+-      [".", -0.3],
+-    ]))
+-    expect(confident.status).not.toBe("unavailable")
+-    expect(hesitant.status).not.toBe("unavailable")
+-    expect(confident.score!).toBeGreaterThan(hesitant.score!)
+-    expect(hesitant.flagged).toBeGreaterThan(0)
++  test("lower topK produces higher entropy, hence lower phi", () => {
++    const skewed = {
++      token: "a",
++      logprob: 0,
++      top: [
++        { token: "a", logprob: 0 },
++        { token: "b", logprob: -1 },
++        { token: "c", logprob: -2 },
++        { token: "d", logprob: -3 },
++      ],
++    }
++    expect(phi(skewed, 2)).toBeLessThan(phi(skewed, 20))
++  })
++
++  test("non-finite alternatives are ignored", () => {
++    const noisy = {
++      token: "a",
++      logprob: -0.1,
++      top: [
++        { token: "a", logprob: -0.1 },
++        { token: "b", logprob: Number.NaN },
++        { token: "c", logprob: Number.NEGATIVE_INFINITY },
++      ],
++    }
++    // После фильтра остаётся один кандидат → деградация к p(token).
++    expect(phi(noisy)).toBeCloseTo(Math.exp(-0.1), 6)
+   })
+ 
+-  test("missing tokens degrade to unavailable instead of throwing", () => {
++  test("phi always stays inside 0..1", () => {
++    const weird = [
++      { token: "a", logprob: 5, top: [{ token: "a", logprob: 5 }, { token: "b", logprob: 4 }] },
++      { token: "a", logprob: -50, top: [{ token: "a", logprob: -50 }, { token: "b", logprob: -60 }] },
++    ]
++    for (const value of weird) {
++      const score = phi(value)
++      expect(score).toBeGreaterThanOrEqual(0)
++      expect(score).toBeLessThanOrEqual(1)
++    }
++  })
++})
++
++describe("truthprobe.tokensWithOffsets", () => {
++  test("offsets accumulate in generation order", () => {
++    const mapped = tokensWithOffsets(tokens([[" ab", -1], ["cd", -1], [".", -1]]) as TokenLogprob[])
++    expect(mapped.map((t) => [t.start, t.end])).toEqual([
++      [0, 3],
++      [3, 5],
++      [5, 6],
++    ])
++  })
++
++  test("empty input stays empty", () => {
++    expect(tokensWithOffsets([])).toEqual([])
++  })
++})
++
++describe("truthprobe.codeRanges", () => {
++  test("closed fence is one range including the fences", () => {
++    const text = "a\n```js\nconst x = 1\n```\nb"
++    const ranges = codeRanges(text)
++    expect(ranges.length).toBe(1)
++    const [start, end] = ranges[0]
++    expect(text.slice(start, end)).toBe("```js\nconst x = 1\n```")
++  })
++
++  test("tilde fence is detected too", () => {
++    const text = "a\n~~~\ncode\n~~~"
++    expect(codeRanges(text).length).toBe(1)
++  })
++
++  test("unclosed fence runs to the end of the text", () => {
++    const text = "a\n```\ncode"
++    expect(codeRanges(text)).toEqual([[2, text.length]])
++  })
++
++  test("plain text has no ranges", () => {
++    expect(codeRanges("just text")).toEqual([])
++  })
++})
++
++describe("truthprobe.splitSentences", () => {
++  const texts = (text: string) => splitSentences(text).map((s) => s.text)
++
++  test("splits on terminators", () => {
++    expect(texts("First one. Second one! Third one?")).toEqual(["First one.", "Second one!", "Third one?"])
++  })
++
++  test("offsets match the source string", () => {
++    const text = "Первое. Второе.\n\nТретье — с тире!"
++    for (const sentence of splitSentences(text)) {
++      expect(text.slice(sentence.start, sentence.end)).toBe(sentence.text)
++    }
++  })
++
++  test("does not split decimals", () => {
++    expect(texts("Pi is 3.14 exactly.")).toEqual(["Pi is 3.14 exactly."])
++  })
++
++  test("does not split abbreviations", () => {
++    expect(texts("Это т.е. пример. Конец.")).toEqual(["Это т.е. пример.", "Конец."])
++    expect(texts("Use e.g. this one. Fine.")).toEqual(["Use e.g. this one.", "Fine."])
++    expect(texts("Apples, pears, etc. And more.")).toEqual(["Apples, pears, etc.", "And more."])
++    expect(texts("См. выше. Да.")).toEqual(["См. выше.", "Да."])
++  })
++
++  test("supports the ellipsis and CJK terminators", () => {
++    expect(texts("Ждём… И вот.")).toEqual(["Ждём…", "И вот."])
++    expect(texts("これは文です。次です。")).toEqual(["これは文です。", "次です。"])
++  })
++
++  test("a blank line always breaks a sentence", () => {
++    expect(texts("A\n\nB")).toEqual(["A", "B"])
++  })
++
++  test("code blocks are dropped entirely", () => {
++    const text = "Перед.\n```js\nconst a = 1;\n```\nПосле."
++    expect(texts(text)).toEqual(["Перед.", "После."])
++  })
++
++  test("unclosed code block swallows the rest", () => {
++    expect(texts("Перед.\n```js\nconst a = 1;")).toEqual(["Перед."])
++  })
++
++  test("empty and whitespace-only input give nothing", () => {
++    expect(splitSentences("")).toEqual([])
++    expect(splitSentences("   \n\t ")).toEqual([])
++  })
++
++  test("single line without terminator is one sentence", () => {
++    expect(texts("Просто строка без точки")).toEqual(["Просто строка без точки"])
++  })
++
++  test("list items without terminators stay together", () => {
++    // Документируем поведение: одиночный перевод строки не является границей.
++    expect(texts("- one\n- two")).toEqual(["- one\n- two"])
++  })
++
++  test("indices are sequential starting from zero", () => {
++    const sentences = splitSentences("A. B. C.")
++    expect(sentences.map((s) => s.i)).toEqual([0, 1, 2])
++  })
++})
++
++describe("truthprobe.scoreAnswer — деградация", () => {
++  test("без токенов возвращает unavailable", () => {
+     const result = scoreAnswer("Любой текст.", [])
+     expect(result.status).toBe("unavailable")
+     expect(result.score).toBeNull()
+-    expect(result.reason).toBeTruthy()
++    expect(result.risk).toBeNull()
++    expect(result.first).toBeNull()
++    expect(result.sentences).toEqual([])
++    expect(result.flagged).toBe(0)
++    expect(result.reason).toBe("no logprobs in response")
++  })
++
++  test("только пунктуация — нет содержательных токенов", () => {
++    const result = scoreAnswer("...", tokens([["...", -0.1], [" .", -0.2]]))
++    expect(result.status).toBe("unavailable")
++    expect(result.reason).toBe("no content tokens")
+   })
+ 
+-  test("offset drift marks the result partial but still scores", () => {
+-    const result = scoreAnswer("Совсем другой текст, который не совпадает.", tokens([
+-      ["Что-то", -0.1],
+-      [" иное", -0.2],
+-    ]))
++  test("minTokenChars можно ослабить", () => {
++    const text = "a b"
++    const raw = tokens([["a", -0.1], [" b", -0.1]])
++    expect(scoreAnswer(text, raw).status).toBe("unavailable")
++    expect(scoreAnswer(text, raw, { minTokenChars: 1 }).status).toBe("ok")
++  })
++
++  test("дрейф токенов относительно текста даёт partial", () => {
++    const result = scoreAnswer("Совсем другой текст, который не совпадает.", tokens([["Что-то", -0.1], [" иное", -0.2]]))
+     expect(result.status).toBe("partial")
++    expect(result.reason).toBe("token/text offset drift")
++    expect(result.score).not.toBeNull()
++    expect(result.sentences).toEqual([])
++  })
++})
++
++describe("truthprobe.scoreAnswer — арифметика", () => {
++  test("risk всегда дополняет score до единицы", () => {
++    const text = "Москва — столица России."
++    const result = scoreAnswer(text, flat(text, -1))
+     expect(result.score).not.toBeNull()
++    expect(result.risk!).toBeCloseTo(1 - result.score!, 10)
++    expect(result.score!).toBeGreaterThanOrEqual(0)
++    expect(result.score!).toBeLessThanOrEqual(1)
++  })
++
++  test("уверенный ответ выше сомнительного", () => {
++    const text = "Москва — столица России. Население около 13 миллионов человек."
++    const confident = scoreAnswer(text, flat(text, -0.02))
++    const hesitant = scoreAnswer(text, flat(text, -2.2))
++    expect(confident.score!).toBeGreaterThan(hesitant.score!)
++    expect(hesitant.flagged).toBeGreaterThan(0)
++  })
++
++  test("первый токен — первый содержательный, пунктуация пропускается", () => {
++    const text = "«Париж» — столица."
++    const result = scoreAnswer(text, tokens([["«", -0.1], ["Париж", -0.5], ["»", -0.1], [" —", -0.1], [" столица", -0.2], [".", -0.1]]))
++    expect(result.first!.token).toBe("Париж")
++    expect(result.first!.score).toBeCloseTo(phi(token("Париж", -0.5)), 10)
++  })
++
++  test("предложения не смешивают токены соседей", () => {
++    const text = "Хорошо. Плохо."
++    const raw = tokens([["Хорошо", -0.01], [".", -0.01], [" Плохо", -3.5], [".", -3.5]])
++    const result = scoreAnswer(text, raw)
++    expect(result.sentences.length).toBe(2)
++    const [good, bad] = result.sentences
++    expect(good.flag).toBe(false)
++    expect(bad.flag).toBe(true)
++    expect(result.flagged).toBe(1)
++    expect(good.tokens).toBe(1)
++    expect(bad.tokens).toBe(1)
++  })
++
++  test("minLp и meanLp отражают худший и средний токен", () => {
++    const text = "Аа бб"
++    const raw = tokens([["Аа", -0.2], [" бб", -2.4]])
++    const result = scoreAnswer(text, raw)
++    const sentence = result.sentences[0]
++    expect(sentence.minLp).toBe(-2.4)
++    expect(sentence.meanLp).toBeCloseTo(Math.exp((-0.2 - 2.4) / 2), 10)
++  })
++
++  test("порог риска настраивается", () => {
++    const text = "Средне сомнительно."
++    const raw = flat(text, -1.4)
++    const lenient = scoreAnswer(text, raw, { riskyThreshold: 1 })
++    const strict = scoreAnswer(text, raw, { riskyThreshold: 0 })
++    expect(lenient.flagged).toBe(0)
++    expect(strict.flagged).toBe(strict.sentences.length)
++    expect(strict.flagged).toBeGreaterThan(0)
++  })
++
++  test("globalWeight=1 даёт геометрическое среднее по всем токенам", () => {
++    const text = "Совершенно уверенно."
++    const raw = tokens([["Совер", -0.1], ["шенно", -0.3], [" уверен", -0.2], ["но", -0.4], [".", -0.1]])
++    const result = scoreAnswer(text, raw, { globalWeight: 1 })
++    const expected = Math.exp((-0.1 - 0.3 - 0.2 - 0.4) / 4) // пунктуация не в счёте
++    expect(result.score!).toBeCloseTo(expected, 10)
++  })
++
++  test("score детерминирован", () => {
++    const text = "Повторяемый ответ. Тот же самый."
++    const raw = flat(text, -0.7)
++    expect(JSON.stringify(scoreAnswer(text, raw))).toBe(JSON.stringify(scoreAnswer(text, raw)))
++  })
++
++  test("идеально уверенный ответ даёт score 1 и risk 0", () => {
++    const text = "ok"
++    const result = scoreAnswer(text, [{ token: "ok", logprob: 0 }])
++    expect(result.score).toBeCloseTo(1, 10)
++    expect(result.risk).toBeCloseTo(0, 10)
++    expect(result.flagged).toBe(0)
++  })
++
++  test("крайне неуверенный ответ даёт risk около единицы", () => {
++    const text = "Что-то очень странное."
++    const result = scoreAnswer(text, flat(text, -12))
++    expect(result.risk!).toBeGreaterThan(0.95)
++    expect(result.flagged).toBe(1)
++  })
++
++  test("границы предложений в оценке совпадают с сегментатором", () => {
++    const text = "Первое. Второе."
++    const result = scoreAnswer(text, flat(text, -0.3))
++    const sentences = splitSentences(text)
++    expect(result.sentences.map((s) => [s.start, s.end])).toEqual(sentences.map((s) => [s.start, s.end]))
++  })
++
++  test("каждое оценённое предложение имеет risk = 1 - score", () => {
++    const text = "Раз. Два. Три."
++    for (const sentence of scoreAnswer(text, flat(text, -0.9)).sentences) {
++      expect(sentence.risk).toBeCloseTo(1 - sentence.score, 10)
++    }
+   })
+ })
+-- 
+2.53.0
+

@@ -1,0 +1,20 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "model": "mock/mock-1",
+  "provider": {
+    "mock": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Mock",
+      "options": {
+        "baseURL": "http://127.0.0.1:8899/v1",
+        "apiKey": "test-key"
+      },
+      "models": {
+        "mock-1": {
+          "name": "Mock 1",
+          "limit": { "context": 400000, "output": 8000 }
+        }
+      }
+    }
+  }
+}

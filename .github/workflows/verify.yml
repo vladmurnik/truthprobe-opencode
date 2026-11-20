@@ -1,0 +1,82 @@
+name: verify
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  scoring:
+    name: scoring unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: bun test test/score.test.ts
+
+  patch:
+    name: patch applies and scores inside opencode
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      OPENCODE_BASE: 007afb1
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: clone opencode at the patch base
+        run: |
+          git clone --filter=blob:none https://github.com/sst/opencode upstream
+          cd upstream
+          git checkout "$OPENCODE_BASE"
+
+      - name: apply TruthProbe patch
+        run: |
+          cd upstream
+          git -c user.name=ci -c user.email=ci@local am ../patches/truthprobe-0001.patch
+          git log --oneline -4
+
+      - name: install dependencies
+        run: cd upstream && bun install
+
+      - name: typecheck patched packages
+        run: |
+          cd upstream
+          bun run --cwd packages/schema typecheck
+          bun run --cwd packages/ai typecheck
+          bun run --cwd packages/core typecheck
+          bun run --cwd packages/client typecheck
+          bun run --cwd packages/tui typecheck
+
+      - name: truthprobe tests
+        run: |
+          cd upstream/packages/core && bun test test/truthprobe.test.ts
+          cd ../ai && bun test test/truthprobe.test.ts
+
+      - name: regression subset around session text events
+        run: |
+          cd upstream/packages/core
+          bun test test/session*.test.ts test/projector*.test.ts test/message*.test.ts
+
+  probe-report:
+    name: logprob capability probe (informational)
+    runs-on: ubuntu-latest
+    if: ${{ secrets.TRUTHPROBE_API_KEY != '' }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: probe a provider for logprobs support
+        env:
+          TRUTHPROBE_API_KEY: ${{ secrets.TRUTHPROBE_API_KEY }}
+          TRUTHPROBE_BASE_URL: ${{ vars.TRUTHPROBE_BASE_URL }}
+          TRUTHPROBE_MODEL: ${{ vars.TRUTHPROBE_MODEL }}
+        run: python3 scripts/probe-logprobs.py --out probe.json || true
+      - uses: actions/upload-artifact@v4
+        with:
+          name: probe-report
+          path: probe.json
