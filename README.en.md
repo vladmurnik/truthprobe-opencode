@@ -184,20 +184,56 @@ Inspect the verdicts: `cat <data>/truthprobe/capabilities.json`.
 
 ## How it is computed
 
-```
-φ_first        = 1 − H_norm(top-K of the first tokens)   K = 20
-H_norm         = −Σ q ln q / ln K,   q = softmax(logprob)
-score_sentence = 0.4 · geo(exp(lp)) + 0.3 · exp(minLp) + 0.3 · φ_first
-risk           = 1 − score            flagged at risk ≥ 0.45
-score_answer   = 0.6 · globalGeo + 0.4 · mean(score_sentence)
-```
+One formula applied twice — to each sentence and to the whole answer. Everything else (entropy, the
+worst token, the share of low probabilities) stays a **feature** for fitted weights but is not part of
+the default score: the measurement showed that first-token entropy flips the result
+(`docs/VALIDATION.md` §14).
 
-Three signals per sentence: average confidence (geometric mean), the worst token (it is the one that
-gives away an invented number or name) and the first-token entropy. Segmentation is by `. ! ? …`
-with decimals, abbreviations and CJK terminators taken into account; code blocks are dropped
-entirely.
+$$
+s_{\text{sentence}} \;=\; \exp\!\left(\overline{\ell}\right),
+\qquad
+\overline{\ell} \;=\; \frac{1}{n}\sum_{k=1}^{n} \ell_k,
+\qquad
+\text{risk} \;=\; 1 - s
+$$
 
-States: `ok` — tokens matched the text; `partial` — offsets drifted; `unavailable` — no tokens.
+$$
+s_{\text{answer}} \;=\; 0.6 \cdot s_{\text{global}} \;+\; 0.4 \cdot \frac{1}{m}\sum_{i=1}^{m} s_i
+$$
+
+| Symbol | Meaning |
+| --- | --- |
+| $\ell_k$ | `logprob` of the k-th content token; punctuation and whitespace are skipped |
+| $n$ | number of content tokens in the sentence |
+| $m$ | number of sentences in the answer |
+| $s_{\text{global}}$ | the same formula over all content tokens of the answer |
+| $0.6 / 0.4$ | `globalWeight`: whole answer versus the mean over sentences |
+
+In other words, **confidence is the average token probability**, not "the weakest token". The flag
+fires at $\text{risk} \ge 0.45$; levels are `safe ≥0.90`, `likely ≥0.75`, `uncertain ≥0.55`,
+`risky ≥0.35`, below that `unreliable`.
+
+Features that are always computed and feed the fitted weights when those are enabled:
+
+$$
+\varphi = 1 - \frac{H_{\text{top-}K}}{\ln K},
+\qquad
+H_{\text{top-}K} = -\sum_{i=1}^{K} q_i \ln q_i,
+\qquad
+q_i = \frac{e^{\ell_i}}{\sum_{j=1}^{K} e^{\ell_j}},
+\qquad
+K = 20
+$$
+
+$$
+\text{fracLow} \;=\; \frac{\#\{\,k : \ell_k < \ln 0.5 \,\}}{n},
+\qquad
+\text{minLp} \;=\; \min_k \ell_k
+$$
+
+Segmentation is by `. ! ? …` with decimals, abbreviations and CJK terminators taken into account;
+code blocks are dropped entirely. States: `ok` — tokens matched the text; `partial` — offsets
+drifted; `unavailable` — no tokens.
 
 ## Verification
 
@@ -210,7 +246,7 @@ States: `ok` — tokens matched the text; `partial` — offsets drifted; `unavai
 | Auto-enable without environment variables | mock + two consecutive runs | RUN1: probe → `{"status":"ok"}`; RUN2: **2 of 2** requests with `logprobs: true, top_logprobs: 20` |
 | Regression around text events | `test/session*.test.ts test/projector*.test.ts test/message*.test.ts` | **811 pass / 0 fail** |
 | Full core run | `bun test` in `packages/core` (7 713 tests, 331 files) | 7 300 pass / 351 skip / 62 fail — none in truthprobe: `tool-search` downloads ripgrep from github.com, `provider-gitlab-oauth` calls gitlab.com, `cross-spawn`/MCP depend on spawn; the harness blocks outbound network |
-| TruthProbe tests, current build | `bun test` of the five truthprobe files | **109 pass / 0 fail** |
+| TruthProbe tests, current build | `bun test` of the five truthprobe files | **110 pass / 0 fail** |
 | Patch on a clean tree | `git am` in a `007afb1` worktree | applies without conflicts, tests 45 + 8 green |
 | Typecheck | schema / ai / core / client / tui | green (132 / 357+322 / 2 030 / 181 / 1 942 files) |
 | Typecheck of the UI packages | session-ui / app / desktop | green (382 / 2 445 / 3 569 files, desktop 2 projects) |

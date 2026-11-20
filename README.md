@@ -211,19 +211,56 @@ Windows: `%APPDATA%\opencode\truthprobe\`) и живёт: `ok`/`ignored`/`reject
 
 ## Как считается
 
-```
-φ_first        = 1 − H_norm(top-K первых токенов)      K = 20
-H_norm         = −Σ q ln q / ln K,   q = softmax(logprob)
-score_sentence = 0.4 · geo(exp(lp)) + 0.3 · exp(minLp) + 0.3 · φ_first
-risk           = 1 − score            флаг при risk ≥ 0.45
-score_answer   = 0.6 · globalGeo + 0.4 · mean(score_sentence)
-```
+Одна формула, применённая дважды — к каждому предложению и ко всему ответу. Всё остальное
+(энтропия, худший токен, доля низких вероятностей) остаётся **признаками** для обученных весов,
+но в оценку по умолчанию не входит: замер показал, что энтропия первого токена разворачивает
+результат (`docs/VALIDATION.md` §14).
 
-Три сигнала на предложение: средняя уверенность (геометрическое среднее), худший токен (именно он
-выдаёт придуманное число или имя) и энтропия первого токена. Сегментация — по `. ! ? …` с учётом
-десятичных дробей, сокращений и CJK-терминаторов; блоки кода выбрасываются целиком.
+$$
+s_{\text{предл}} \;=\; \exp\!\left(\overline{\ell}\right),
+\qquad
+\overline{\ell} \;=\; \frac{1}{n}\sum_{k=1}^{n} \ell_k,
+\qquad
+\text{risk} \;=\; 1 - s
+$$
 
-Состояния: `ok` — токены совпали с текстом; `partial` — дрейф смещений; `unavailable` — токенов нет.
+$$
+s_{\text{ответ}} \;=\; 0.6 \cdot s_{\text{глоб}} \;+\; 0.4 \cdot \frac{1}{m}\sum_{i=1}^{m} s_i
+$$
+
+| Обозначение | Что это |
+| --- | --- |
+| $\ell_k$ | `logprob` k-го содержательного токена; пунктуация и пробелы пропускаются |
+| $n$ | число содержательных токенов в предложении |
+| $m$ | число предложений в ответе |
+| $s_{\text{глоб}}$ | та же формула, но по всем содержательным токенам ответа |
+| $0.6 / 0.4$ | `globalWeight`: ответ целиком против среднего по предложениям |
+
+Иначе говоря, **уверенность = средняя вероятность токенов**, а не «самый слабый токен». Порог
+плашки — $\text{risk} \ge 0.45$; уровни — `safe ≥0.90`, `likely ≥0.75`, `uncertain ≥0.55`,
+`risky ≥0.35`, ниже — `unreliable`.
+
+Признаки, которые считаются всегда и идут в обученные веса, если они подключены:
+
+$$
+\varphi = 1 - \frac{H_{\text{top-}K}}{\ln K},
+\qquad
+H_{\text{top-}K} = -\sum_{i=1}^{K} q_i \ln q_i,
+\qquad
+q_i = \frac{e^{\ell_i}}{\sum_{j=1}^{K} e^{\ell_j}},
+\qquad
+K = 20
+$$
+
+$$
+\text{fracLow} \;=\; \frac{\#\{\,k : \ell_k < \ln 0.5 \,\}}{n},
+\qquad
+\text{minLp} \;=\; \min_k \ell_k
+$$
+
+Сегментация — по `. ! ? …` с учётом десятичных дробей, сокращений и CJK-терминаторов; блоки кода
+выбрасываются целиком. Состояния: `ok` — токены совпали с текстом; `partial` — дрейф смещений;
+`unavailable` — токенов нет.
 
 ## Проверки
 
@@ -236,7 +273,7 @@ score_answer   = 0.6 · globalGeo + 0.4 · mean(score_sentence)
 | Автовключение без переменных окружения | мок + два прогона подряд | RUN1: проба → `{"status":"ok"}`; RUN2: **2 из 2** запросов с `logprobs: true, top_logprobs: 20` |
 | Регрессия вокруг событий текста | `test/session*.test.ts test/projector*.test.ts test/message*.test.ts` | **811 pass / 0 fail** |
 | Полный прогон core | `bun test` в `packages/core` (7 713 тестов, 331 файл) | 7 300 pass / 351 skip / 62 fail — ни одного в truthprobe: `tool-search` качает ripgrep с github.com, `provider-gitlab-oauth` ходит на gitlab.com, `cross-spawn`/MCP зависят от spawn; в окружении зарезана исходящая сеть |
-| Тесты TruthProbe, текущая сборка | `bun test` пяти truthprobe-файлов | **109 pass / 0 fail** |
+| Тесты TruthProbe, текущая сборка | `bun test` пяти truthprobe-файлов | **110 pass / 0 fail** |
 | Патч на чистом дереве | `git am` в worktree `007afb1` | применяется без конфликтов, тесты 45 + 8 зелёные |
 | Типизация | schema / ai / core / client / tui | зелёная (132 / 357+322 / 2 030 / 181 / 1 942 файла) |
 | Типизация UI-пакетов | session-ui / app / desktop | зелёная (382 / 2 445 / 3 569 файлов, desktop — 2 проекта) |
@@ -266,7 +303,7 @@ python3 scripts/tui-probe.py && python3 scripts/screen-dump.py /tmp/tui-probe.lo
 
 | Что | Как проверяли | Результат |
 | --- | --- | --- |
-| Тесты truthprobe | `bun test` пяти файлов в `packages/core/test` | **109 pass, 0 fail** |
+| Тесты truthprobe | `bun test` пяти файлов в `packages/core/test` | **110 pass, 0 fail** |
 | Тесты всего монорепо | `bun test` в `packages/core` — 7713 тестов, 331 файл | **7300 pass, 351 skip, 62 fail** |
 | Ответ `freepi/particle` | живой запрос через боевой бинарь | `score 0.7595 · likely`, предложение `#0 0.603 · uncertain` |
 | Ответ `freepi/deepseek-v4.1-flash` | живой запрос | `score 0.6893`, первый флаг `0.4849` |
@@ -306,45 +343,6 @@ python3 scripts/tui-probe.py && python3 scripts/screen-dump.py /tmp/tui-probe.lo
   неверных**, `evaluate.py` печатает `AUROC n/a (one class)`. Поэтому числа 0.538/0.683/0.866
   отозваны, а вместо них появился `scripts/audit-bank.py`, который ловит такой брак банка до
   обучения. Подробности — `docs/VALIDATION.md` §12.
-
-## FreeLLMAPI: много моделей для сбора калибровочных данных
-
-[FreeLLMAPI](https://github.com/tashfeenahmed/freellmapi) — один OpenAI-совместимый
-эндпоинт поверх бесплатных тарифов десятков провайдеров. Здесь он нужен не как ещё один
-шлюз, а как источник данных: много моделей, одинаковый формат `logprobs`, и на каждую
-модель можно обучить собственные веса скорера.
-
-Статус на 20.11.2026, без прикрас:
-
-| Что | Результат |
-| --- | --- |
-| Образ поднимается в Docker | `healthy` на `:3001`, засеяно 25 моделей, `POST /api/auth/login` → 200 |
-| Каталог моделей | `GET /api/models` отдаёт платформу, `rpmLimit`, `contextWindow`, `enabled` |
-| Инференс через роутер | **не проверен**: без ключей провайдеров все модели `enabled: false` |
-| Проброс `logprobs` | **не проверен** по той же причине; проверяется по каждой модели отдельно |
-| Массовый сбор на `127.0.0.1:8790` | 24 модели × 24 вопроса = 576 запросов: **120 строк с признаками** на 7 моделях (4 из них 24/24), 108 отказов `HTTP 403 premium credits`, 348 «без logprobs»; **негативов 0** — все ответы верные |
-
-Для проверки готов скрипт, и он прогнан на живом источнике логвероятностей
-(`freepi/particle`): 24 модели в каталоге, 22 токена с logprob, `meanLp -0.0573`,
-`minLp -0.4930` — разбор ответа и признаки считаются верно.
-
-```bash
-python3 scripts/probe-freellmapi.py --key freellmapi-xxxx --jsonl labeled.jsonl
-python3 scripts/collect.py --url http://127.0.0.1:3001/v1 --key freellmapi-xxxx \
-    --models auto,auto:fast --prompts prompts.txt --out data/rows.jsonl --resume
-python3 scripts/calibrate.py data/rows.jsonl --fit --by-model --out truthprobe-weights.json
-```
-
-`collect.py` гоняет список промптов по списку моделей и пишет строки с признаками
-**той же формулой, что в рантайме** (`fracLow` по порогу `ln 0.5`, а не −1.0), с
-`--resume` для прерванного сбора. `--by-model` обучает отдельный sigmoid на каждую
-модель и пишет бандл `{global, models}` с AUROC/ECE по каждой группе.
-
-Рантайм с 0.7.0 действительно выбирает веса по модели: `scoreAnswer` получает
-`providerID/modelID`, скорер берёт `models[<id>]`, а при отсутствии — `global`.
-Сломанная запись одной модели пропускается, остальные продолжают работать.
-
-Подробности, docker-команда и оговорки — [`docs/FREELLMAPI.md`](docs/FREELLMAPI.md).
 
 ## Устройство патча
 
