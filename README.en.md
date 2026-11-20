@@ -37,12 +37,36 @@ A survey of papers and tools is in [`docs/PRIOR-ART.md`](docs/PRIOR-ART.md).
 
 | Level | Where | What you see |
 | --- | --- | --- |
-| **L1** | the line before the answer | confidence in the first sentence: does the model know this off the top of its head |
-| **L2** | the block after the answer | confidence over the whole answer plus the number of doubtful sentences |
-| **L3** | the list under the answer (TUI and desktop) | every doubtful sentence: number, percentage, start of the text |
+| **L1** | the line before the answer | confidence in the **first token**: does the model know this off the top of its head |
+| **L2** | the block after the answer | confidence over the whole answer, its level and the number of doubtful sentences |
+| **L3** | the list under the answer (TUI and desktop) | every doubtful sentence: number, percentage, level, start of the text |
 
 Confidence is not a verdict: confident lies exist (`docs/PRIOR-ART.md`, ECLIPSE 2512.03107). That is
 why the UI says `confidence`, not `truth`.
+
+### Confidence scale
+
+The number next to the answer carries a level, not just a percentage:
+`answer confidence 71% · uncertain`.
+
+| level | score | how to read it |
+| --- | --- | --- |
+| `safe` | ≥ 90% | the model never hesitated |
+| `likely` | 75–90% | confident answer |
+| `uncertain` | 55–75% | visible hesitation |
+| `risky` | 35–55% | shaky answer, worth double-checking |
+| `unreliable` | < 35% | the model was mostly guessing |
+
+`risky` and `unreliable` get a tinted card: amber left border and background for `risky`, red for
+`unreliable`. A sentence counts as doubtful at 45% risk by default; move the thresholds with
+`TRUTHPROBE_RISKY_THRESHOLD` and `TRUTHPROBE_SHAKY_THRESHOLD` (0..1, invalid values are ignored).
+
+**Important:** these percentages are the model's confidence in its own tokens, not the probability
+that the answer is true. A deterministic gateway (logprob ≈ −0.001) yields `safe` on any text,
+including fabricated text.
+
+Which models emit logprobs and which will never show numbers —
+[`docs/MODEL-SUPPORT.md`](docs/MODEL-SUPPORT.md).
 
 ## Install
 

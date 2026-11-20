@@ -103,6 +103,29 @@ def save_cache(cache: dict) -> None:
         json.dump(cache, handle, ensure_ascii=False, indent=2)
 
 
+def markdown_table(base: str, rows: list[tuple[str, str, str]]) -> str:
+    """Таблица для docs/MODEL-SUPPORT.md: одна строка на модель."""
+    marks = {
+        "ok": "✅ logprobs",
+        "ignored": "❌ нет logprobs",
+        "rejected": "❌ нет logprobs",
+        "auth": "⚠️ ключ не принят",
+        "rate": "⚠️ rate limit",
+        "error": "⚠️ ошибка запроса",
+    }
+    lines = [
+        f"<!-- сгенерировано scripts/probe-logprobs.py --md, endpoint {base} -->",
+        "",
+        "| модель | цифры уверенности | что показал зонд |",
+        "| --- | --- | --- |",
+    ]
+    for model, status, detail in rows:
+        mark = marks.get(status, f"⚠️ {status}")
+        note = detail.replace("|", "\\|")
+        lines.append(f"| `{model}` | {mark} | {note} |")
+    return "\n".join(lines)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="TruthProbe: проверка поддержки logprobs")
     parser.add_argument("--base", required=True, help="base URL, например https://api.openai.com/v1")
@@ -110,6 +133,7 @@ def main() -> int:
     parser.add_argument("--models", required=True, help="список моделей через запятую")
     parser.add_argument("--timeout", type=float, default=45.0)
     parser.add_argument("--no-cache", action="store_true")
+    parser.add_argument("--md", action="store_true", help="напечатать таблицу Markdown для docs/MODEL-SUPPORT.md")
     args = parser.parse_args()
 
     if not args.key:
@@ -119,10 +143,13 @@ def main() -> int:
     cache = {} if args.no_cache else load_cache()
     entry = cache.setdefault(args.base.rstrip("/"), {"probed": {}, "models": {}})
     failures = 0
+    rows: list[tuple[str, str, str]] = []
 
     for model in [item.strip() for item in args.models.split(",") if item.strip()]:
         status, detail, sample = probe(args.base, args.key, model, args.timeout)
-        print(f"{status:9} {model}: {detail}")
+        if not args.md:
+            print(f"{status:9} {model}: {detail}")
+        rows.append((model, status, detail))
         if status in ("auth", "rate"):
             failures += 1
             break
@@ -136,6 +163,10 @@ def main() -> int:
                 "probed": int(time.time()),
                 "ttl": TTL_SECONDS,
             }
+
+    if args.md:
+        print(markdown_table(args.base.rstrip("/"), rows))
+        return 1 if failures else 0
 
     if not args.no_cache:
         save_cache(cache)
