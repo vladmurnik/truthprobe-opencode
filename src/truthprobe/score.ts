@@ -223,9 +223,8 @@ export function scoreAnswer(
     const lps = arr.map((t) => t.logprob);
     const geo = geometricMean(lps);
     const startPhi = phi(arr[0], opt.topK);
-    // Один «придуманный» токен важнее общего среднего: именно он выдаёт
-    // сфабрикованную сущность/число, поэтому худший токен получает свой вес.
-    const worst = clamp01(Math.exp(Math.min(...lps)));
+    // Встроенная оценка — только геометрическое среднее: замер (docs/VALIDATION.md §14)
+    // показал, что вес худшего токена и φ делают её хуже случайного.
     const features = featuresOf({
       meanLp: Math.log(Math.max(geo, 1e-9)),
       minLp: Math.min(...lps),
@@ -234,7 +233,7 @@ export function scoreAnswer(
       tokens: arr.length,
     });
     const score = clamp01(
-      (scorer ? scorer.score({ features, text: s.text, model }) : 0.4 * geo + 0.3 * worst + 0.3 * startPhi),
+      (scorer ? scorer.score({ features, text: s.text, model }) : geo),
     );
     const risk = clamp01(1 - score);
     scored.push({

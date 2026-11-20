@@ -271,14 +271,15 @@ python3 scripts/tui-probe.py && python3 scripts/screen-dump.py /tmp/tui-probe.lo
 | Ответ `freepi/particle` | живой запрос через боевой бинарь | `score 0.7595 · likely`, предложение `#0 0.603 · uncertain` |
 | Ответ `freepi/deepseek-v4.1-flash` | живой запрос | `score 0.6893`, первый флаг `0.4849` |
 | Сменный скорер | `TRUTHPROBE_SCORER=linear:weights.json` | score сместился с `0.7595` до `0.9992` — подмена реально работает |
-| Установщик Windows | `install.ps1 -Dir <пусто> -DryRun` | клон, `git apply --check`, 15 коммитов применились, ошибок нет |
+| Установщик Windows | `install.ps1 -Dir <пусто> -DryRun` | клон, `git apply --check`, 17 коммитов применились, ошибок нет |
 | Сборка desktop | electron-builder | приложение 246 МБ, вложенный CLI 279 МБ |
 | CI на чужих машинах | GitHub Actions, прогоны [`44593481931`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44593481931), [`44678633546`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44678633546) и [`44736706708`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44736706708) | **все 7 job'ов success** в каждом, на hosted-раннерах ubuntu-latest и windows-latest |
 | Веса на модель в рантайме | два прогона на моке с разными бандлами, один и тот же ответ | `0.9997 · safe`, когда веса есть для `mock/mock-1`, и `0.0003 · unreliable`, когда они только у `other/model` — выбор по `providerID/modelID` реально работает |
 | `collect.py` на живом шлюзе | 2 промпта, `freepi/particle` | строки с `meanLp -0.063 / -0.125`, `minLp -0.409 / -0.945`, `fracLow 0.00 / 0.06` — признаки считаются той же формулой, что в рантайме |
 | Аудит банка вопросов | `python3 scripts/audit-bank.py data/qa-hard-bank.jsonl data/rows-hard.jsonl` | нашёл **4** пункта, где ошибается не модель, а эталон; после чистки набора — `AUROC n/a (one class)`, 739 верных / **0 неверных** |
 | Сбор негативов | 47 вопросов × 4 модели × 4 сэмпла при `T=0.8` и `T=1.0`, затем ещё три банка (34 вопроса, классические провалы LLM, счёт по списку) | 1504 + 688 строки; настоящих негативов **0** — модели либо отвечают верно, либо молчат |
-| Заказанная ложь: видит ли скорер | `scripts/measure-lies.py` на 626 строках (544 правды / 82 лжи) | встроенная `geometric` — AUROC **0.388**, то есть хуже случайного; обученные веса на тех же признаках — **0.774** out-of-fold. Оговорка: заказанная ложь ≠ самопроизвольная галлюцинация |
+| Заказанная ложь: видит ли скорер | `scripts/measure-lies.py` на 626 строках (544 правды / 82 лжи) | прежняя формула — AUROC **0.388** (хуже случайного), ECE 0.368; обученные веса — 0.774 out-of-fold |
+| Встроенная формула переписана | те же 626 строк + 739 верных строк как контроль | `exp(meanLp)` вместо `0.4·geo + 0.3·worst + 0.3·φ`: AUROC **0.388 → 0.597**, ECE **0.368 → 0.098**, а на верных ответах ECE **0.493 → 0.160** |
 
 **Про 62 падения в монорепо:** ни одно не относится к truthprobe. Причины видны в логе и не связаны
 с патчем: `tool-search` тянет ripgrep с github.com, `provider-gitlab-oauth` ходит на gitlab.com,
@@ -347,7 +348,7 @@ python3 scripts/calibrate.py data/rows.jsonl --fit --by-model --out truthprobe-w
 
 ## Устройство патча
 
-45 файлов, +6875/−40, пятнадцать коммитов поверх `007afb1`. Шов тонкий и аддитивный:
+45 файлов, +6904/−40, семнадцать коммитов поверх `007afb1`. Шов тонкий и аддитивный:
 
 | Слой | Файл | Что делает |
 | --- | --- | --- |

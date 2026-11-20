@@ -240,7 +240,7 @@ reproduction — [`docs/SMOKE-E2E.md`](docs/SMOKE-E2E.md).
 | Live answer, `freepi/particle` | `score 0.7595 · likely`, sentence `#0 0.603 · uncertain` |
 | Live answer, `freepi/deepseek-v4.1-flash` | `score 0.6893`, first doubtful sentence `0.4849` |
 | Scorer swap `TRUTHPROBE_SCORER=linear:weights.json` | score moved `0.7595 → 0.9992`, so the custom scorer is really used |
-| Windows installer, `install.ps1 -Dir <empty> -DryRun` | clean clone, `git apply --check` passed, 15 commits applied |
+| Windows installer, `install.ps1 -Dir <empty> -DryRun` | clean clone, `git apply --check` passed, 17 commits applied |
 | Desktop build | app 246 MB, bundled CLI 279 MB |
 | CI on foreign machines | GitHub Actions [run `44593481931`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44593481931), [run `44678633546`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44678633546) and [run `44736706708`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44736706708) | **all 7 jobs success** in each, on hosted `ubuntu-latest` and `windows-latest` runners |
 | Per-model weights at runtime | two mock runs with different bundles, same answer | `0.9997 · safe` when weights exist for `mock/mock-1`, `0.0003 · unreliable` when they only exist for `other/model` — selection by `providerID/modelID` really works |
@@ -248,7 +248,8 @@ reproduction — [`docs/SMOKE-E2E.md`](docs/SMOKE-E2E.md).
 | `collect.py` at scale | 24 models × 24 questions = 576 requests on `127.0.0.1:8790` | **120 rows with features** on 7 models (4 models answered 24/24), 108 `HTTP 403 premium credits`, 348 without logprobs, **0 negatives** — every answer was correct, so calibration needs weaker models |
 | Question-bank audit | `python3 scripts/audit-bank.py data/qa-hard-bank.jsonl data/rows-hard.jsonl` | found **4** items where the reference answer, not the model, was wrong; after cleaning the set — `AUROC n/a (one class)`, 739 correct / **0 wrong** |
 | Negative harvesting | 47 hard questions × 4 models × 4 samples at `T=0.8` and `T=1.0`, then three more banks (34 questions, classic LLM failures, list counting) | 1504 + 688 rows; **0** genuine negatives — the models either answer correctly or stay silent |
-| Instructed lies: can the scorer see them | `scripts/measure-lies.py` on 626 rows (544 truthful / 82 lies) | built-in `geometric` gives AUROC **0.388**, i.e. worse than chance; fitted weights on the same features give **0.774** out-of-fold. Caveat: instructed lies are not spontaneous hallucinations |
+| Instructed lies: can the scorer see them | `scripts/measure-lies.py` on 626 rows (544 truthful / 82 lies) | previous formula gave AUROC **0.388** (worse than chance), ECE 0.368; fitted weights give 0.774 out-of-fold |
+| Built-in formula rewritten | same 626 rows + 739 correct rows as a control | `exp(meanLp)` instead of `0.4·geo + 0.3·worst + 0.3·φ`: AUROC **0.388 → 0.597**, ECE **0.368 → 0.098**, and on correct answers ECE **0.493 → 0.160** |
 
 **Not tested, and we will not pretend otherwise:**
 
@@ -273,7 +274,7 @@ reproduction — [`docs/SMOKE-E2E.md`](docs/SMOKE-E2E.md).
 
 ## Anatomy of the patch
 
-45 files, +6875/−40, fifteen commits on top of `007afb1`. The seam is thin and additive:
+45 files, +6904/−40, seventeen commits on top of `007afb1`. The seam is thin and additive:
 
 | Layer | File | What it does |
 | --- | --- | --- |

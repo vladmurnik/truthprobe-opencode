@@ -9,11 +9,13 @@
 
 Что скрипт считает:
 
-  geometric   встроенная формула рантайма (0.4·exp(meanLp) + 0.3·exp(minLp) + 0.3·phi);
+  geometric   встроенная формула рантайма (exp(meanLp), см. §14 VALIDATION);
               никакого обучения, ровно то, что сейчас работает у пользователя.
   fitted      логистическая регрессия на тех же четырёх признаках, обученная
               с честной кросс-валидацией (out-of-fold): веса не видят те строки,
               на которых их проверяют.
+  variants    фиксированные формулы без обучения (`--variants`) — то сравнение,
+              из которого выбрана exp(meanLp).
 
     python3 scripts/measure-lies.py data/rows-lie-vs-truth.jsonl
     python3 scripts/measure-lies.py data/rows-lie-vs-truth.jsonl --json
@@ -66,14 +68,28 @@ def load(path: str) -> list[dict]:
 
 
 def geometric(row: dict) -> float:
-    """Ровно формула geometricScorer из packages/core/src/truthprobe/scorer.ts."""
+    """Ровно формула geometricScorer из packages/core/src/truthprobe/scorer.ts: exp(meanLp)."""
     import math
 
     mean_lp = float(row["meanLp"])
-    min_lp = float(row["minLp"])
-    phi = float(row.get("phi") or 0.0)
-    value = 0.4 * math.exp(mean_lp) + 0.3 * math.exp(min_lp) + 0.3 * phi
-    return min(1.0, max(0.0, value))
+    return min(1.0, max(0.0, math.exp(mean_lp)))
+
+
+def variants(row: dict) -> dict[str, float]:
+    """Фиксированные формулы из §14 VALIDATION — чтобы сравнение воспроизводилось из репозитория."""
+    import math
+
+    geo = min(1.0, max(0.0, math.exp(float(row["meanLp"]))))
+    worst = min(1.0, max(0.0, math.exp(float(row["minLp"]))))
+    phi = min(1.0, max(0.0, float(row.get("phi") or 0.0)))
+    frac_low = min(1.0, max(0.0, float(row.get("fracLow") or 0.0)))
+    return {
+        "old 0.4geo+0.3worst+0.3phi": min(1.0, 0.4 * geo + 0.3 * worst + 0.3 * phi),
+        "geo only": geo,
+        "worst only": worst,
+        "phi only": phi,
+        "geo*(1-fracLow)": min(1.0, geo * (1.0 - frac_low)),
+    }
 
 
 def out_of_fold(rows: list[dict]) -> tuple[list[tuple[float, bool]], float | None]:
@@ -113,12 +129,23 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("rows", help="JSONL: строки с label 0/1 и признаками meanLp/minLp/phi/fracLow")
     parser.add_argument("--json", action="store_true", help="печать машинного отчёта")
+    parser.add_argument("--variants", action="store_true", help="сравнить фиксированные формулы из §14 VALIDATION")
     args = parser.parse_args()
 
     rows = load(args.rows)
     if not rows:
         print("нет пригодных строк", file=sys.stderr)
         return 2
+
+    if args.variants:
+        names = list(variants(rows[0]))
+        print(f"== {args.rows}: {len(rows)} строк, формул {len(names)} (без обучения)")
+        print(f"{'формула':30s} {'AUROC':>7s} {'ECE':>6s} {'Brier':>6s}")
+        for name in names:
+            entry = report(name, [(variants(row)[name], row["label"]) for row in rows])
+            auroc = "n/a" if entry["auroc"] is None else f"{entry['auroc']:.3f}"
+            print(f"{name:30s} {auroc:>7s} {entry['ece']:6.3f} {entry['brier']:6.3f}")
+        return 0
 
     builtin = report("geometric", [(geometric(row), row["label"]) for row in rows])
     pairs, _ = out_of_fold(rows)

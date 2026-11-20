@@ -1,7 +1,7 @@
 From 3ccda6cdf3320c8fbcfbb2c8656c34a2827932af Mon Sep 17 00:00:00 2001
 From: truthprobe <truthprobe@local>
 Date: Thu, 19 Nov 2026 00:59:59 +0300
-Subject: [PATCH 01/16] feat(truthprobe): score answers from token logprobs
+Subject: [PATCH 01/17] feat(truthprobe): score answers from token logprobs
 
 - schema: Truthprobe.Info, capabilities.logprobs, AssistantText.truthprobe, optional truthprobe on session.text.ended
 - ai/openai-chat: request logprobs/top_logprobs when enabled, parse choice-level logprobs into providerMetadata
@@ -1192,7 +1192,7 @@ index 6a844d7..f21811e 100644
 From a9db0dab3c3392b40e8c9366e3455be1f37b7dcf Mon Sep 17 00:00:00 2001
 From: adik <adik@local>
 Date: Thu, 19 Nov 2026 01:12:00 +0300
-Subject: [PATCH 02/16] fix(tui): apply truthprobe metadata from
+Subject: [PATCH 02/17] fix(tui): apply truthprobe metadata from
  session.text.ended events
 
 The solid client store only copied event.data.text into the in-memory
@@ -1222,7 +1222,7 @@ index 8b6d247..7368d0c 100644
 From 2870f64a9bcb19d1e1701d85101c5074646cdcac Mon Sep 17 00:00:00 2001
 From: adik <adik@local>
 Date: Thu, 19 Nov 2026 03:08:36 +0300
-Subject: [PATCH 03/16] test(truthprobe): cover segmentation, scoring and
+Subject: [PATCH 03/17] test(truthprobe): cover segmentation, scoring and
  protocol parsing
 
 - send logprobs from every chat-completions model that declares the capability
@@ -1985,7 +1985,7 @@ index eed85f3..5bde799 100755
 From f04342565c0963f466c9bae21dc1b0d9158bab44 Mon Sep 17 00:00:00 2001
 From: TruthProbe <truthprobe@local>
 Date: Thu, 19 Nov 2026 09:40:19 +0300
-Subject: [PATCH 04/16] feat(truthprobe): probe providers and enable logprobs
+Subject: [PATCH 04/17] feat(truthprobe): probe providers and enable logprobs
  automatically
 
 Adding a provider key no longer needs an environment variable.
@@ -2800,7 +2800,7 @@ index 0000000..e23e561
 From 3126939707e7c7c305f8b3c2a89d196dc1b5acd9 Mon Sep 17 00:00:00 2001
 From: adik <adik@local>
 Date: Thu, 19 Nov 2026 13:34:58 +0300
-Subject: [PATCH 05/16] feat(truthprobe): show confidence in the desktop
+Subject: [PATCH 05/17] feat(truthprobe): show confidence in the desktop
  session UI
 
 ---
@@ -2897,7 +2897,7 @@ index be526b4..659538f 100644
 From 335305a2e846ae50c7d31cec6a750b74a4d385a6 Mon Sep 17 00:00:00 2001
 From: TruthProbe <truthprobe@localhost>
 Date: Thu, 19 Nov 2026 13:44:43 +0300
-Subject: [PATCH 06/16] feat(truthprobe): list doubtful sentences in the
+Subject: [PATCH 06/17] feat(truthprobe): list doubtful sentences in the
  desktop footer
 
 ---
@@ -3082,7 +3082,7 @@ index b44a4df..2a7ef9d 100644
 From 6017d751fc1a7a9bf1eac92e2b40b161e0c48b49 Mon Sep 17 00:00:00 2001
 From: TruthProbe <truthprobe@localhost>
 Date: Thu, 19 Nov 2026 14:33:06 +0300
-Subject: [PATCH 07/16] feat(desktop): let a fork brand the desktop app
+Subject: [PATCH 07/17] feat(desktop): let a fork brand the desktop app
 
 A fork that ships its own Electron application sets OPENCODE_DESKTOP_APP and
 OPENCODE_DESKTOP_APP_ID before building. The window title, the AppUserModelID,
@@ -3294,7 +3294,7 @@ index 9688672..de655d5 100644
 From a478531b342afc1a07626aafcd1e085543cbaef2 Mon Sep 17 00:00:00 2001
 From: truthprobe <truthprobe@local>
 Date: Thu, 19 Nov 2026 19:21:40 +0300
-Subject: [PATCH 08/16] fix(truthprobe): keep logprobs that arrive without
+Subject: [PATCH 08/17] fix(truthprobe): keep logprobs that arrive without
  text, align tokens, always publish a verdict
 
 - ai: buffer token logprobs in parser state; gateways send them in a separate
@@ -3705,7 +3705,7 @@ index f21811e..edac0e3 100644
 From 5a335e31658d33202b76ac0fb58f795cb1db4e03 Mon Sep 17 00:00:00 2001
 From: truthprobe <truthprobe@local>
 Date: Thu, 19 Nov 2026 19:36:25 +0300
-Subject: [PATCH 09/16] fix(truthprobe): say so when tokens do not match the
+Subject: [PATCH 09/17] fix(truthprobe): say so when tokens do not match the
  answer text
 
 Dropping every token that cannot be found in the text silently produced
@@ -3737,7 +3737,7 @@ index e024f93..7d46333 100644
 From 3d8a5b1ac9a2b94bd6729f6e9de9b6b400ac5df6 Mon Sep 17 00:00:00 2001
 From: adik <adik@users.noreply.github.com>
 Date: Thu, 19 Nov 2026 21:10:26 +0300
-Subject: [PATCH 10/16] feat(truthprobe): confidence levels and sentence
+Subject: [PATCH 10/17] feat(truthprobe): confidence levels and sentence
  highlights
 
 ---
@@ -8105,7 +8105,7 @@ index 0000000..d3450d7
 From 51f6f1088316234b53fb7ba8b8b78619c9b3d570 Mon Sep 17 00:00:00 2001
 From: adik <adik@users.noreply.github.com>
 Date: Thu, 19 Nov 2026 21:13:56 +0300
-Subject: [PATCH 11/16] feat(truthprobe): pluggable scorer (geometric | linear
+Subject: [PATCH 11/17] feat(truthprobe): pluggable scorer (geometric | linear
  weights)
 
 ---
@@ -8487,7 +8487,7 @@ index 0000000..998bf44
 From 699374c936946d597addbc90680dd680e048a37c Mon Sep 17 00:00:00 2001
 From: adik <adik@users.noreply.github.com>
 Date: Thu, 19 Nov 2026 21:28:48 +0300
-Subject: [PATCH 12/16] fix(schema): accept null level so unavailable verdicts
+Subject: [PATCH 12/17] fix(schema): accept null level so unavailable verdicts
  decode
 
 ---
@@ -8545,7 +8545,7 @@ index 5d05c07..d6f7831 100644
 From d153658602f327ff2f5f9a7ccbcfd4c2a6e6a9dc Mon Sep 17 00:00:00 2001
 From: TruthProbe <truthprobe@localhost>
 Date: Thu, 19 Nov 2026 21:58:03 +0300
-Subject: [PATCH 13/16] fix(truthprobe): make the patched tree typecheck clean
+Subject: [PATCH 13/17] fix(truthprobe): make the patched tree typecheck clean
 
 - schema: Level is a type alias over the Literals union, not an interface
 - core: DEFAULT_SCORE_OPTIONS omits the optional scorer field
@@ -8681,7 +8681,7 @@ index d6f7831..99b4171 100644
 From 3b720f0a39072f8e1699cecd75337d10f3f3c402 Mon Sep 17 00:00:00 2001
 From: TruthProbe <truthprobe@localhost>
 Date: Fri, 20 Nov 2026 07:54:47 +0300
-Subject: [PATCH 14/16] feat(truthprobe): per-model calibration weights
+Subject: [PATCH 14/17] feat(truthprobe): per-model calibration weights
 
 - core: WeightsBundle/parseWeightsBundle/bundleScorer/weightsFor read the
   {global, models} bundle written by calibrate.py --fit --by-model
@@ -8972,7 +8972,7 @@ index 0000000..57691fb
 From f6ef42b7d241e856c4b443e8d55c7fc88668c939 Mon Sep 17 00:00:00 2001
 From: TruthProbe <truthprobe@localhost>
 Date: Fri, 20 Nov 2026 15:31:41 +0300
-Subject: [PATCH 15/16] feat(session-ui): one readable confidence verdict and a
+Subject: [PATCH 15/17] feat(session-ui): one readable confidence verdict and a
  doubtful list
 
 - session-ui: new confidence.tsx with ConfidenceMeter, ConfidenceLine and
@@ -9248,7 +9248,7 @@ index 29f537b..6043672 100644
 From 068ce15559a427b8b95e53f2effbbf473ddc0764 Mon Sep 17 00:00:00 2001
 From: vladmurnik <vladmurnik@users.noreply.github.com>
 Date: Fri, 20 Nov 2026 16:28:49 +0300
-Subject: [PATCH 16/16] feat(tui): fixed-width confidence meter and level label
+Subject: [PATCH 16/17] feat(tui): fixed-width confidence meter and level label
 
 ---
  .../tui/src/routes/session/message-parts.tsx  | 36 +++++++++++++------
@@ -9325,6 +9325,124 @@ index b94c95c..8c17cd8 100644
                </text>
              )}
            </For>
+-- 
+2.53.0
+
+
+From 654daf52b109ed8571a8cdebcca7902232e88174 Mon Sep 17 00:00:00 2001
+From: vladmurnik <vladmurnik@users.noreply.github.com>
+Date: Fri, 20 Nov 2026 18:15:27 +0300
+Subject: [PATCH 17/17] fix(truthprobe): drop phi and the worst token from the
+ default score
+
+Measured on 626 rows (544 truthful, 82 deliberate lies): the old
+0.4*geo+0.3*worst+0.3*phi formula gave AUROC 0.388, i.e. worse than
+chance, because phi anti-correlates with correctness (0.199 alone).
+exp(meanLp) alone gives 0.597 and ECE 0.098 on the same rows, and
+ECE 0.160 instead of 0.493 on 739 truthful rows.
+
+phi and minLp stay as features for fitted models; they just no longer
+drive the built-in score.
+---
+ packages/core/src/truthprobe/score.ts        |  7 +++----
+ packages/core/src/truthprobe/scorer.ts       | 21 ++++++++++++--------
+ packages/core/test/truthprobe-scorer.test.ts | 13 ++++++++++--
+ 3 files changed, 27 insertions(+), 14 deletions(-)
+
+diff --git a/packages/core/src/truthprobe/score.ts b/packages/core/src/truthprobe/score.ts
+index 0954ba5..c420c6f 100644
+--- a/packages/core/src/truthprobe/score.ts
++++ b/packages/core/src/truthprobe/score.ts
+@@ -223,9 +223,8 @@ export function scoreAnswer(
+     const lps = arr.map((t) => t.logprob);
+     const geo = geometricMean(lps);
+     const startPhi = phi(arr[0], opt.topK);
+-    // Один «придуманный» токен важнее общего среднего: именно он выдаёт
+-    // сфабрикованную сущность/число, поэтому худший токен получает свой вес.
+-    const worst = clamp01(Math.exp(Math.min(...lps)));
++    // Встроенная оценка — только геометрическое среднее: замер (docs/VALIDATION.md §14)
++    // показал, что вес худшего токена и φ делают её хуже случайного.
+     const features = featuresOf({
+       meanLp: Math.log(Math.max(geo, 1e-9)),
+       minLp: Math.min(...lps),
+@@ -234,7 +233,7 @@ export function scoreAnswer(
+       tokens: arr.length,
+     });
+     const score = clamp01(
+-      (scorer ? scorer.score({ features, text: s.text, model }) : 0.4 * geo + 0.3 * worst + 0.3 * startPhi),
++      (scorer ? scorer.score({ features, text: s.text, model }) : geo),
+     );
+     const risk = clamp01(1 - score);
+     scored.push({
+diff --git a/packages/core/src/truthprobe/scorer.ts b/packages/core/src/truthprobe/scorer.ts
+index b4a09f3..09bf6d4 100644
+--- a/packages/core/src/truthprobe/scorer.ts
++++ b/packages/core/src/truthprobe/scorer.ts
+@@ -1,9 +1,16 @@
+ /**
+  * TruthProbe — сменный скорер.
+  *
+- * По умолчанию итог считается «геометрическим» способом: 0.4·геом.среднее +
+- * 0.3·худший токен + 0.3·уверенность первого токена. Это эвристика, а не
+- * обученная модель, и её можно заменить, не пересобирая патч:
++ * По умолчанию оценка — геометрическое среднее вероятностей содержательных
++ * токенов (`exp(meanLp)`). Раньше здесь была эвристика 0.4·гео + 0.3·худший токен
++ * + 0.3·уверенность первого токена; замер на 626 строках (544 правды и 82
++ * заказанной лжи, docs/VALIDATION.md §14) показал, что она даёт AUROC 0.388 —
++ * хуже случайного, причём виноват именно φ (сама по себе AUROC 0.199, то есть
++ * антикоррелирует с правильностью). Без φ та же величина даёт 0.597 при ECE
++ * 0.098 против 0.368, а на 739 заведомо верных ответах ECE падает с 0.493 до 0.160.
++ * φ и minLp остаются в признаках — их может использовать обученная модель.
++ *
++ * Скорер сменный, менять его можно, не пересобирая патч:
+  *
+  *   TRUTHPROBE_SCORER=geometric                 # встроенный (по умолчанию)
+  *   TRUTHPROBE_SCORER=linear:/path/weights.json # линейная модель, веса из JSON
+@@ -24,15 +31,13 @@ function clamp01(x: number): number {
+   return Math.min(1, Math.max(0, x))
+ }
+ 
+-/** Встроенный скорер: ровно та формула, что была до появления сменных моделей. */
++/** Встроенный скорер: геометрическое среднее вероятностей содержательных токенов. */
+ export function geometricScorer(): Scorer {
+   return {
+     name: "geometric",
+     score(input) {
+-      const { features } = input
+-      const geo = Math.exp(features.meanLp)
+-      const worst = Math.exp(features.minLp)
+-      return clamp01(0.4 * geo + 0.3 * worst + 0.3 * features.meanPhi)
++      // clamp01 сам отдаёт 0 на NaN/Infinity, поэтому битые признаки не ломают оценку.
++      return clamp01(Math.exp(input.features.meanLp))
+     },
+   }
+ }
+diff --git a/packages/core/test/truthprobe-scorer.test.ts b/packages/core/test/truthprobe-scorer.test.ts
+index 998bf44..3e7db3f 100644
+--- a/packages/core/test/truthprobe-scorer.test.ts
++++ b/packages/core/test/truthprobe-scorer.test.ts
+@@ -11,10 +11,19 @@ import { scoreAnswer } from "../src/truthprobe/score"
+ import type { Scorer } from "../src/truthprobe/types"
+ 
+ describe("geometricScorer", () => {
+-  test("повторяет встроенную формулу 0.4·geo + 0.3·worst + 0.3·phi", () => {
++  test("повторяет встроенную формулу: геометрическое среднее вероятностей", () => {
+     const features = featuresOf({ meanLp: Math.log(0.8), minLp: Math.log(0.5), meanPhi: 0.9, lowFraction: 0.2 })
+     const score = geometricScorer().score({ features, text: "" })
+-    expect(score).toBeCloseTo(0.4 * 0.8 + 0.3 * 0.5 + 0.3 * 0.9, 10)
++    expect(score).toBeCloseTo(0.8, 10)
++  })
++
++  test("φ и худший токен больше не влияют на встроенную оценку", () => {
++    const base = featuresOf({ meanLp: Math.log(0.8), minLp: Math.log(0.5), meanPhi: 0.9, lowFraction: 0.2 })
++    const grim = featuresOf({ meanLp: Math.log(0.8), minLp: Math.log(0.01), meanPhi: 0.02, lowFraction: 0.9 })
++    expect(geometricScorer().score({ features: grim, text: "" })).toBeCloseTo(
++      geometricScorer().score({ features: base, text: "" }),
++      10,
++    )
+   })
+ })
+ 
 -- 
 2.53.0
 
