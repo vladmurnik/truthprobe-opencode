@@ -4,11 +4,13 @@
 [![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![opencode base](https://img.shields.io/badge/opencode-007afb1-informational)](patches/truthprobe-0001.patch)
 
+[English](README.en.md) · **Русский**
+
 Показывает, **насколько модель уверена в своём ответе**, по логвероятностям первых токенов —
 без второго прохода, без самопроверки модели и без второй модели-судьи.
 
 Патч ядра [opencode](https://github.com/sst/opencode): одно место сбора токенов, одно поле в схеме,
-один бейдж в TUI.
+один бейдж в TUI и один чип в сессионном UI desktop-приложения (Electron).
 
 ```
    What is the capital of France and how many people live there?
@@ -44,7 +46,25 @@
 
 ## Установка
 
-### 1. Патч (нужен свой билд)
+Две команды, клонировать этот репозиторий не нужно:
+
+```bash
+# Linux / macOS
+curl -fsSL https://raw.githubusercontent.com/vladmurnik/truthprobe-opencode/master/install.sh | bash
+```
+
+```powershell
+# Windows (PowerShell)
+irm https://raw.githubusercontent.com/vladmurnik/truthprobe-opencode/master/install.ps1 | iex
+```
+
+Оба установщика забирают `sst/opencode`, закреплённый на `007afb1`, применяют
+`patches/truthprobe-0001.patch`, ставят зависимости и печатают версию сборки. Нужны `git` и
+[`bun`](https://bun.sh); вне целевого каталога ничего не меняется — git-идентичность, если её нет,
+задаётся локально в нём. Каталог можно назвать своим: `bash install.sh my-opencode`
+(`.\install.ps1 -Dir my-opencode`).
+
+### Патч вручную
 
 ```bash
 git clone https://github.com/sst/opencode && cd opencode
@@ -58,7 +78,7 @@ bun run --cwd packages/cli src/index.ts
 отправляет одну посылку на один токен с текстом `ping` и, если провайдер вернул `logprobs`,
 включает их для этого провайдера. Переменные окружения не нужны.
 
-### 2. Готовый бинарь
+### Готовый бинарь
 
 ```bash
 # Linux x64
@@ -125,8 +145,10 @@ score_answer   = 0.6 · globalGeo + 0.4 · mean(score_sentence)
 | Полный прогон core | `bun run script/test.ts` | 7 272 pass / 39 fail — все 39 падают и на чистой базе (сеть: GitLab OAuth, ripgrep) |
 | Патч на чистом дереве | `git am` в worktree `007afb1` | применяется без конфликтов, тесты 45 + 8 зелёные |
 | Типизация | schema / ai / core / client / tui | зелёная (132 / 357+322 / 2 030 / 181 / 1 942 файла) |
+| Типизация UI-пакетов | session-ui / app / desktop | зелёная (380 / 2 443 / 3 567 файлов, desktop — 2 проекта) |
 | Сквозной прогон | мок-провайдер с настоящими `logprobs` | `logprobs: true, top_logprobs: 20` в запросе, `truthprobe` в базе |
 | Живой TUI | pty-проба | бейдж и блок спорных предложений отрендерились |
+| Desktop UI | чип `confidence` в Electron-рендерере | строка `confidence NN%` в футере ответа |
 | Windows-бинарь | `.exe` на моке | `status: "ok", score: 0.417, first 0.708, flagged: 1` |
 
 Воспроизвести без ключей:
@@ -144,7 +166,7 @@ python3 scripts/tui-probe.py && python3 scripts/screen-dump.py /tmp/tui-probe.lo
 
 ## Устройство патча
 
-24 файла, +1932/−27, четыре коммита поверх `007afb1`. Шов тонкий и аддитивный:
+27 файлов, +1961/−27, пять коммитов поверх `007afb1`. Шов тонкий и аддитивный:
 
 | Слой | Файл | Что делает |
 | --- | --- | --- |
@@ -158,6 +180,7 @@ python3 scripts/tui-probe.py && python3 scripts/screen-dump.py /tmp/tui-probe.lo
 | ядро | `session/message-updater.ts` | переносит поле в парт сообщения |
 | клиент | `client/src/solid/data.ts` | **не теряет** поле при живом обновлении стора |
 | TUI | `tui/src/routes/session/message-parts.tsx` | бейдж + блок спорных предложений |
+| desktop | `session-ui/src/message/message-content.tsx` | чип `confidence` в футере ответа — общий для desktop-приложения и веба |
 | скоринг | `core/src/truthprobe/*` | чистые функции, ноль внешних зависимостей |
 
 Почему именно так и что можно было сломать — в [`PLAN.md`](PLAN.md) §11 «жизнь патча при
@@ -173,6 +196,7 @@ test/capability.test.ts   32 теста статусов, TTL и кэша авт
 test/opencode-tree/       тесты, которые живут в дереве opencode
 patches/                  готовый git-am патч и python-патчеры для точечных правок
 scripts/                  мок-провайдер, probe, pty-проба TUI, эмулятор экрана, сборка
+install.sh / install.ps1  установка в две команды: патч поверх sst/opencode @ 007afb1
 docs/                     приоритет, план встроенных моделей, валидация, сборка
 ```
 

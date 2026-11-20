@@ -2,7 +2,7 @@
 
 Всё ниже — измеренное, не задуманное. Если чего-то не проверяли, это написано отдельным разделом.
 
-База: `sst/opencode` @ `007afb1`. Ветка `feat/truthprobe`, четыре коммита:
+База: `sst/opencode` @ `007afb1`. Ветка `feat/truthprobe`, пять коммитов:
 
 | Коммит | Что |
 | --- | --- |
@@ -10,8 +10,9 @@
 | `a9db0da` | fix(tui): apply truthprobe metadata from session.text.ended events |
 | `2870f64` | test(truthprobe): cover segmentation, scoring and protocol parsing |
 | `f043425` | feat(truthprobe): probe providers and enable logprobs automatically |
+| `3126939` | feat(truthprobe): show confidence in the desktop session UI |
 
-Итог: **24 файла, +1932 / −27**. Патч — `patches/truthprobe-0001.patch` (2798 строк, `git am`).
+Итог: **27 файлов, +1961 / −27**. Патч — `patches/truthprobe-0001.patch` (2895 строк, `git am`).
 
 ## 1. Слои патча
 
@@ -37,6 +38,8 @@
 | 18 | `packages/ai/src/protocols/truthprobe-capability.ts` | чтение кэша вердиктов в протоколе |
 | 19 | `packages/core/src/model.ts` | `mergeCapabilities` проносит `logprobs` |
 | 20 | `packages/core/test/truthprobe-capability.test.ts` | 32 теста |
+| 21 | `packages/session-ui/src/message/message-content.tsx` | чип `confidence` в футере ответа (desktop и веб) |
+| 22 | `packages/session-ui/src/timeline-next/tools/assistant-content.tsx`, `packages/session-ui/src/message/current-message.tsx` | проброс `truthprobe` в текстовый парт |
 
 ## 2. Тесты
 
@@ -85,9 +88,10 @@
 | schema | `bun test` | **95 pass / 0 fail**, 231 ms |
 | регрессия сессий | `test/session*.test.ts test/projector*.test.ts test/message*.test.ts` | **811 pass / 0 fail**, 30 s |
 | типизация | schema / ai / core / client / tui | 132 / 357+322 / 2 030 / 181 / 1 942 файла, 0 ошибок |
+| типизация UI | session-ui / app / desktop | 380 / 2 443 / 3 567 файлов (desktop — 2 проекта), 0 ошибок |
 
-Отдельно проверено, что **патч самодостаточен**: на чистом worktree `007afb1` (24 файла,
-+1932/−27, без моих рабочих копий) `git am patches/truthprobe-0001.patch` применяется без
+Отдельно проверено, что **патч самодостаточен**: на чистом worktree `007afb1` (27 файлов,
++1961/−27, без моих рабочих копий) `git am patches/truthprobe-0001.patch` применяется без
 конфликтов, `typecheck` пакетов ai и core — 0 ошибок, тесты в применённом дереве — **45 pass / 0 fail**,
 **32 pass / 0 fail** и **8 pass / 0 fail**. То есть зелёные тесты не зависят от локального состояния
 моей машины.

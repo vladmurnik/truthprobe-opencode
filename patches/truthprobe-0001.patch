@@ -1,7 +1,7 @@
 From 3ccda6cdf3320c8fbcfbb2c8656c34a2827932af Mon Sep 17 00:00:00 2001
 From: truthprobe <truthprobe@local>
 Date: Thu, 19 Nov 2026 00:59:59 +0300
-Subject: [PATCH 1/4] feat(truthprobe): score answers from token logprobs
+Subject: [PATCH 1/5] feat(truthprobe): score answers from token logprobs
 
 - schema: Truthprobe.Info, capabilities.logprobs, AssistantText.truthprobe, optional truthprobe on session.text.ended
 - ai/openai-chat: request logprobs/top_logprobs when enabled, parse choice-level logprobs into providerMetadata
@@ -1192,7 +1192,7 @@ index 6a844d7..f21811e 100644
 From a9db0dab3c3392b40e8c9366e3455be1f37b7dcf Mon Sep 17 00:00:00 2001
 From: adik <adik@local>
 Date: Thu, 19 Nov 2026 01:12:00 +0300
-Subject: [PATCH 2/4] fix(tui): apply truthprobe metadata from
+Subject: [PATCH 2/5] fix(tui): apply truthprobe metadata from
  session.text.ended events
 
 The solid client store only copied event.data.text into the in-memory
@@ -1222,7 +1222,7 @@ index 8b6d247..7368d0c 100644
 From 2870f64a9bcb19d1e1701d85101c5074646cdcac Mon Sep 17 00:00:00 2001
 From: adik <adik@local>
 Date: Thu, 19 Nov 2026 03:08:36 +0300
-Subject: [PATCH 3/4] test(truthprobe): cover segmentation, scoring and
+Subject: [PATCH 3/5] test(truthprobe): cover segmentation, scoring and
  protocol parsing
 
 - send logprobs from every chat-completions model that declares the capability
@@ -1985,7 +1985,7 @@ index eed85f3..5bde799 100755
 From f04342565c0963f466c9bae21dc1b0d9158bab44 Mon Sep 17 00:00:00 2001
 From: TruthProbe <truthprobe@local>
 Date: Thu, 19 Nov 2026 09:40:19 +0300
-Subject: [PATCH 4/4] feat(truthprobe): probe providers and enable logprobs
+Subject: [PATCH 4/5] feat(truthprobe): probe providers and enable logprobs
  automatically
 
 Adding a provider key no longer needs an environment variable.
@@ -2793,6 +2793,103 @@ index 0000000..e23e561
 +    expect(Capability.keyOf("opencode", "glm-5-free")).toBe("opencode/glm-5-free")
 +  })
 +})
+-- 
+2.53.0
+
+
+From 3126939707e7c7c305f8b3c2a89d196dc1b5acd9 Mon Sep 17 00:00:00 2001
+From: adik <adik@local>
+Date: Thu, 19 Nov 2026 13:34:58 +0300
+Subject: [PATCH 5/5] feat(truthprobe): show confidence in the desktop session
+ UI
+
+---
+ .../src/message/current-message.tsx           |  1 +
+ .../src/message/message-content.tsx           | 27 +++++++++++++++++++
+ .../timeline-next/tools/assistant-content.tsx |  1 +
+ 3 files changed, 29 insertions(+)
+
+diff --git a/packages/session-ui/src/message/current-message.tsx b/packages/session-ui/src/message/current-message.tsx
+index 9492872..7d114c8 100644
+--- a/packages/session-ui/src/message/current-message.tsx
++++ b/packages/session-ui/src/message/current-message.tsx
+@@ -85,6 +85,7 @@ export function SessionAssistantContent(props: {
+             id={props.contentID}
+             text={content().text}
+             message={props.message}
++            probe={content().truthprobe}
+             showCopy={props.showAssistantCopyPartID === props.contentID}
+             keepCopyVisible={props.keepCopyVisible}
+             turnDurationMs={props.turnDurationMs}
+diff --git a/packages/session-ui/src/message/message-content.tsx b/packages/session-ui/src/message/message-content.tsx
+index 23816f2..b44a4df 100644
+--- a/packages/session-ui/src/message/message-content.tsx
++++ b/packages/session-ui/src/message/message-content.tsx
+@@ -16,6 +16,7 @@ import {
+ } from "solid-js"
+ import { createStore } from "solid-js/store"
+ import { createMediaQuery } from "@solid-primitives/media"
++import type { TruthprobeInfo } from "@opencode/client/promise"
+ import { useData } from "../context"
+ import { useDialog } from "@opencode/ui/context/dialog"
+ import { useI18n } from "@opencode/ui/context/i18n"
+@@ -1137,6 +1138,8 @@ export function AssistantTextContent(props: {
+   id: string
+   text: string
+   message: SessionMessageAssistant
++  /** TruthProbe: уверенность модели по logprobs, посчитанная ядром для этого парта. */
++  probe?: TruthprobeInfo
+   showCopy: boolean
+   keepCopyVisible?: boolean
+   turnDurationMs?: number | null
+@@ -1188,11 +1191,35 @@ export function AssistantTextContent(props: {
+   // Mobile omits the per-response agent and model; see CurrentUserMessageDisplay.
+   const mobile = createMediaQuery("(max-width: 767px)")
+ 
++  // Одна строка рядом с длительностью: сколько модель была уверена и сколько
++  // предложений помечено спорными. Нет вердикта — нет и строки, лишнего шума не добавляем.
++  const confidence = createMemo<MetaItem[]>(() => {
++    const probe = props.probe
++    if (!probe) return []
++
++    const pct = (value: unknown) =>
++      typeof value === "number" && Number.isFinite(value) ? `${Math.round(value * 100)}%` : undefined
++
++    if (probe.status === "unavailable") {
++      return [{ label: probe.reason ? `confidence unavailable · ${probe.reason}` : "confidence unavailable" }]
++    }
++
++    const score = pct(probe.first?.score) ?? pct(probe.score)
++    if (!score) return []
++
++    const parts = [`confidence ${score}`]
++    if (probe.status === "partial") parts.push("partial")
++    if (typeof probe.flagged === "number" && probe.flagged > 0) parts.push(`${probe.flagged} doubtful`)
++
++    return [{ label: parts.join(" · ") }]
++  })
++
+   const meta = createMemo<MetaItem[]>(() => [
+     ...(mobile() ? [] : labels()),
+     ...[duration(), interrupted() ? i18n.t("ui.message.interrupted") : ""].flatMap((label) =>
+       label ? [{ label }] : [],
+     ),
++    ...confidence(),
+   ])
+ 
+   const speed = createMemo(() => {
+diff --git a/packages/session-ui/src/timeline-next/tools/assistant-content.tsx b/packages/session-ui/src/timeline-next/tools/assistant-content.tsx
+index be526b4..659538f 100644
+--- a/packages/session-ui/src/timeline-next/tools/assistant-content.tsx
++++ b/packages/session-ui/src/timeline-next/tools/assistant-content.tsx
+@@ -37,6 +37,7 @@ export function AssistantContent(props: {
+             id={props.contentID}
+             text={content().text}
+             message={props.message}
++            probe={content().truthprobe}
+             showCopy={props.showAssistantCopyPartID === props.contentID}
+             keepCopyVisible={props.keepCopyVisible}
+             turnDurationMs={props.turnDurationMs}
 -- 
 2.53.0
 
