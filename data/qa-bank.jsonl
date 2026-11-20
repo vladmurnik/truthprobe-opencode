@@ -1,0 +1,24 @@
+{"prompt": "What is the capital of Australia? Answer with the city name only.", "expect": ["canberra"]}
+{"prompt": "How many moons does the planet Mars have? Answer with a number word or digit only.", "expect": ["two", "2"]}
+{"prompt": "Who wrote the novel The Old Man and the Sea? Answer with the author name only.", "expect": ["hemingway"]}
+{"prompt": "In which country is the city of Timbuktu? Answer with the country name only.", "expect": ["mali"]}
+{"prompt": "What is the largest desert on Earth? Answer in one short sentence.", "expect": ["antarctic", "antarctica"]}
+{"prompt": "How many strings does a standard violin have? Answer with a number only.", "expect": ["four", "4"]}
+{"prompt": "What is the chemical symbol for potassium? Answer with the symbol only.", "expect": ["k"]}
+{"prompt": "Which planet in the Solar System rotates on its side, with an axial tilt near 98 degrees? Name it.", "expect": ["uranus"]}
+{"prompt": "What is the tallest building in the world as of 2024? Name it.", "expect": ["burj khalifa"]}
+{"prompt": "Which river flows through the city of Cairo? Name it.", "expect": ["nile"]}
+{"prompt": "Who painted the ceiling of the Sistine Chapel? Answer with the name only.", "expect": ["michelangelo"]}
+{"prompt": "What is the capital of Canada? Answer with the city name only.", "expect": ["ottawa"]}
+{"prompt": "How many hearts does an octopus have? Answer with a number word or digit only.", "expect": ["three", "3"]}
+{"prompt": "What is the smallest prime number? Answer with a number only.", "expect": ["two", "2"]}
+{"prompt": "Which gas makes up most of the Earth's atmosphere? Name it.", "expect": ["nitrogen"]}
+{"prompt": "In which year did the Berlin Wall fall? Answer with the year only.", "expect": ["1989"]}
+{"prompt": "What is the hardest natural substance on Earth? Name it.", "expect": ["diamond"]}
+{"prompt": "How many degrees are in the sum of the interior angles of a triangle? Answer with a number only.", "expect": ["180"]}
+{"prompt": "Which ocean is the smallest by area? Name it.", "expect": ["arctic"]}
+{"prompt": "Who developed the theory of general relativity? Answer with the name only.", "expect": ["einstein"]}
+{"prompt": "What is the currency of Switzerland? Answer with the currency name only.", "expect": ["franc"]}
+{"prompt": "Which element has the atomic number 1? Name it.", "expect": ["hydrogen"]}
+{"prompt": "What is the longest river in Africa? Name it.", "expect": ["nile"]}
+{"prompt": "How many players are on the field per team in a football (soccer) match? Answer with a number only.", "expect": ["eleven", "11"]}
