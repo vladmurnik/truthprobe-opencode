@@ -163,11 +163,51 @@ def cross_validate(rows: list[dict], folds: int = 5) -> tuple[float, float]:
     return auroc(pairs), ece(pairs)
 
 
+def fit_by_model(rows: list[dict], min_rows: int = 20) -> dict:
+    """Обучает отдельные веса на каждую модель (поле "model" в JSONL).
+
+    Смысл: у моделей разная форма распределения логвероятностей, поэтому один
+    общий sigmoid систематически смещён для части моделей. Группам с числом
+    строк меньше min_rows веса не выдаются — для них остаётся глобальная модель.
+    """
+    groups: dict[str, list[dict]] = {}
+    for row in rows:
+        key = str(row.get("model") or "unknown")
+        groups.setdefault(key, []).append(row)
+
+    bundle: dict = {
+        "version": 1,
+        "features": ["bias", "meanLp", "minLp", "meanPhi", "fracLow"],
+        "global": fit(rows)["weights"],
+        "models": {},
+    }
+    for name, group in sorted(groups.items()):
+        positives = sum(1 for row in group if row["label"])
+        if len(group) < min_rows:
+            bundle["models"][name] = {
+                "rows": len(group),
+                "positives": positives,
+                "weights": None,
+                "note": f"меньше {min_rows} строк — используется global",
+            }
+            continue
+        cv_auroc, cv_ece = cross_validate(group)
+        bundle["models"][name] = {
+            "rows": len(group),
+            "positives": positives,
+            "auroc": round(cv_auroc, 4),
+            "ece": round(cv_ece, 4),
+            "weights": fit(group)["weights"],
+        }
+    return bundle
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("path", nargs="?", help="JSONL с размеченными предложениями")
     parser.add_argument("--demo", action="store_true", help="считать синтетику")
     parser.add_argument("--fit", action="store_true", help="обучить веса linear-скорера")
+    parser.add_argument("--by-model", action="store_true", help="отдельные веса на каждую модель из поля model")
     parser.add_argument("--out", help="куда записать веса (по умолчанию stdout)")
     args = parser.parse_args()
 
@@ -200,6 +240,27 @@ def main() -> int:
         cv_auroc, cv_ece = cross_validate(rows)
         print(f"\nlinear-скорер, out-of-fold ({len(rows)} строк, 5 фолдов):")
         print(f"  AUROC {cv_auroc:.3f}   ECE {cv_ece:.3f}")
+
+        if args.by_model:
+            bundle = fit_by_model(rows)
+            print("\nпо моделям (out-of-fold там, где строк >= 20):")
+            print(f"{'model':34s} {'rows':>5s} {'AUROC':>7s} {'ECE':>7s}")
+            for name, entry in bundle["models"].items():
+                auroc_text = f"{entry['auroc']:.3f}" if entry.get("auroc") is not None else "   —  "
+                ece_text = f"{entry['ece']:.3f}" if entry.get("ece") is not None else "  —  "
+                print(f"{name[:34]:34s} {entry['rows']:5d} {auroc_text:>7s} {ece_text:>7s}")
+            text = json.dumps(bundle, ensure_ascii=False, indent=2)
+            if args.out:
+                with open(args.out, "w", encoding="utf-8", newline="\n") as handle:
+                    handle.write(text + "\n")
+                print(f"\nбандл весов записан: {args.out}")
+                print(f"включить глобальную часть: TRUTHPROBE_SCORER=linear:{args.out}")
+                print("рантайм пока берёт global; выбор по модели — открытый пункт docs/FREELLMAPI.md")
+            else:
+                print("\nбандл весов:")
+                print(text)
+            return 0
+
         weights = fit(rows)
         text = json.dumps(weights, ensure_ascii=False, indent=2)
         if args.out:
