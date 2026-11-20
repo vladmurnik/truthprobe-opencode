@@ -142,3 +142,6 @@ bash scripts/../truthprobe 2>/dev/null
 4. `make verify`.
 5. Desktop: `bash scripts/build-desktop.sh --win` (результат в `packages/desktop/dist/win-unpacked`),
    установка поверх `AppData/Local/Programs/TruthProbe` при необходимости.
+   Скрипт сам копирует собранный CLI в `packages/desktop/resources/opencode-cli[.exe]` — именно
+   оттуда electron-builder берёт бинарь (`extraResources`). Если этот шаг пропустить, приложение
+   соберётся со **старым** CLI и будет молча вести себя как предыдущая версия.

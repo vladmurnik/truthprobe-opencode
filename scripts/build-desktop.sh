@@ -8,8 +8,12 @@
 #
 # Что происходит:
 #   1. `packages/cli/script/build.ts --skip-install` собирает встроенный CLI;
-#   2. `electron-vite build` собирает renderer/main;
-#   3. `electron-builder --dir` кладёт распакованное приложение в packages/desktop/dist.
+#   2. собранный CLI копируется в `packages/desktop/resources/` под именем
+#      `opencode-cli[.exe]` — именно оттуда electron-builder берёт бинарь
+#      (`extraResources` в electron-builder.config.ts). Без этого шага desktop
+#      молча упаковывает СТАРЫЙ CLI;
+#   3. `electron-vite build` собирает renderer/main;
+#   4. `electron-builder --dir` кладёт распакованное приложение в packages/desktop/dist.
 #
 # Результат: dist/win-unpacked/TruthProbe.exe (или linux-unpacked/truthprobe).
 # Брендинг берётся из OPENCODE_DESKTOP_APP / OPENCODE_DESKTOP_APP_ID — см. docs/DEVELOPMENT.md.
@@ -49,13 +53,28 @@ export OPENCODE_DESKTOP_APP=${OPENCODE_DESKTOP_APP:-TruthProbe}
 export OPENCODE_DESKTOP_APP_ID=${OPENCODE_DESKTOP_APP_ID:-ai.truthprobe.desktop}
 
 echo "== платформа: $PLATFORM, приложение: $OPENCODE_DESKTOP_APP ($OPENCODE_DESKTOP_APP_ID)"
-echo "== 1/3 cli"
+echo "== 1/4 cli"
 (cd "$DEV/packages/cli" && bun run script/build.ts --skip-install)
 
-echo "== 2/3 electron-vite"
+echo "== 2/4 staging cli into packages/desktop/resources"
+CLI_DIR="$DEV/packages/cli/dist/cli-$PLATFORM"
+STAGE="$DEV/packages/desktop/resources"
+case "$PLATFORM" in
+  windows-x64) SRC="$CLI_DIR/bin/opencode.exe"; DST="$STAGE/opencode-cli.exe" ;;
+  *) SRC="$CLI_DIR/bin/opencode"; DST="$STAGE/opencode-cli" ;;
+esac
+[ -f "$SRC" ] || { echo "error: нет $SRC — сборка CLI не дала бинарь" >&2; exit 1; }
+mkdir -p "$STAGE"
+cp -f "$SRC" "$DST"
+if [ -f "$CLI_DIR/opencode-cli.version" ]; then
+  cp -f "$CLI_DIR/opencode-cli.version" "$STAGE/opencode-cli.version"
+fi
+echo "   $(basename "$DST"): $(wc -c < "$DST") bytes"
+
+echo "== 3/4 electron-vite"
 (cd "$DEV/packages/desktop" && bun x electron-vite build)
 
-echo "== 3/3 electron-builder --dir"
+echo "== 4/4 electron-builder --dir"
 case "$PLATFORM" in
   windows-x64) FLAGS="--win --x64" ;;
   linux-x64) FLAGS="--linux --x64" ;;

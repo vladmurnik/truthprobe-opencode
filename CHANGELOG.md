@@ -30,6 +30,12 @@
 - `packages/core/test/truthprobe-scorer-bundle.test.ts`: фикстура признаков не содержала
   `digitDensity`, из-за чего typecheck пропатченного дерева падал (7 × TS2741) — тесты при этом
   проходили, потому что в рантайме поле необязательное. Найдено CI-прогоном `44784193788`.
+- `scripts/build-desktop.sh`: desktop молча упаковывал **старый** CLI — electron-builder берёт
+  бинарь из `packages/desktop/resources/opencode-cli[.exe]` (`extraResources`), а не из
+  `packages/cli/dist`. Добавлен шаг staging: собранный CLI копируется в `resources` до
+  `electron-vite`/`electron-builder`. Проверено на установленной сборке: в
+  `resources/opencode-cli.exe` есть `digitDensity` (3 вхождения), в `app.asar` —
+  `confidence-meter` и `doubtful-list`.
 
 **Не проверено**: набор негативов один и получен заказом (модель просили соврать), поэтому
 прирост +0.034 на самопроизвольную галлюцинацию переносить нельзя. Формула по умолчанию та же.
