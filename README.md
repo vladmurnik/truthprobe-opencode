@@ -1,6 +1,6 @@
 # TruthProbe for opencode
 
-[![unit tests](https://img.shields.io/badge/unit%20tests-97%20pass-brightgreen)](docs/VALIDATION.md)
+[![unit tests](https://img.shields.io/badge/unit%20tests-109%20pass-brightgreen)](docs/VALIDATION.md)
 [![CI](https://github.com/vladmurnik/truthprobe-opencode/actions/workflows/verify.yml/badge.svg)](https://github.com/vladmurnik/truthprobe-opencode/actions/workflows/verify.yml)
 [![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![opencode base](https://img.shields.io/badge/opencode-007afb1-informational)](patches/truthprobe-0001.patch)
@@ -260,14 +260,16 @@ python3 scripts/tui-probe.py && python3 scripts/screen-dump.py /tmp/tui-probe.lo
 
 | Что | Как проверяли | Результат |
 | --- | --- | --- |
-| Тесты truthprobe | `bun test` четырёх файлов в `packages/core/test` | **97 pass, 0 fail** |
+| Тесты truthprobe | `bun test` пяти файлов в `packages/core/test` | **109 pass, 0 fail** |
 | Тесты всего монорепо | `bun test` в `packages/core` — 7713 тестов, 331 файл | **7300 pass, 351 skip, 62 fail** |
 | Ответ `freepi/particle` | живой запрос через боевой бинарь | `score 0.7595 · likely`, предложение `#0 0.603 · uncertain` |
 | Ответ `freepi/deepseek-v4.1-flash` | живой запрос | `score 0.6893`, первый флаг `0.4849` |
 | Сменный скорер | `TRUTHPROBE_SCORER=linear:weights.json` | score сместился с `0.7595` до `0.9992` — подмена реально работает |
-| Установщик Windows | `install.ps1 -Dir <пусто> -DryRun` | клон, `git apply --check`, 13 коммитов применились, ошибок нет |
+| Установщик Windows | `install.ps1 -Dir <пусто> -DryRun` | клон, `git apply --check`, 14 коммитов применились, ошибок нет |
 | Сборка desktop | electron-builder | приложение 246 МБ, вложенный CLI 279 МБ |
 | CI на чужих машинах | GitHub Actions, прогон [`44593481931`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44593481931) | **все 7 job'ов success** на hosted-раннерах ubuntu-latest и windows-latest |
+| Веса на модель в рантайме | два прогона на моке с разными бандлами, один и тот же ответ | `0.9997 · safe`, когда веса есть для `mock/mock-1`, и `0.0003 · unreliable`, когда они только у `other/model` — выбор по `providerID/modelID` реально работает |
+| `collect.py` на живом шлюзе | 2 промпта, `freepi/particle` | строки с `meanLp -0.063 / -0.125`, `minLp -0.409 / -0.945`, `fracLow 0.00 / 0.06` — признаки считаются той же формулой, что в рантайме |
 
 **Про 62 падения в монорепо:** ни одно не относится к truthprobe. Причины видны в логе и не связаны
 с патчем: `tool-search` тянет ripgrep с github.com, `provider-gitlab-oauth` ходит на gitlab.com,
@@ -310,18 +312,25 @@ python3 scripts/tui-probe.py && python3 scripts/screen-dump.py /tmp/tui-probe.lo
 
 ```bash
 python3 scripts/probe-freellmapi.py --key freellmapi-xxxx --jsonl labeled.jsonl
-python3 scripts/calibrate.py labeled.jsonl --fit --by-model --out truthprobe-weights.json
+python3 scripts/collect.py --url http://127.0.0.1:3001/v1 --key freellmapi-xxxx \
+    --models auto,auto:fast --prompts prompts.txt --out data/rows.jsonl --resume
+python3 scripts/calibrate.py data/rows.jsonl --fit --by-model --out truthprobe-weights.json
 ```
 
-`--by-model` обучает отдельный sigmoid на каждую модель (поле `model` в JSONL) и пишет
-бандл `{global, models}` с AUROC/ECE по каждой группе. Рантайм пока читает только
-`global`: выбор весов по модели — следующий шаг, а не сделанная фича.
+`collect.py` гоняет список промптов по списку моделей и пишет строки с признаками
+**той же формулой, что в рантайме** (`fracLow` по порогу `ln 0.5`, а не −1.0), с
+`--resume` для прерванного сбора. `--by-model` обучает отдельный sigmoid на каждую
+модель и пишет бандл `{global, models}` с AUROC/ECE по каждой группе.
+
+Рантайм с 0.7.0 действительно выбирает веса по модели: `scoreAnswer` получает
+`providerID/modelID`, скорер берёт `models[<id>]`, а при отсутствии — `global`.
+Сломанная запись одной модели пропускается, остальные продолжают работать.
 
 Подробности, docker-команда и оговорки — [`docs/FREELLMAPI.md`](docs/FREELLMAPI.md).
 
 ## Устройство патча
 
-43 файла, +6565/−40, тринадцать коммитов поверх `007afb1`. Шов тонкий и аддитивный:
+43 файла, +6565/−40, четырнадцать коммитов поверх `007afb1`. Шов тонкий и аддитивный:
 
 | Слой | Файл | Что делает |
 | --- | --- | --- |

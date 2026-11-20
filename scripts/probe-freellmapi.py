@@ -21,12 +21,14 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import os
 import sys
 import urllib.error
 import urllib.request
 
 PROMPT = "What is the capital of France? Answer in one sentence."
+FRAC_LOW_CUTOFF = math.log(0.5)  # порог ровно как в packages/core/src/truthprobe/score.ts
 
 
 def request(url: str, key: str, payload: dict | None = None, timeout: int = 90):
@@ -108,7 +110,17 @@ def main() -> int:
     lps = [float(token["logprob"]) for token in tokens if token.get("logprob") is not None]
     mean_lp = sum(lps) / len(lps)
     min_lp = min(lps)
-    print(f"  meanLp {mean_lp:.4f}, minLp {min_lp:.4f}, пример: " + ", ".join(
+    top = [x for x in (tokens[0].get("top_logprobs") or []) if isinstance(x.get("logprob"), (int, float))]
+    if len(top) < 2:
+        start_phi = max(0.0, min(1.0, 1 - math.exp(float(tokens[0]["logprob"]))))
+    else:
+        probs = [math.exp(float(x["logprob"])) for x in top]
+        total = sum(probs)
+        h = -sum((p / total) * math.log(p / total) for p in probs if total > 0 and p > 0)
+        start_phi = max(0.0, min(1.0, h / math.log(max(2, min(20, len(top))))))
+    frac_low = sum(1 for lp in lps if lp < FRAC_LOW_CUTOFF) / len(lps)
+    print(f"  meanLp {mean_lp:.4f}, minLp {min_lp:.4f}, phi(первый токен) {start_phi:.3f}, "
+          f"fracLow {frac_low:.2f}, пример: " + ", ".join(
         f"{token['token']!r}={token['logprob']:.3f}" for token in tokens[:5]
     ))
     print("  ВЕРДИКТ: logprobs доходят — модель годится для сбора калибровочных данных.")
@@ -120,8 +132,8 @@ def main() -> int:
             "answer": text,
             "meanLp": round(mean_lp, 6),
             "minLp": round(min_lp, 6),
-            "phi": round(min_lp / mean_lp if mean_lp else 0.0, 6),
-            "fracLow": round(sum(1 for lp in lps if lp < -1.0) / len(lps), 6),
+            "phi": round(start_phi, 6),
+            "fracLow": round(frac_low, 6),
             "label": None,
         }
         with open(args.jsonl, "a", encoding="utf-8", newline="\n") as handle:

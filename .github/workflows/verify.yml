@@ -21,7 +21,7 @@ jobs:
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
-      - run: bun test test/score.test.ts
+      - run: bun test test
 
   # 2. Both installers must at least apply the patch cleanly on a clean VM.
   installer-dry-run:

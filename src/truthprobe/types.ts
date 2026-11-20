@@ -5,6 +5,8 @@
  * logprobs из стрима), слоем скоринга (чистые функции) и UI/плагинами.
  */
 
+import type { ConfidenceLevel } from "./levels.js"
+
 /** Один альтернативный токен из `top_logprobs`. */
 export interface TopLogprob {
   token: string;
@@ -42,6 +44,8 @@ export interface SentenceScore {
   tokens: number;
   /** score < 1 - riskyThreshold. */
   flag: boolean;
+  /** Уровень уверенности по score: safe | likely | uncertain | risky | unreliable. */
+  level: ConfidenceLevel;
 }
 
 /** Итог по всему ответу. */
@@ -50,6 +54,8 @@ export interface AnswerScore {
   /** 0..1 или null, если сигнала нет. */
   score: number | null;
   risk: number | null;
+  /** Уровень уверенности по score; null, если сигнала нет. */
+  level: ConfidenceLevel | null;
   /** Уверенность по первому содержательному токену всего ответа. */
   first: { score: number; entropy: number; token: string } | null;
   sentences: SentenceScore[];
@@ -70,9 +76,49 @@ export interface ScoreOptions {
   minTokenChars?: number;
   /** Доля веса whole-answer, отданная глобальному геом. среднему. */
   globalWeight?: number;
+  /** Скорер: null/undefined — встроенная формула (см. scorer.ts). */
+  scorer?: Scorer | null;
 }
 
-export const DEFAULT_SCORE_OPTIONS: Required<ScoreOptions> = {
+/** Признаки, которые скорер получает по набору токенов. */
+export interface ScorerFeatures {
+  /** ln геометрического среднего вероятностей. */
+  meanLp: number;
+  /** ln вероятности худшего токена. */
+  minLp: number;
+  /** Средняя уверенность первого токена по top-K. */
+  meanPhi: number;
+  /** Доля токенов с вероятностью ниже 0.5. */
+  fracLow: number;
+  /** Сколько токенов участвовало. */
+  tokens: number;
+}
+
+export interface ScorerInput {
+  features: ScorerFeatures;
+  /** Текст, к которому относятся токены (для моделей, смотрящих на текст). */
+  text: string;
+  /** Модель, сгенерировавшая ответ (`providerID/modelID`); для весов «на модель». */
+  model?: string;
+}
+
+export interface Scorer {
+  /** Имя для логов и диагностики. */
+  name: string;
+  /** 0..1, выше — увереннее. */
+  score(input: ScorerInput): number;
+}
+
+/** Веса линейной модели; готовит `scripts/calibrate.py --fit`. */
+export interface LinearWeights {
+  bias: number;
+  meanLp: number;
+  minLp: number;
+  meanPhi: number;
+  fracLow: number;
+}
+
+export const DEFAULT_SCORE_OPTIONS: Required<Omit<ScoreOptions, "scorer">> = {
   topK: 20,
   riskyThreshold: 0.45,
   shakyThreshold: 0.3,

@@ -1,11 +1,14 @@
 /**
  * TruthProbe — скоринг уверенности по token logprobs.
  *
- * Все функции чистые: нет I/O, нет состояния, детерминированный результат.
- * Это позволяет покрыть всю математику юнит-тестами на записанных фикстурах
- * и использовать модуль и в ядре OpenCode, и в офлайн-калибровке (T8).
+ * Все функции чистые, кроме необязательной загрузки сменного скорера из
+ * `TRUTHPROBE_SCORER` (см. scorer.ts): математика одна и та же, состояние не
+ * копится. Это позволяет покрыть всю математику юнит-тестами на записанных
+ * фикстурах и использовать модуль и в ядре OpenCode, и в офлайн-калибровке (T8).
  */
 
+import { levelOf } from "./levels";
+import { featuresOf, scorerFromEnv } from "./scorer";
 import { splitSentences, type Sentence } from "./sentences";
 import {
   DEFAULT_SCORE_OPTIONS,
@@ -149,14 +152,18 @@ export function scoreAnswer(
   text: string,
   tokens: TokenLogprob[],
   options: ScoreOptions = {},
+  /** `providerID/modelID` — чтобы сменный скорер мог взять веса именно этой модели. */
+  model?: string,
 ): AnswerScore {
-  const opt = { ...DEFAULT_SCORE_OPTIONS, ...options };
+  const opt = { ...DEFAULT_SCORE_OPTIONS, ...envScoreOptions(), ...options };
+  const scorer = opt.scorer === undefined ? scorerFromEnv() : opt.scorer;
 
   if (!tokens.length) {
     return {
       status: "unavailable",
       score: null,
       risk: null,
+      level: null,
       first: null,
       sentences: [],
       flagged: 0,
@@ -183,6 +190,7 @@ export function scoreAnswer(
       status: "unavailable",
       score: null,
       risk: null,
+      level: null,
       first: null,
       sentences: [],
       flagged: 0,
@@ -218,7 +226,16 @@ export function scoreAnswer(
     // Один «придуманный» токен важнее общего среднего: именно он выдаёт
     // сфабрикованную сущность/число, поэтому худший токен получает свой вес.
     const worst = clamp01(Math.exp(Math.min(...lps)));
-    const score = clamp01(0.4 * geo + 0.3 * worst + 0.3 * startPhi);
+    const features = featuresOf({
+      meanLp: Math.log(Math.max(geo, 1e-9)),
+      minLp: Math.min(...lps),
+      meanPhi: startPhi,
+      lowFraction: lps.filter((lp) => Math.exp(lp) < 0.5).length / lps.length,
+      tokens: arr.length,
+    });
+    const score = clamp01(
+      (scorer ? scorer.score({ features, text: s.text, model }) : 0.4 * geo + 0.3 * worst + 0.3 * startPhi),
+    );
     const risk = clamp01(1 - score);
     scored.push({
       i,
@@ -232,22 +249,55 @@ export function scoreAnswer(
       phi: startPhi,
       tokens: arr.length,
       flag: risk >= opt.riskyThreshold,
+      level: levelOf(score) ?? "unreliable",
     });
   }
 
-  const globalGeo = geometricMean(content.map((t) => t.logprob));
+  const allLps = content.map((t) => t.logprob);
+  const globalGeo = geometricMean(allLps);
+  const globalFeatures = featuresOf({
+    meanLp: Math.log(Math.max(globalGeo, 1e-9)),
+    minLp: Math.min(...allLps),
+    meanPhi: phi(content[0], opt.topK),
+    lowFraction: allLps.filter((lp) => Math.exp(lp) < 0.5).length / allLps.length,
+    tokens: content.length,
+  });
+  const globalScore = scorer
+    ? clamp01(scorer.score({ features: globalFeatures, text, model }))
+    : globalGeo;
   const meanSentence = scored.length
     ? scored.reduce((a, s) => a + s.score, 0) / scored.length
-    : globalGeo;
-  const score = clamp01(opt.globalWeight * globalGeo + (1 - opt.globalWeight) * meanSentence);
+    : globalScore;
+  const score = clamp01(opt.globalWeight * globalScore + (1 - opt.globalWeight) * meanSentence);
 
   return {
     status: offsetDrift ? "partial" : "ok",
     score,
     risk: clamp01(1 - score),
+    level: levelOf(score),
     first,
     sentences: scored,
     flagged: scored.filter((s) => s.flag).length,
     ...(offsetDrift ? { reason: "token/text offset drift" } : {}),
+  };
+}
+
+/**
+ * Пороги можно переопределить окружением, не дожидаясь конфига в opencode.jsonc.
+ * Некорректное значение молча игнорируется: сломанная переменная не должна
+ * менять числа.
+ */
+export function envScoreOptions(env: Record<string, string | undefined> = process.env): ScoreOptions {
+  const num = (name: string) => {
+    const raw = env[name];
+    if (raw === undefined || raw === "") return undefined;
+    const value = Number(raw);
+    return Number.isFinite(value) && value >= 0 && value <= 1 ? value : undefined;
+  };
+  const risky = num("TRUTHPROBE_RISKY_THRESHOLD");
+  const shaky = num("TRUTHPROBE_SHAKY_THRESHOLD");
+  return {
+    ...(risky === undefined ? {} : { riskyThreshold: risky }),
+    ...(shaky === undefined ? {} : { shakyThreshold: shaky }),
   };
 }

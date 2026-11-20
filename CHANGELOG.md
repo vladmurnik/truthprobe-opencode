@@ -26,6 +26,33 @@
 - Сквозной инференс через FreeLLMAPI: нужны ключи провайдеров, которых нет.
   Проброс `logprobs` через роутер — тоже открытый вопрос по каждой модели.
 
+# 0.7.0 — 2026-11-20
+
+Веса калибровки теперь работают на модель, а не «на всех сразу», и их стало чем собирать.
+
+**Добавлено**
+
+- `packages/core/src/truthprobe/scorer.ts`: `WeightsBundle`, `parseWeightsBundle`,
+  `bundleScorer`, `weightsFor`. Бандл `{global, models}` из `calibrate.py --fit --by-model`
+  читается как есть; `TRUTHPROBE_SCORER=linear:<file>` выбирает веса по
+  `providerID/modelID` с откатом на `global`. Плоский JSON весов по-прежнему принимается.
+- `packages/core/src/truthprobe/score.ts`: `scoreAnswer(..., model?)` — четвёртый аргумент
+  `providerID/modelID`, который уходит в `ScorerInput.model`.
+- `packages/core/src/session/runner/publish-llm-event.ts`: `modelKey` из `input.model`
+  передаётся и в обычный, и в reasoning-путь оценки.
+- `scripts/collect.py`: сбор калибровочных строк по списку моделей и промптов
+  (`--models`, `--prompts`, `--out`, `--resume`, `--dry-run`, `--limit`). Признаки
+  считаются ровно как в рантайме: `phi` — энтропия `top_logprobs` первого токена,
+  `fracLow` — доля `logprob < ln 0.5`.
+- `packages/core/test/truthprobe-scorer-bundle.test.ts`: 12 тестов на разбор бандла,
+  выбор весов, откат на `global` и на geometric при битом файле.
+
+**Исправлено**
+
+- `scripts/probe-freellmapi.py`: `fracLow` считался по порогу `−1.0`, а рантайм — по
+  `ln 0.5`; `phi` был отношением `minLp/meanLp`, а не энтропией. Обе метрики приведены
+  к рантаймовым, иначе собранный набор не соответствовал бы числам скорера.
+
 # 0.6.2 — 2026-11-19
 
 Патч проверен на чужих чистых машинах.

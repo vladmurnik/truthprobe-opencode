@@ -1,7 +1,7 @@
 From 3ccda6cdf3320c8fbcfbb2c8656c34a2827932af Mon Sep 17 00:00:00 2001
 From: truthprobe <truthprobe@local>
 Date: Thu, 19 Nov 2026 00:59:59 +0300
-Subject: [PATCH 01/13] feat(truthprobe): score answers from token logprobs
+Subject: [PATCH 01/14] feat(truthprobe): score answers from token logprobs
 
 - schema: Truthprobe.Info, capabilities.logprobs, AssistantText.truthprobe, optional truthprobe on session.text.ended
 - ai/openai-chat: request logprobs/top_logprobs when enabled, parse choice-level logprobs into providerMetadata
@@ -1192,7 +1192,7 @@ index 6a844d7..f21811e 100644
 From a9db0dab3c3392b40e8c9366e3455be1f37b7dcf Mon Sep 17 00:00:00 2001
 From: adik <adik@local>
 Date: Thu, 19 Nov 2026 01:12:00 +0300
-Subject: [PATCH 02/13] fix(tui): apply truthprobe metadata from
+Subject: [PATCH 02/14] fix(tui): apply truthprobe metadata from
  session.text.ended events
 
 The solid client store only copied event.data.text into the in-memory
@@ -1222,7 +1222,7 @@ index 8b6d247..7368d0c 100644
 From 2870f64a9bcb19d1e1701d85101c5074646cdcac Mon Sep 17 00:00:00 2001
 From: adik <adik@local>
 Date: Thu, 19 Nov 2026 03:08:36 +0300
-Subject: [PATCH 03/13] test(truthprobe): cover segmentation, scoring and
+Subject: [PATCH 03/14] test(truthprobe): cover segmentation, scoring and
  protocol parsing
 
 - send logprobs from every chat-completions model that declares the capability
@@ -1985,7 +1985,7 @@ index eed85f3..5bde799 100755
 From f04342565c0963f466c9bae21dc1b0d9158bab44 Mon Sep 17 00:00:00 2001
 From: TruthProbe <truthprobe@local>
 Date: Thu, 19 Nov 2026 09:40:19 +0300
-Subject: [PATCH 04/13] feat(truthprobe): probe providers and enable logprobs
+Subject: [PATCH 04/14] feat(truthprobe): probe providers and enable logprobs
  automatically
 
 Adding a provider key no longer needs an environment variable.
@@ -2800,7 +2800,7 @@ index 0000000..e23e561
 From 3126939707e7c7c305f8b3c2a89d196dc1b5acd9 Mon Sep 17 00:00:00 2001
 From: adik <adik@local>
 Date: Thu, 19 Nov 2026 13:34:58 +0300
-Subject: [PATCH 05/13] feat(truthprobe): show confidence in the desktop
+Subject: [PATCH 05/14] feat(truthprobe): show confidence in the desktop
  session UI
 
 ---
@@ -2897,7 +2897,7 @@ index be526b4..659538f 100644
 From 335305a2e846ae50c7d31cec6a750b74a4d385a6 Mon Sep 17 00:00:00 2001
 From: TruthProbe <truthprobe@localhost>
 Date: Thu, 19 Nov 2026 13:44:43 +0300
-Subject: [PATCH 06/13] feat(truthprobe): list doubtful sentences in the
+Subject: [PATCH 06/14] feat(truthprobe): list doubtful sentences in the
  desktop footer
 
 ---
@@ -3082,7 +3082,7 @@ index b44a4df..2a7ef9d 100644
 From 6017d751fc1a7a9bf1eac92e2b40b161e0c48b49 Mon Sep 17 00:00:00 2001
 From: TruthProbe <truthprobe@localhost>
 Date: Thu, 19 Nov 2026 14:33:06 +0300
-Subject: [PATCH 07/13] feat(desktop): let a fork brand the desktop app
+Subject: [PATCH 07/14] feat(desktop): let a fork brand the desktop app
 
 A fork that ships its own Electron application sets OPENCODE_DESKTOP_APP and
 OPENCODE_DESKTOP_APP_ID before building. The window title, the AppUserModelID,
@@ -3294,7 +3294,7 @@ index 9688672..de655d5 100644
 From a478531b342afc1a07626aafcd1e085543cbaef2 Mon Sep 17 00:00:00 2001
 From: truthprobe <truthprobe@local>
 Date: Thu, 19 Nov 2026 19:21:40 +0300
-Subject: [PATCH 08/13] fix(truthprobe): keep logprobs that arrive without
+Subject: [PATCH 08/14] fix(truthprobe): keep logprobs that arrive without
  text, align tokens, always publish a verdict
 
 - ai: buffer token logprobs in parser state; gateways send them in a separate
@@ -3705,7 +3705,7 @@ index f21811e..edac0e3 100644
 From 5a335e31658d33202b76ac0fb58f795cb1db4e03 Mon Sep 17 00:00:00 2001
 From: truthprobe <truthprobe@local>
 Date: Thu, 19 Nov 2026 19:36:25 +0300
-Subject: [PATCH 09/13] fix(truthprobe): say so when tokens do not match the
+Subject: [PATCH 09/14] fix(truthprobe): say so when tokens do not match the
  answer text
 
 Dropping every token that cannot be found in the text silently produced
@@ -3737,7 +3737,7 @@ index e024f93..7d46333 100644
 From 3d8a5b1ac9a2b94bd6729f6e9de9b6b400ac5df6 Mon Sep 17 00:00:00 2001
 From: adik <adik@users.noreply.github.com>
 Date: Thu, 19 Nov 2026 21:10:26 +0300
-Subject: [PATCH 10/13] feat(truthprobe): confidence levels and sentence
+Subject: [PATCH 10/14] feat(truthprobe): confidence levels and sentence
  highlights
 
 ---
@@ -8105,7 +8105,7 @@ index 0000000..d3450d7
 From 51f6f1088316234b53fb7ba8b8b78619c9b3d570 Mon Sep 17 00:00:00 2001
 From: adik <adik@users.noreply.github.com>
 Date: Thu, 19 Nov 2026 21:13:56 +0300
-Subject: [PATCH 11/13] feat(truthprobe): pluggable scorer (geometric | linear
+Subject: [PATCH 11/14] feat(truthprobe): pluggable scorer (geometric | linear
  weights)
 
 ---
@@ -8487,7 +8487,7 @@ index 0000000..998bf44
 From 699374c936946d597addbc90680dd680e048a37c Mon Sep 17 00:00:00 2001
 From: adik <adik@users.noreply.github.com>
 Date: Thu, 19 Nov 2026 21:28:48 +0300
-Subject: [PATCH 12/13] fix(schema): accept null level so unavailable verdicts
+Subject: [PATCH 12/14] fix(schema): accept null level so unavailable verdicts
  decode
 
 ---
@@ -8545,7 +8545,7 @@ index 5d05c07..d6f7831 100644
 From d153658602f327ff2f5f9a7ccbcfd4c2a6e6a9dc Mon Sep 17 00:00:00 2001
 From: TruthProbe <truthprobe@localhost>
 Date: Thu, 19 Nov 2026 21:58:03 +0300
-Subject: [PATCH 13/13] fix(truthprobe): make the patched tree typecheck clean
+Subject: [PATCH 13/14] fix(truthprobe): make the patched tree typecheck clean
 
 - schema: Level is a type alias over the Literals union, not an interface
 - core: DEFAULT_SCORE_OPTIONS omits the optional scorer field
@@ -8674,6 +8674,297 @@ index d6f7831..99b4171 100644
  /** Уровень уверенности по score; отсутствует у ответов, записанных до 0.5. */
  export const Level = Schema.Literals(["safe", "likely", "uncertain", "risky", "unreliable"]).annotate({
    identifier: "Truthprobe.Level",
+-- 
+2.53.0
+
+
+From 3b720f0a39072f8e1699cecd75337d10f3f3c402 Mon Sep 17 00:00:00 2001
+From: TruthProbe <truthprobe@localhost>
+Date: Fri, 20 Nov 2026 07:54:47 +0300
+Subject: [PATCH 14/14] feat(truthprobe): per-model calibration weights
+
+- core: WeightsBundle/parseWeightsBundle/bundleScorer/weightsFor read the
+  {global, models} bundle written by calibrate.py --fit --by-model
+- core: scoreAnswer takes providerID/modelID and passes it to ScorerInput.model
+- core: runner computes modelKey so the scorer can pick models[<id>]
+- test: 12 tests for bundle parsing, per-model selection and fallbacks
+---
+ .../src/session/runner/publish-llm-event.ts   |   6 +-
+ packages/core/src/truthprobe/score.ts         |   6 +-
+ packages/core/src/truthprobe/scorer.ts        |  63 ++++++++++-
+ packages/core/src/truthprobe/types.ts         |   2 +
+ .../test/truthprobe-scorer-bundle.test.ts     | 106 ++++++++++++++++++
+ 5 files changed, 177 insertions(+), 6 deletions(-)
+ create mode 100644 packages/core/test/truthprobe-scorer-bundle.test.ts
+
+diff --git a/packages/core/src/session/runner/publish-llm-event.ts b/packages/core/src/session/runner/publish-llm-event.ts
+index 03af658..46cbf4f 100644
+--- a/packages/core/src/session/runner/publish-llm-event.ts
++++ b/packages/core/src/session/runner/publish-llm-event.ts
+@@ -122,6 +122,8 @@ export const createLLMEventPublisher = (bus: Pick<Bus.Interface, "publish">, inp
+     return { metadata: { ...tool.progress, ...metadata } }
+   }
+   const assistantMessageID = input.assistantMessageID
++  /** ключ весов в бандле калибровки: `providerID/modelID` */
++  const modelKey = `${input.model.providerID}/${input.model.id}`
+   let stepStarted = false
+   let providerFailed = false
+   let outputStarted = false
+@@ -502,7 +504,7 @@ export const createLLMEventPublisher = (bus: Pick<Bus.Interface, "publish">, inp
+         // Поле ставим всегда: при отсутствии logprobs scoreAnswer вернёт
+         // status "unavailable" с причиной, и UI скажет об этом вслух вместо тишины.
+         if (value.length > 0) {
+-          const scored = scoreAnswer(value, tokens ?? [])
++          const scored = scoreAnswer(value, tokens ?? [], {}, modelKey)
+           // У reasoning-моделей logprobs приходят на скрытых рассуждениях: показываем
+           // уверенность по ним, но без списка предложений — их в ответе нет.
+           if (scored.status === "unavailable" && lastReasoningScore && lastReasoningScore.status === "ok")
+@@ -550,7 +552,7 @@ export const createLLMEventPublisher = (bus: Pick<Bus.Interface, "publish">, inp
+         const value = event.text ?? truthprobeReasoningText.get(event.id) ?? ""
+         truthprobeReasoningTokens.delete(event.id)
+         truthprobeReasoningText.delete(event.id)
+-        if (tokens?.length && value.length > 0) lastReasoningScore = scoreAnswer(value, tokens)
++        if (tokens?.length && value.length > 0) lastReasoningScore = scoreAnswer(value, tokens, {}, modelKey)
+         yield* reasoning.end(event.id, native(event.providerMetadata), event.text)
+         return
+       }
+diff --git a/packages/core/src/truthprobe/score.ts b/packages/core/src/truthprobe/score.ts
+index fb640fa..0954ba5 100644
+--- a/packages/core/src/truthprobe/score.ts
++++ b/packages/core/src/truthprobe/score.ts
+@@ -152,6 +152,8 @@ export function scoreAnswer(
+   text: string,
+   tokens: TokenLogprob[],
+   options: ScoreOptions = {},
++  /** `providerID/modelID` — чтобы сменный скорер мог взять веса именно этой модели. */
++  model?: string,
+ ): AnswerScore {
+   const opt = { ...DEFAULT_SCORE_OPTIONS, ...envScoreOptions(), ...options };
+   const scorer = opt.scorer === undefined ? scorerFromEnv() : opt.scorer;
+@@ -232,7 +234,7 @@ export function scoreAnswer(
+       tokens: arr.length,
+     });
+     const score = clamp01(
+-      (scorer ? scorer.score({ features, text: s.text }) : 0.4 * geo + 0.3 * worst + 0.3 * startPhi),
++      (scorer ? scorer.score({ features, text: s.text, model }) : 0.4 * geo + 0.3 * worst + 0.3 * startPhi),
+     );
+     const risk = clamp01(1 - score);
+     scored.push({
+@@ -261,7 +263,7 @@ export function scoreAnswer(
+     tokens: content.length,
+   });
+   const globalScore = scorer
+-    ? clamp01(scorer.score({ features: globalFeatures, text }))
++    ? clamp01(scorer.score({ features: globalFeatures, text, model }))
+     : globalGeo;
+   const meanSentence = scored.length
+     ? scored.reduce((a, s) => a + s.score, 0) / scored.length
+diff --git a/packages/core/src/truthprobe/scorer.ts b/packages/core/src/truthprobe/scorer.ts
+index 3d659e2..b4a09f3 100644
+--- a/packages/core/src/truthprobe/scorer.ts
++++ b/packages/core/src/truthprobe/scorer.ts
+@@ -103,6 +103,64 @@ export function parseLinearWeights(raw: unknown): LinearWeights {
+   return out
+ }
+ 
++/**
++ * Набор весов: общие плюс отдельные на модель. Так выглядит бандл, который пишет
++ * `scripts/calibrate.py --fit --by-model`; плоский JSON (просто `bias/meanLp/...`)
++ * тоже принимается — он становится `global`.
++ */
++export interface WeightsBundle {
++  global: LinearWeights
++  models: Record<string, LinearWeights>
++}
++
++/**
++ * Читает и плоские веса, и бандл `{version, features, global, models}`.
++ * Битые записи моделей пропускаются молча: одна испорченная модель не должна
++ * отключать калибровку для всех остальных.
++ */
++export function parseWeightsBundle(raw: unknown): WeightsBundle {
++  const obj = raw as Record<string, unknown> | null
++  if (!obj || typeof obj !== "object") throw new Error("weights object is missing")
++  const looksBundled = "global" in obj || "models" in obj || "features" in obj
++  if (!looksBundled) return { global: parseLinearWeights(obj), models: {} }
++  const global = parseLinearWeights(obj.global ?? obj.weights)
++  const models: Record<string, LinearWeights> = {}
++  const src = obj.models
++  if (src && typeof src === "object") {
++    for (const [key, value] of Object.entries(src as Record<string, unknown>)) {
++      if (!value || typeof value !== "object") continue
++      try {
++        models[key] = parseLinearWeights(value)
++      } catch {
++        continue
++      }
++    }
++  }
++  return { global, models }
++}
++
++/**
++ * Скорер с весами на модель: `models[providerID/modelID]`, иначе `global`.
++ * Так калибровка, снятая на конкретной модели, не разбавляется чужими числами.
++ */
++export function bundleScorer(bundle: WeightsBundle, name = "linear"): Scorer {
++  const fallback = linearScorer(bundle.global, name)
++  const perModel = new Map<string, Scorer>()
++  for (const [key, weights] of Object.entries(bundle.models)) perModel.set(key, linearScorer(weights, `${name}:${key}`))
++  return {
++    name,
++    score(input) {
++      const scorer = input.model ? perModel.get(input.model) : undefined
++      return (scorer ?? fallback).score(input)
++    },
++  }
++}
++
++/** Веса, которые реально будут применены к модели (для диагностики и тестов). */
++export function weightsFor(bundle: WeightsBundle, model?: string): LinearWeights {
++  return (model ? bundle.models[model] : undefined) ?? bundle.global
++}
++
+ let cached: { spec: string; scorer: Scorer } | null = null
+ 
+ /**
+@@ -125,8 +183,9 @@ export function scorerFromEnv(
+   if (spec.startsWith("linear:")) {
+     const path = spec.slice("linear:".length).trim()
+     try {
+-      const weights = parseLinearWeights(JSON.parse(read(path)))
+-      scorer = linearScorer(weights, `linear:${path}`)
++      const bundle = parseWeightsBundle(JSON.parse(read(path)))
++      const count = Object.keys(bundle.models).length
++      scorer = count ? bundleScorer(bundle, `linear:${path}(${count} models)`) : linearScorer(bundle.global, `linear:${path}`)
+     } catch (error) {
+       warn(error instanceof Error ? error.message : String(error))
+     }
+diff --git a/packages/core/src/truthprobe/types.ts b/packages/core/src/truthprobe/types.ts
+index 5053498..210f267 100644
+--- a/packages/core/src/truthprobe/types.ts
++++ b/packages/core/src/truthprobe/types.ts
+@@ -98,6 +98,8 @@ export interface ScorerInput {
+   features: ScorerFeatures;
+   /** Текст, к которому относятся токены (для моделей, смотрящих на текст). */
+   text: string;
++  /** Модель, сгенерировавшая ответ (`providerID/modelID`); для весов «на модель». */
++  model?: string;
+ }
+ 
+ export interface Scorer {
+diff --git a/packages/core/test/truthprobe-scorer-bundle.test.ts b/packages/core/test/truthprobe-scorer-bundle.test.ts
+new file mode 100644
+index 0000000..57691fb
+--- /dev/null
++++ b/packages/core/test/truthprobe-scorer-bundle.test.ts
+@@ -0,0 +1,106 @@
++import { describe, expect, test } from "bun:test"
++
++import { bundleScorer, parseWeightsBundle, scorerFromEnv, weightsFor } from "../src/truthprobe/scorer"
++import type { LinearWeights } from "../src/truthprobe/types"
++
++const strong: LinearWeights = { bias: 6, meanLp: 0, minLp: 0, meanPhi: 6, fracLow: 0 }
++const weak: LinearWeights = { bias: -6, meanLp: 0, minLp: 0, meanPhi: -6, fracLow: 0 }
++const features = { meanLp: -1, minLp: -2, meanPhi: 0.5, fracLow: 0.25, tokens: 12 }
++
++describe("parseWeightsBundle", () => {
++  test("плоские веса становятся global, моделей нет", () => {
++    const bundle = parseWeightsBundle({ bias: 1, meanLp: 2, minLp: 3, meanPhi: 4, fracLow: 5 })
++    expect(bundle.global).toEqual({ bias: 1, meanLp: 2, minLp: 3, meanPhi: 4, fracLow: 5 })
++    expect(Object.keys(bundle.models)).toEqual([])
++  })
++
++  test("бандл читается вместе с весами моделей", () => {
++    const bundle = parseWeightsBundle({
++      version: 1,
++      features: ["bias", "meanLp", "minLp", "meanPhi", "fracLow"],
++      global: strong,
++      models: { "freepi/particle": weak },
++    })
++    expect(bundle.global).toEqual(strong)
++    expect(bundle.models["freepi/particle"]).toEqual(weak)
++  })
++
++  test("битая запись модели пропускается, остальные остаются", () => {
++    const bundle = parseWeightsBundle({
++      global: strong,
++      models: { broken: { bias: "nope" }, "freepi/particle": weak },
++    })
++    expect(bundle.models["broken"]).toBeUndefined()
++    expect(bundle.models["freepi/particle"]).toEqual(weak)
++  })
++
++  test("нечисловые общие веса — ошибка, а не тихий ноль", () => {
++    expect(() => parseWeightsBundle({ bias: "x", meanLp: 1, minLp: 1, meanPhi: 1, fracLow: 1 })).toThrow()
++  })
++})
++
++describe("weightsFor", () => {
++  const bundle = parseWeightsBundle({ global: strong, models: { "freepi/particle": weak } })
++
++  test("для известной модели берёт её веса", () => {
++    expect(weightsFor(bundle, "freepi/particle")).toEqual(weak)
++  })
++
++  test("для чужой модели и без модели — global", () => {
++    expect(weightsFor(bundle, "opencode/gpt-5")).toEqual(strong)
++    expect(weightsFor(bundle)).toEqual(strong)
++  })
++})
++
++describe("bundleScorer", () => {
++  const bundle = parseWeightsBundle({ global: strong, models: { "freepi/particle": weak } })
++  const scorer = bundleScorer(bundle, "test")
++
++  test("разные модели дают разные оценки на одних признаках", () => {
++    const a = scorer.score({ features, text: "ответ", model: "freepi/particle" })
++    const b = scorer.score({ features, text: "ответ", model: "other/model" })
++    expect(a).toBeLessThan(b)
++    expect(b).toBeGreaterThan(0.9)
++  })
++
++  test("без модели работает global", () => {
++    expect(scorer.score({ features, text: "ответ" })).toBeCloseTo(scorer.score({ features, text: "ответ", model: "other/model" }))
++  })
++
++  test("оценка остаётся в [0,1]", () => {
++    for (const model of ["freepi/particle", "other/model", undefined]) {
++      const value = scorer.score({ features, text: "ответ", model })
++      expect(value).toBeGreaterThanOrEqual(0)
++      expect(value).toBeLessThanOrEqual(1)
++    }
++  })
++})
++
++describe("scorerFromEnv", () => {
++  const read = (path: string) => {
++    if (path !== "/wb.json") throw new Error("ENOENT")
++    return JSON.stringify({ global: strong, models: { "freepi/particle": weak } })
++  }
++
++  test("бандл из файла подхватывается по TRUTHPROBE_SCORER", () => {
++    const scorer = scorerFromEnv({ TRUTHPROBE_SCORER: "linear:/wb.json" }, read)
++    expect(scorer).not.toBeNull()
++    expect(scorer!.name).toContain("1 models")
++    const perModel = scorer!.score({ features, text: "ответ", model: "freepi/particle" })
++    const global = scorer!.score({ features, text: "ответ", model: "other/model" })
++    expect(perModel).toBeLessThan(global)
++  })
++
++  test("плоский файл весов по-прежнему работает", () => {
++    const flat = scorerFromEnv({ TRUTHPROBE_SCORER: "linear:/flat.json" }, () =>
++      JSON.stringify({ bias: 0, meanLp: 1, minLp: 1, meanPhi: 1, fracLow: 0 }),
++    )
++    expect(flat).not.toBeNull()
++    expect(flat!.name).not.toContain("models")
++  })
++
++  test("битый файл — null (откат на geometric), без падения", () => {
++    const scorer = scorerFromEnv({ TRUTHPROBE_SCORER: "linear:/broken.json" }, () => "not json")
++    expect(scorer).toBeNull()
++  })
++})
 -- 
 2.53.0
 
