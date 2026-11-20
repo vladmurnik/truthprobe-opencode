@@ -255,3 +255,19 @@ docs/                     prior art, built-in model plan, validation, build
 
 MIT — see [LICENSE](LICENSE). `opencode` stays under its own license; this repository is only the
 patch.
+
+## Still open (honest list)
+
+These review points are **not** fixed, and the docs do not pretend otherwise:
+
+- **Calibration.** AUROC, ECE and precision/recall are unmeasured: there is no labelled set. The
+  protocol and the script live in [`docs/CALIBRATION.md`](docs/CALIBRATION.md) and `scripts/calibrate.py`.
+- **Logprobs support is inherited per provider.** One confirmed model turns the feature on for every
+  model of that gateway. This is deliberate: the free-pi cache only holds `freepi/particle`, so without
+  inheritance `deepseek-*` would stay silent. The cost is a gateway whose other models reject the field
+  answering 400; `OPENCODE_TRUTHPROBE=off` or a cache entry is the escape hatch.
+- **`temperature > 0`.** `top_logprobs` at non-zero temperature is a smoothed distribution, not the
+  model's confidence. We neither block nor mark it `partial`.
+- **`top_logprobs` is not configurable.** `TRUTHPROBE_TOP_K = 20` is a constant.
+- **Two TTL implementations.** `core/src/truthprobe/capability.ts` and
+  `ai/src/protocols/truthprobe-capability.ts` duplicate freshness logic without a drift test.
