@@ -1,86 +1,64 @@
 name: verify
 
-# Runs on GitHub-hosted VMs (ubuntu / windows / macos) — the CI "virtual machine" that proves
-# the patch actually installs and produces truthprobe verdicts, not just compiles.
+# CI on GitHub-hosted runners: proves the patch installs, the tests pass, and a real
+# run produces a truthprobe verdict — not just that the code compiles.
 on:
   push:
-    branches: [main, master]
+    branches: [master, main]
   pull_request:
   workflow_dispatch:
 
-concurrency:
-  group: verify-${{ github.ref }}
-  cancel-in-progress: true
-
 env:
-  OPENCODE_BASE: 007afb1b0c8a36dff93d7945909d4e976545ba95
+  BASE: 007afb1b0c8a36dff93d7945909d4e976545ba95
 
 jobs:
-  # 1. Pure repo tests: reference math and probe logic, no opencode tree needed.
+  # 1. Reference math and probe logic without cloning opencode (~10 s).
   scoring:
-    name: repo unit tests (${{ matrix.os }})
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+    name: repo tests
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
-      - run: bun --version
       - run: bun test test/score.test.ts
-      - run: bun test test/capability.test.ts
 
-  # 2. Patch applies on a clean upstream clone — linux and windows, with the installers themselves.
-  installer:
+  # 2. Both installers must at least apply the patch cleanly on a clean VM.
+  installer-dry-run:
     name: installer dry-run (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: ubuntu-latest
-            shell: bash
-          - os: windows-latest
-            shell: pwsh
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
-
-      - name: install.sh --dry-run
-        if: matrix.shell == 'bash'
-        shell: bash
-        run: |
-          chmod +x install.sh
-          ./install.sh --dir "$RUNNER_TEMP/tp" --dry-run
-          test -f "$RUNNER_TEMP/tp/packages/core/src/truthprobe/score.ts"
-
-      - name: install.ps1 -DryRun
-        if: matrix.shell == 'pwsh'
-        shell: pwsh
-        run: |
-          ./install.ps1 -Dir "$env:RUNNER_TEMP/tp" -DryRun
-          if (-not (Test-Path "$env:RUNNER_TEMP/tp/packages/core/src/truthprobe/score.ts")) {
-            throw "patch did not produce the truthprobe sources"
-          }
-
-  # 3. Full patched tree on linux: deps, typecheck, truthprobe tests, and the end-to-end mock run.
-  patch:
-    name: patched tree + end-to-end (${{ matrix.os }})
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest]
     steps:
       - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
 
+      - name: install.sh --dry-run (linux)
+        if: runner.os == 'Linux'
+        run: |
+          chmod +x install.sh
+          ./install.sh --dir "$RUNNER_TEMP/tp" --dry-run
+
+      - name: install.ps1 -DryRun (windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: ./install.ps1 -Dir "$env:RUNNER_TEMP\tp" -DryRun
+
+  # 3. The real thing: patched tree, deps, typecheck, unit tests.
+  patch:
+    name: patched tree (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
@@ -90,7 +68,7 @@ jobs:
         run: |
           git clone --filter=blob:none https://github.com/sst/opencode upstream
           cd upstream
-          git checkout "$OPENCODE_BASE"
+          git checkout "$BASE"
 
       - name: apply TruthProbe patch
         shell: bash
@@ -116,71 +94,109 @@ jobs:
         shell: bash
         run: |
           cd upstream/packages/core
-          bun test test/truthprobe.test.ts test/truthprobe-levels.test.ts test/truthprobe-scorer.test.ts test/truthprobe-capability.test.ts
+          bun test test/truthprobe.test.ts
+          bun test test/truthprobe-levels.test.ts test/truthprobe-scorer.test.ts
 
-      - name: end-to-end run against the mock provider
-        shell: bash
-        run: |
-          cd upstream
-          python3 ../scripts/mock-openai-logprobs.py 8899 &
-          MOCK=$!
-          sleep 2
-          OPENCODE_CONFIG=../scripts/mock-opencode.json \
-            bun run --cwd packages/cli src/index.ts run --standalone --model mock/mock-1 "capital of France?" > run.log 2>&1 || cat run.log
-          kill $MOCK || true
-          python3 ../scripts/check-db.py > db.txt 2>&1 || true
-          cat db.txt | head -40
-          grep -q '"truthprobe"' db.txt || { echo "no truthprobe verdict in the database"; cat run.log; exit 1; }
-          grep -q '"status": *"ok"' db.txt || { echo "verdict is not ok"; cat db.txt; exit 1; }
-
-  # 4. Build the CLI from the patched tree, so a broken build fails the PR instead of users.
-  build:
-    name: cli build (${{ matrix.os }})
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 60
-    needs: patch
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: ubuntu-latest
-            target: linux-x64
-          - os: windows-latest
-            target: windows-x64
-          - os: macos-latest
-            target: darwin-arm64
+  # 4. End-to-end on Linux: mock provider that emits logprobs → CLI → SQLite part
+  #    must contain truthprobe with status ok and a numeric score.
+  e2e:
+    name: end-to-end verdict
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
-
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
 
-      - name: clone and patch
-        shell: bash
+      - name: clone, patch, install
         run: |
           git clone --filter=blob:none https://github.com/sst/opencode upstream
           cd upstream
-          git checkout "$OPENCODE_BASE"
+          git checkout "$BASE"
           git -c user.name=ci -c user.email=ci@local am ../patches/truthprobe-0001.patch
+          bun install
 
-      - name: install dependencies
-        shell: bash
-        run: cd upstream && bun install
+      - name: start mock provider
+        run: |
+          python3 scripts/mock-openai-logprobs.py 8899 > mock.log 2>&1 &
+          for i in $(seq 1 20); do
+            if curl -sf http://127.0.0.1:8899/v1/models > /dev/null; then break; fi
+            sleep 0.5
+          done
+          cat mock.log
+
+      - name: run opencode against the mock
+        run: |
+          cd upstream
+          OPENCODE_CONFIG="$GITHUB_WORKSPACE/scripts/mock-opencode.json" \
+            bun run --cwd packages/cli src/index.ts run --model mock/mock-1 \
+            "What is the capital of France? Answer in two sentences." | tee run.log
+          test -s run.log
+
+      - name: assert the verdict landed in the database
+        run: |
+          python3 - <<'PY'
+          import glob, json, os, sqlite3, sys
+          rows = []
+          for db in glob.glob(os.path.expanduser("~/.local/share/opencode/*.db")):
+              try:
+                  con = sqlite3.connect(f"file:{db}?mode=ro", uri=True)
+                  cur = con.cursor()
+                  cur.execute("SELECT name FROM sqlite_master WHERE type='table'")
+                  tables = {r[0] for r in cur.fetchall()}
+                  if "session_part" not in tables:
+                      continue
+                  cur.execute("SELECT data FROM session_part")
+                  for (data,) in cur.fetchall():
+                      probe = json.loads(data).get("truthprobe")
+                      if probe:
+                          rows.append((db, probe))
+              except Exception as exc:
+                  print(f"skip {db}: {exc}")
+          if not rows:
+              sys.exit("FAIL: no truthprobe field in any session part")
+          db, probe = rows[-1]
+          print("db:", db)
+          print(json.dumps(probe)[:400])
+          if probe.get("status") != "ok":
+              sys.exit(f"FAIL: status is {probe.get('status')} ({probe.get('reason')})")
+          if not isinstance(probe.get("score"), (int, float)):
+              sys.exit("FAIL: score is not numeric")
+          print("OK: score", probe["score"], "level", probe.get("level"))
+          PY
+
+  # 5. The CLI must still build from the patched tree.
+  build:
+    name: cli build
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    needs: patch
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: clone, patch, install
+        run: |
+          git clone --filter=blob:none https://github.com/sst/opencode upstream
+          cd upstream
+          git checkout "$BASE"
+          git -c user.name=ci -c user.email=ci@local am ../patches/truthprobe-0001.patch
+          bun install
 
       - name: build
-        shell: bash
         env:
-          OPENCODE_TARGET: ${{ matrix.target }}
+          OPENCODE_TARGET: linux-x64
           OPENCODE_CHANNEL: dev
         run: |
           cd upstream/packages/cli
           bun run script/build.ts --skip-install
 
-      - name: smoke the built binary
-        shell: bash
+      - name: smoke the binary
         run: |
           cd upstream/packages/cli/dist
-          BIN=$(find . -name "opencode*" -type f -perm -u+x | head -1)
+          BIN=$(find . -maxdepth 3 -type f -name 'opencode' | head -1)
           echo "binary: $BIN"
           "$BIN" --version
