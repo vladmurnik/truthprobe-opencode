@@ -230,7 +230,7 @@ score_answer   = 0.6 · globalGeo + 0.4 · mean(score_sentence)
 | Автовключение без переменных окружения | мок + два прогона подряд | RUN1: проба → `{"status":"ok"}`; RUN2: **2 из 2** запросов с `logprobs: true, top_logprobs: 20` |
 | Регрессия вокруг событий текста | `test/session*.test.ts test/projector*.test.ts test/message*.test.ts` | **811 pass / 0 fail** |
 | Полный прогон core | `bun test` в `packages/core` (7 713 тестов, 331 файл) | 7 300 pass / 351 skip / 62 fail — ни одного в truthprobe: `tool-search` качает ripgrep с github.com, `provider-gitlab-oauth` ходит на gitlab.com, `cross-spawn`/MCP зависят от spawn; в окружении зарезана исходящая сеть |
-| Тесты TruthProbe, текущая сборка | `bun test` четырёх truthprobe-файлов | **97 pass / 0 fail** |
+| Тесты TruthProbe, текущая сборка | `bun test` пяти truthprobe-файлов | **109 pass / 0 fail** |
 | Патч на чистом дереве | `git am` в worktree `007afb1` | применяется без конфликтов, тесты 45 + 8 зелёные |
 | Типизация | schema / ai / core / client / tui | зелёная (132 / 357+322 / 2 030 / 181 / 1 942 файла) |
 | Типизация UI-пакетов | session-ui / app / desktop | зелёная (382 / 2 445 / 3 569 файлов, desktop — 2 проекта) |

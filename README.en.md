@@ -204,7 +204,7 @@ States: `ok` — tokens matched the text; `partial` — offsets drifted; `unavai
 | Auto-enable without environment variables | mock + two consecutive runs | RUN1: probe → `{"status":"ok"}`; RUN2: **2 of 2** requests with `logprobs: true, top_logprobs: 20` |
 | Regression around text events | `test/session*.test.ts test/projector*.test.ts test/message*.test.ts` | **811 pass / 0 fail** |
 | Full core run | `bun test` in `packages/core` (7 713 tests, 331 files) | 7 300 pass / 351 skip / 62 fail — none in truthprobe: `tool-search` downloads ripgrep from github.com, `provider-gitlab-oauth` calls gitlab.com, `cross-spawn`/MCP depend on spawn; the harness blocks outbound network |
-| TruthProbe tests, current build | `bun test` of the four truthprobe files | **97 pass / 0 fail** |
+| TruthProbe tests, current build | `bun test` of the five truthprobe files | **109 pass / 0 fail** |
 | Patch on a clean tree | `git am` in a `007afb1` worktree | applies without conflicts, tests 45 + 8 green |
 | Typecheck | schema / ai / core / client / tui | green (132 / 357+322 / 2 030 / 181 / 1 942 files) |
 | Typecheck of the UI packages | session-ui / app / desktop | green (382 / 2 445 / 3 569 files, desktop 2 projects) |
