@@ -1,6 +1,7 @@
 # TruthProbe for OpenCode — план разработки
 
-Статус: **0.2.0 — T2–T9 готовы и проверены** (коммиты `3ccda6c`, `a9db0da`, `2870f64`, ветка `feat/truthprobe`, 18 файлов, +1254/−27, патч `patches/truthprobe-0001.patch` применяется `git am` на чистое дерево `007afb1`; 45 + 8 тестов зелёные, полный прогон core 7272 pass / 39 чужих падений, сборка Windows 233 MB проверена на живом моке).
+Статус: **0.4.0** — восемь коммитов поверх `007afb1`, актуальные числа и замеры живут в
+`docs/VALIDATION.md`; этот файл оставлен как история решений и местами устарел.
 Открыто: T8 — проба реального шлюза opencode (нужен ключ) и калибровка `riskyThreshold` на живых ответах; осознанный долг — явный статус `unavailable` в UI, когда провайдер проигнорировал запрос logprobs.
 Проект: `C:\Users\adik\Desktop\progects\opencode-truthprobe`
 Песочница: WSL2 `Ubuntu 26.04`, 12 vCPU, 7.6 GB RAM, `~/src/opencode` (upstream `sst/opencode`, `dev`).

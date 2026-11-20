@@ -40,9 +40,18 @@ printf '    git %s\n    bun %s\n' "$(git --version | awk '{print $3}')" "$(bun -
 
 step "fetching sst/opencode @ ${BASE_SHORT} into $DIR"
 if [ -d "$DIR/.git" ] && git -C "$DIR" rev-parse --git-dir >/dev/null 2>&1; then
-  printf '    reusing existing checkout\n'
   cd "$DIR"
-  git fetch -q --depth 1 origin "$BASE" 2>/dev/null || true
+  head="$(git rev-parse HEAD 2>/dev/null || true)"
+  if [ "$head" = "$BASE" ]; then
+    printf '    reusing existing checkout at %s\n' "$BASE_SHORT"
+  else
+    # The patch is cut against $BASE, so a checkout on any other commit must be
+    # moved there first. Untracked files survive a hard reset; tracked edits do not.
+    printf '    existing checkout is on %s, switching to %s\n' "${head:0:7}" "$BASE_SHORT"
+    git fetch -q --depth 1 origin "$BASE"
+    git reset -q --hard FETCH_HEAD
+    git checkout -q -B truthprobe
+  fi
 else
   mkdir -p "$DIR"
   cd "$DIR"
@@ -69,6 +78,11 @@ else
   if ! git am --whitespace=nowarn "$PATCH"; then
     git am --abort 2>/dev/null || true
     printf '    git am failed, retrying as a plain diff\n'
+    # --check first: a partial `git apply` leaves the tree half-patched and hides
+    # the real error behind a wall of follow-up failures.
+    if ! git apply --check --whitespace=nowarn "$PATCH"; then
+      die "patch does not apply cleanly to $BASE_SHORT; the tree was left untouched"
+    fi
     git apply --whitespace=nowarn "$PATCH"
   fi
 fi

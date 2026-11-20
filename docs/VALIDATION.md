@@ -13,8 +13,9 @@
 | `3126939` | feat(truthprobe): show confidence in the desktop session UI |
 | `335305a` | feat(truthprobe): list doubtful sentences in the desktop footer |
 | `6017d75` | feat(desktop): let a fork brand the desktop app |
+| `a478531` | fix(truthprobe): keep logprobs that arrive without text, align tokens, always publish a verdict |
 
-Итог: **37 файлов, +2139 / −34**. Патч — `patches/truthprobe-0001.patch` (3292 строки, `git am`).
+Итог: **38 файлов, +2278 / −40**, восемь коммитов. Патч — `patches/truthprobe-0001.patch` (3703 строки, `git am`).
 
 ## 1. Слои патча
 
@@ -258,3 +259,50 @@ bun x electron-builder --win --x64 --publish never --dir --config electron-build
 это не сборка форка, а случайная. Переменные читаются в `src/main/constants.ts` (брэнд
 `OPENCODE_DESKTOP_APP(_ID)`) и в `electron-builder.config.ts` (`brand()`: appId, productName,
 `publish: null`).
+
+## 9. Живой шлюз free-pi: цифры на particle и deepseek (измерено)
+
+Шлюз `http://127.0.0.1:8790/v1`, провайдер `@ai-sdk/openai-compatible`, кэш автопроверки
+`{"freepi/particle":{"status":"ok"}}`. Сборка `0.0.0-dev-202611191618`, канал `dev`, проверка через
+парты в базе после живых прогонов CLI.
+
+**Что выяснилось про транспорт.** Шлюз присылает logprobs **отдельным чанком с пустой дельтой**:
+
+```
+1) {"delta":{"content":"Hi"},       "logprobs":null}
+2) {"delta":{} ,                    "logprobs":{"content":[{"token":"Hi","logprob":-0.0016,...}]}}
+3) {"delta":{"content":"."},        "logprobs":null}
+4) {"delta":{} ,                    "logprobs":{"content":[{"token":".","logprob":-1.209,...}]}}
+```
+
+Плюс внутренние токены (`<​/think>`, `<​/end​-of​-sentence​>`) вообще не имеют видимого
+текста. До `a478531` токены вешались только на чанк с текстом, поэтому карта токенов всегда была
+пуста и парт получал `unavailable` — это и было «не вижу цифр».
+
+**Замер 1 — `freepi/particle`.** Ответ про Эйфелеву башню, три предложения:
+
+```json
+{"status":"ok","score":0.8152,"risk":0.1848,
+ "first":{"score":0.9620,"entropy":0.0380,"token":"The"},
+ "sentences":[{"i":0,"score":0.7108,"risk":0.2892,"meanLp":0.8767,"minLp":-1.4335,"phi":0.9620,"tokens":20,"flag":false}]}
+```
+
+`sentences` непустые, `status: ok` — уровень предложений работает.
+
+**Замер 2 — `freepi/deepseek-v4.1-flash`.** Ответ про Канберру:
+
+```json
+{"status":"ok","score":0.6893,"risk":0.3107,
+ "first":{"score":0.8123,"entropy":0.1877,"token":"Capital"},
+ "sentences":[{"i":0,"text":"**Capital:** Canberra.","score":0.5151,"risk":0.4849,"flag":true}]}
+```
+
+Первый флаг на живом ответе: риск `0.4849` выше порога `0.45`.
+
+**Чего эти замеры не доказывают.** Ни один из них не размечен: мы не знаем, было ли первое
+предложение правдой. Числа подтверждают только, что сигнал доезжает до UI и что порог срабатывает.
+Калибровка — отдельный, пока не выполненный шаг, см. [`CALIBRATION.md`](CALIBRATION.md).
+
+**Известное ограничение точности.** На этом шлюзе распределение почти детерминированное
+(`logprob` лучшего токена порядка `-0.001`), поэтому `phi ≈ 1` и `answer confidence` уходит к
+`99.9997%`. Высокие проценты здесь означают «модель шла ровно», а не «ответ верный».

@@ -80,14 +80,15 @@ bun run --cwd packages/cli src/index.ts
 
 ### Готовый бинарь
 
+Публичных сборок **нет**: ни один бинарь не опубликован и контрольных сумм мы не выдаём. Собирать
+надо из дерева, которое поставил `install.sh`:
+
 ```bash
-# Linux x64
-curl -LO <release>/opencode-truthprobe-linux-x64 && chmod +x opencode-truthprobe-linux-x64
-# Windows x64
-curl -LO <release>/opencode-truthprobe-windows-x64.exe
+cd opencode-truthprobe
+bun run --cwd packages/cli script/build.ts        # dist/cli-<target>/bin/opencode
 ```
 
-Сборка из исходников — [`docs/BUILD.md`](docs/BUILD.md) (включая кросс-сборку Windows из Linux).
+Кросс-сборка Windows из Linux и варианты таргетов — [`docs/BUILD.md`](docs/BUILD.md).
 
 ### Desktop-приложение
 
@@ -196,7 +197,7 @@ python3 scripts/tui-probe.py && python3 scripts/screen-dump.py /tmp/tui-probe.lo
 
 ## Устройство патча
 
-37 файлов, +2139/−34, семь коммитов поверх `007afb1`. Шов тонкий и аддитивный:
+38 файлов, +2278/−40, восемь коммитов поверх `007afb1`. Шов тонкий и аддитивный:
 
 | Слой | Файл | Что делает |
 | --- | --- | --- |

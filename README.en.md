@@ -80,15 +80,15 @@ for that provider. No environment variables are needed.
 
 ### Prebuilt binaries
 
+There are **no published builds**: no binary is hosted and no checksum is published. Build from the
+tree that `install.sh` produced:
+
 ```bash
-# Linux x64
-curl -LO <release>/opencode-truthprobe-linux-x64 && chmod +x opencode-truthprobe-linux-x64
-# Windows x64
-curl -LO <release>/opencode-truthprobe-windows-x64.exe
+cd opencode-truthprobe
+bun run --cwd packages/cli script/build.ts        # dist/cli-<target>/bin/opencode
 ```
 
-Building from source — [`docs/BUILD.md`](docs/BUILD.md) (including the Windows cross-build from
-Linux).
+Windows cross-builds and target variants — [`docs/BUILD.md`](docs/BUILD.md).
 
 ### Desktop app
 
@@ -203,7 +203,7 @@ reproduction — [`docs/SMOKE-E2E.md`](docs/SMOKE-E2E.md).
 
 ## Anatomy of the patch
 
-37 files, +2139/−34, seven commits on top of `007afb1`. The seam is thin and additive:
+38 files, +2278/−40, eight commits on top of `007afb1`. The seam is thin and additive:
 
 | Layer | File | What it does |
 | --- | --- | --- |

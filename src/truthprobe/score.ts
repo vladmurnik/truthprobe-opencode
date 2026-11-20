@@ -22,7 +22,10 @@ export function isContentToken(token: string, minChars = 2): boolean {
   if (!token) return false;
   if (!/\S/.test(token)) return false;
   if (PUNCT_ONLY.test(token)) return false;
-  return token.replace(/\s/g, "").length >= minChars;
+  const visible = token.replace(/\s/g, "")
+  if (visible.length >= minChars) return true
+  // Иероглиф/канa/хангыль — самостоятельное слово в один символ, его нельзя терять.
+  return /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uac00-\ud7af]/.test(visible);
 }
 
 /**
@@ -77,6 +80,46 @@ export function tokensWithOffsets(tokens: TokenLogprob[]): TokenWithOffset[] {
 }
 
 /**
+ * Привязка токенов к тексту с терпимостью к «внутренним» токенам.
+ *
+ * Провайдеры (и reasoning-модели особенно) отдают токены, у которых нет
+ * видимого текста: `</think>`, служебные маркеры, обрезанные пробелы. Слепая
+ * конкатенация ломает смещения, поэтому каждый токен либо находится в тексте
+ * рядом с текущей позицией, либо пропускается.
+ */
+export function alignTokens(text: string, tokens: TokenLogprob[]): TokenWithOffset[] {
+  const out: TokenWithOffset[] = [];
+  let pos = 0;
+  for (const t of tokens) {
+    const tok = t.token;
+    if (!tok) continue;
+    if (text.startsWith(tok, pos)) {
+      out.push({ ...t, start: pos, end: pos + tok.length });
+      pos += tok.length;
+      continue;
+    }
+    // Токен мог потерять ведущий пробел/перенос: ищем его в пределах окна.
+    const at = text.indexOf(tok, pos);
+    if (at >= 0 && at - pos <= 8) {
+      out.push({ ...t, start: at, end: at + tok.length });
+      pos = at + tok.length;
+      continue;
+    }
+    const trimmed = tok.trimStart();
+    if (trimmed && trimmed !== tok) {
+      const at2 = text.indexOf(trimmed, pos);
+      if (at2 >= 0 && at2 - pos <= 8) {
+        out.push({ ...t, start: at2, end: at2 + trimmed.length });
+        pos = at2 + trimmed.length;
+        continue;
+      }
+    }
+    // Внутренний токен без видимого текста — пропускаем, не ломая смещения.
+  }
+  return out;
+}
+
+/**
  * Предложение, которому принадлежит диапазон токена.
  *
  * Токен может начинаться с пробела, который сегментатор уже «съел» как
@@ -121,13 +164,13 @@ export function scoreAnswer(
     };
   }
 
-  const withOffsets = tokensWithOffsets(tokens);
+  const withOffsets = alignTokens(text, tokens);
   const sentences = splitSentences(text);
 
-  // Дрейф смещений: если конкатенация токенов не совпала с текстом,
-  // привязка к предложениям ненадёжна — сигнализируем partial.
+  // Дрейф смещений: хвост ответа не покрыт токенами — привязка к предложениям
+  // ненадёжна, сигнализируем partial.
   const totalLen = withOffsets.length ? withOffsets[withOffsets.length - 1].end : 0;
-  const offsetDrift = Math.abs(totalLen - text.length) > 2;
+  const offsetDrift = totalLen < text.length - 2;
 
   const content = withOffsets.filter(
     (t) =>
@@ -143,7 +186,9 @@ export function scoreAnswer(
       first: null,
       sentences: [],
       flagged: 0,
-      reason: "no content tokens",
+      // Токены пришли, но ни один не нашёлся в тексте ответа: числа по такому
+      // потоку были бы выдумкой, честнее сказать «не могу сопоставить».
+      reason: withOffsets.length ? "no content tokens" : "tokens do not match the answer text",
     };
   }
 

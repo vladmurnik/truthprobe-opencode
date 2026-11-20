@@ -275,11 +275,11 @@ describe("truthprobe.scoreAnswer — деградация", () => {
     expect(scoreAnswer(text, raw, { minTokenChars: 1 }).status).toBe("ok")
   })
 
-  test("дрейф токенов относительно текста даёт partial", () => {
+  test("дрейф токенов относительно текста даёт unavailable, а не выдуманные числа", () => {
     const result = scoreAnswer("Совсем другой текст, который не совпадает.", tokens([["Что-то", -0.1], [" иное", -0.2]]))
-    expect(result.status).toBe("partial")
-    expect(result.reason).toBe("token/text offset drift")
-    expect(result.score).not.toBeNull()
+    expect(result.status).toBe("unavailable")
+    expect(result.reason).toBe("tokens do not match the answer text")
+    expect(result.score).toBeNull()
     expect(result.sentences).toEqual([])
   })
 })

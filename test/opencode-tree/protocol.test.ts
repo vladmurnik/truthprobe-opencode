@@ -1,10 +1,14 @@
 import { afterEach, describe, expect, test } from "bun:test"
-import {
-  TRUTHPROBE_TOP_K,
-  truthprobeBody,
-  truthprobeEnabled,
-  truthprobeFromDelta,
-} from "../src/protocols/openai-chat.js"
+
+// Этот файл рассчитан на запуск внутри дерева opencode, куда он копируется
+// вместе с патчем: там исходники лежат в `../src/protocols`. В самом репозитории
+// их нет, поэтому честнее пропустить набор, чем падать с «module not found».
+const protocol = await import("../src/protocols/openai-chat.js").catch(() => undefined)
+const TRUTHPROBE_TOP_K = protocol?.TRUTHPROBE_TOP_K as number
+const truthprobeBody = protocol?.truthprobeBody as (...args: any[]) => Record<string, unknown>
+const truthprobeEnabled = protocol?.truthprobeEnabled as (...args: any[]) => boolean
+const truthprobeFromDelta = protocol?.truthprobeFromDelta as (...args: any[]) => unknown
+const suite = protocol ? describe : describe.skip
 
 const original = process.env.OPENCODE_TRUTHPROBE
 
@@ -13,7 +17,7 @@ afterEach(() => {
   else process.env.OPENCODE_TRUTHPROBE = original
 })
 
-describe("openai-chat.truthprobeEnabled", () => {
+suite("openai-chat.truthprobeEnabled", () => {
   test("capabilities win over the environment", () => {
     process.env.OPENCODE_TRUTHPROBE = "1"
     expect(truthprobeEnabled({ capabilities: { logprobs: false } })).toBe(false)
@@ -36,7 +40,7 @@ describe("openai-chat.truthprobeEnabled", () => {
   })
 })
 
-describe("openai-chat.truthprobeBody", () => {
+suite("openai-chat.truthprobeBody", () => {
   test("requests logprobs with the configured top-k", () => {
     expect(TRUTHPROBE_TOP_K).toBeGreaterThan(1)
     expect(truthprobeBody({ capabilities: { logprobs: true } })).toEqual({
@@ -52,7 +56,7 @@ describe("openai-chat.truthprobeBody", () => {
   })
 })
 
-describe("openai-chat.truthprobeFromDelta", () => {
+suite("openai-chat.truthprobeFromDelta", () => {
   test("missing or empty content yields undefined", () => {
     expect(truthprobeFromDelta(undefined)).toBeUndefined()
     expect(truthprobeFromDelta(null)).toBeUndefined()

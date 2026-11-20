@@ -25,6 +25,8 @@ import type { PluginInternal } from "./internal.js"
 
 const PROBE_TIMEOUT_MS = 15_000
 const CHAT_PATH = "/chat/completions"
+/** Столько же альтернатив, сколько просит боевой запрос (TRUTHPROBE_TOP_K). */
+const PROBE_TOP_K = 20
 
 type HttpRequest = SessionHooks["http.request"]
 
@@ -94,7 +96,7 @@ export const TruthprobePlugin = define({
       const headers = new Headers(event.request.headers)
       headers.delete("content-length")
       headers.set("content-type", "application/json")
-      const body = JSON.stringify(Capability.probeBody(modelID))
+      const body = JSON.stringify(Capability.probeBody(modelID, PROBE_TOP_K))
       const response = yield* Effect.promise(async () => {
         const result = await fetch(url, {
           method: "POST",
@@ -126,6 +128,9 @@ export const TruthprobePlugin = define({
       if (status === "ok") yield* enable(providerID, event.model.id)
     })
 
+    // Выключено пользователем: не трогаем ни каталог моделей, ни сеть.
+    if (disabled()) return
+
     // Известные «да» включаем сразу: бейдж работает с первого же ответа.
     const now = Date.now()
     for (const [key, entry] of Object.entries(state.entries)) {
@@ -135,7 +140,6 @@ export const TruthprobePlugin = define({
       yield* enable(providerID, rest.join("/"))
     }
 
-    if (disabled()) return
 
     // Очередь + одна fiber: хук не ждёт сети, проверки идут строго по одной.
     const queue = yield* Queue.unbounded<HttpRequest>()

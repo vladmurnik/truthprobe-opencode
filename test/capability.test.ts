@@ -5,62 +5,62 @@ const NOW = 1_800_000_000_000
 const DAY = 24 * 60 * 60 * 1000
 
 describe("ttl", () => {
-  test("ok/ignored/rejected/unsupported Р¶РёРІСѓС‚ РЅРµРґРµР»СЋ", () => {
+  test("ok/ignored/rejected/unsupported живут неделю", () => {
     expect(Capability.ttl("ok")).toBe(7 * DAY)
     expect(Capability.ttl("ignored")).toBe(7 * DAY)
     expect(Capability.ttl("rejected")).toBe(7 * DAY)
     expect(Capability.ttl("unsupported")).toBe(7 * DAY)
   })
-  test("auth РїРµСЂРµРїСЂРѕРІРµСЂСЏРµРј С‡РµСЂРµР· С‡Р°СЃ", () => {
+  test("auth перепроверяем через час", () => {
     expect(Capability.ttl("auth")).toBe(60 * 60 * 1000)
   })
-  test("error РЅРµ РєСЌС€РёСЂСѓРµС‚СЃСЏ РІРѕРІСЃРµ", () => {
+  test("error не кэшируется вовсе", () => {
     expect(Capability.ttl("error")).toBe(0)
   })
 })
 
 describe("fresh", () => {
-  test("СЃРІРµР¶Р°СЏ Р·Р°РїРёСЃСЊ Р¶РёРІС‘С‚", () => {
+  test("свежая запись живёт", () => {
     expect(Capability.fresh({ status: "ok", checkedAt: NOW - DAY }, NOW)).toBe(true)
   })
-  test("РїСЂРѕСЃСЂРѕС‡РµРЅРЅР°СЏ вЂ” РЅРµС‚", () => {
+  test("просроченная — нет", () => {
     expect(Capability.fresh({ status: "ok", checkedAt: NOW - 8 * DAY }, NOW)).toBe(false)
   })
-  test("СЂРѕРІРЅРѕ РЅР° РіСЂР°РЅРёС†Рµ вЂ” СѓР¶Рµ РЅРµС‚", () => {
+  test("ровно на границе — уже нет", () => {
     expect(Capability.fresh({ status: "ok", checkedAt: NOW - 7 * DAY }, NOW)).toBe(false)
   })
-  test("error РЅРµ Р±С‹РІР°РµС‚ СЃРІРµР¶РёРј", () => {
+  test("error не бывает свежим", () => {
     expect(Capability.fresh({ status: "error", checkedAt: NOW }, NOW)).toBe(false)
   })
-  test("undefined вЂ” РЅРµ СЃРІРµР¶РёР№", () => {
+  test("undefined — не свежий", () => {
     expect(Capability.fresh(undefined, NOW)).toBe(false)
   })
-  test("Р·Р°РїРёСЃСЊ РёР· Р±СѓРґСѓС‰РµРіРѕ РЅРµ СЃС‡РёС‚Р°РµС‚СЃСЏ СЃРІРµР¶РµР№", () => {
+  test("запись из будущего не считается свежей", () => {
     expect(Capability.fresh({ status: "ok", checkedAt: NOW + DAY }, NOW)).toBe(false)
   })
 })
 
 describe("enabled", () => {
-  test("С‚РѕР»СЊРєРѕ ok РІРєР»СЋС‡Р°РµС‚ СЃР±РѕСЂ", () => {
+  test("только ok включает сбор", () => {
     expect(Capability.enabled({ status: "ok", checkedAt: NOW }, NOW)).toBe(true)
     for (const status of ["ignored", "rejected", "auth", "unsupported", "error"] as const) {
       expect(Capability.enabled({ status, checkedAt: NOW }, NOW)).toBe(false)
     }
   })
-  test("СЃС‚Р°СЂС‹Р№ ok РЅРµ РІРєР»СЋС‡Р°РµС‚", () => {
+  test("старый ok не включает", () => {
     expect(Capability.enabled({ status: "ok", checkedAt: NOW - 30 * DAY }, NOW)).toBe(false)
   })
 })
 
 describe("parse/serialize", () => {
-  test("РїСѓСЃС‚РѕР№ Рё Р±РёС‚С‹Р№ РІС…РѕРґ РґР°СЋС‚ РїСѓСЃС‚РѕР№ С„Р°Р№Р»", () => {
+  test("пустой и битый вход дают пустой файл", () => {
     expect(Capability.parse(undefined)).toEqual(Capability.empty())
     expect(Capability.parse("")).toEqual(Capability.empty())
-    expect(Capability.parse("{РЅРµ json")).toEqual(Capability.empty())
+    expect(Capability.parse("{не json")).toEqual(Capability.empty())
     expect(Capability.parse("null")).toEqual(Capability.empty())
     expect(Capability.parse('{"entries":null}')).toEqual(Capability.empty())
   })
-  test("С‡СѓР¶РёРµ Рё РЅРµРїРѕР»РЅС‹Рµ Р·Р°РїРёСЃРё РѕС‚Р±СЂР°СЃС‹РІР°СЋС‚СЃСЏ", () => {
+  test("чужие и неполные записи отбрасываются", () => {
     const file = Capability.parse(
       JSON.stringify({
         entries: {
@@ -73,7 +73,7 @@ describe("parse/serialize", () => {
     )
     expect(Object.keys(file.entries)).toEqual(["p/m"])
   })
-  test("roundtrip СЃРѕС…СЂР°РЅСЏРµС‚ Р·Р°РїРёСЃСЊ Рё РІРµСЂСЃРёСЋ", () => {
+  test("roundtrip сохраняет запись и версию", () => {
     const entry = { status: "ok" as const, checkedAt: NOW, endpoint: "https://x.test", model: "m" }
     const file = Capability.setEntry(Capability.empty(), "p/m", entry)
     expect(Capability.parse(Capability.serialize(file))).toEqual(file)

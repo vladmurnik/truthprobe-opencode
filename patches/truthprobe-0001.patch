@@ -1,7 +1,7 @@
 From 3ccda6cdf3320c8fbcfbb2c8656c34a2827932af Mon Sep 17 00:00:00 2001
 From: truthprobe <truthprobe@local>
 Date: Thu, 19 Nov 2026 00:59:59 +0300
-Subject: [PATCH 1/7] feat(truthprobe): score answers from token logprobs
+Subject: [PATCH 1/8] feat(truthprobe): score answers from token logprobs
 
 - schema: Truthprobe.Info, capabilities.logprobs, AssistantText.truthprobe, optional truthprobe on session.text.ended
 - ai/openai-chat: request logprobs/top_logprobs when enabled, parse choice-level logprobs into providerMetadata
@@ -1192,7 +1192,7 @@ index 6a844d7..f21811e 100644
 From a9db0dab3c3392b40e8c9366e3455be1f37b7dcf Mon Sep 17 00:00:00 2001
 From: adik <adik@local>
 Date: Thu, 19 Nov 2026 01:12:00 +0300
-Subject: [PATCH 2/7] fix(tui): apply truthprobe metadata from
+Subject: [PATCH 2/8] fix(tui): apply truthprobe metadata from
  session.text.ended events
 
 The solid client store only copied event.data.text into the in-memory
@@ -1222,7 +1222,7 @@ index 8b6d247..7368d0c 100644
 From 2870f64a9bcb19d1e1701d85101c5074646cdcac Mon Sep 17 00:00:00 2001
 From: adik <adik@local>
 Date: Thu, 19 Nov 2026 03:08:36 +0300
-Subject: [PATCH 3/7] test(truthprobe): cover segmentation, scoring and
+Subject: [PATCH 3/8] test(truthprobe): cover segmentation, scoring and
  protocol parsing
 
 - send logprobs from every chat-completions model that declares the capability
@@ -1985,7 +1985,7 @@ index eed85f3..5bde799 100755
 From f04342565c0963f466c9bae21dc1b0d9158bab44 Mon Sep 17 00:00:00 2001
 From: TruthProbe <truthprobe@local>
 Date: Thu, 19 Nov 2026 09:40:19 +0300
-Subject: [PATCH 4/7] feat(truthprobe): probe providers and enable logprobs
+Subject: [PATCH 4/8] feat(truthprobe): probe providers and enable logprobs
  automatically
 
 Adding a provider key no longer needs an environment variable.
@@ -2800,7 +2800,7 @@ index 0000000..e23e561
 From 3126939707e7c7c305f8b3c2a89d196dc1b5acd9 Mon Sep 17 00:00:00 2001
 From: adik <adik@local>
 Date: Thu, 19 Nov 2026 13:34:58 +0300
-Subject: [PATCH 5/7] feat(truthprobe): show confidence in the desktop session
+Subject: [PATCH 5/8] feat(truthprobe): show confidence in the desktop session
  UI
 
 ---
@@ -2897,7 +2897,7 @@ index be526b4..659538f 100644
 From 335305a2e846ae50c7d31cec6a750b74a4d385a6 Mon Sep 17 00:00:00 2001
 From: TruthProbe <truthprobe@localhost>
 Date: Thu, 19 Nov 2026 13:44:43 +0300
-Subject: [PATCH 6/7] feat(truthprobe): list doubtful sentences in the desktop
+Subject: [PATCH 6/8] feat(truthprobe): list doubtful sentences in the desktop
  footer
 
 ---
@@ -3082,7 +3082,7 @@ index b44a4df..2a7ef9d 100644
 From 6017d751fc1a7a9bf1eac92e2b40b161e0c48b49 Mon Sep 17 00:00:00 2001
 From: TruthProbe <truthprobe@localhost>
 Date: Thu, 19 Nov 2026 14:33:06 +0300
-Subject: [PATCH 7/7] feat(desktop): let a fork brand the desktop app
+Subject: [PATCH 7/8] feat(desktop): let a fork brand the desktop app
 
 A fork that ships its own Electron application sets OPENCODE_DESKTOP_APP and
 OPENCODE_DESKTOP_APP_ID before building. The window title, the AppUserModelID,
@@ -3287,6 +3287,417 @@ index 9688672..de655d5 100644
      icon: path.join(icons, `icon.${process.platform === "win32" ? "ico" : "png"}`),
      backgroundColor: storedBackgroundColor(),
      ...platformFrame(tone(), zoom),
+-- 
+2.53.0
+
+
+From a478531b342afc1a07626aafcd1e085543cbaef2 Mon Sep 17 00:00:00 2001
+From: truthprobe <truthprobe@local>
+Date: Thu, 19 Nov 2026 19:21:40 +0300
+Subject: [PATCH 8/8] fix(truthprobe): keep logprobs that arrive without text,
+ align tokens, always publish a verdict
+
+- ai: buffer token logprobs in parser state; gateways send them in a separate
+  chunk with an empty delta, so every text chunk looked like it had none
+- core: publish the truthprobe verdict even when no tokens arrived, so the UI
+  can say 'unavailable' out loud instead of rendering nothing
+- core: score reasoning-token logprobs and fall back to them for the answer
+- core: align tokens to the answer text instead of concatenating blindly, so
+  sentence-level scores survive internal tokens such as </think>
+- core: one topK for both probe and live request; 'off' now disables the probe
+- core: keep single-character CJK/kana/hangul tokens as content
+- session-ui: show 'first-token' and 'answer' confidence always, with reason
+- tui: rename the first-token line to match what it measures
+- server: answer /api/info in every state so the desktop client can connect
+---
+ packages/ai/src/protocols/openai-chat.ts      | 36 +++++++++++--
+ packages/core/src/plugin/truthprobe.ts        |  8 ++-
+ .../src/session/runner/publish-llm-event.ts   | 48 +++++++++++++++--
+ packages/core/src/truthprobe/score.ts         | 53 +++++++++++++++++--
+ packages/server/src/process.ts                |  6 ++-
+ .../src/message/message-content.tsx           | 26 ++++++---
+ .../tui/src/routes/session/message-parts.tsx  |  2 +-
+ 7 files changed, 156 insertions(+), 23 deletions(-)
+
+diff --git a/packages/ai/src/protocols/openai-chat.ts b/packages/ai/src/protocols/openai-chat.ts
+index 42479fb..d74446e 100644
+--- a/packages/ai/src/protocols/openai-chat.ts
++++ b/packages/ai/src/protocols/openai-chat.ts
+@@ -434,6 +434,8 @@ export interface ParserState {
+   readonly latestToolIndex?: number
+   readonly nextToolIndex: number
+   readonly requireFinishReason: boolean
++  /** Токены logprobs, пришедшие чанком без текста (шлюзы вроде freepi). */
++  readonly pendingTruthprobe: TruthprobeToken[]
+ }
+ 
+ // =============================================================================
+@@ -1230,6 +1232,10 @@ const step = (state: ParserState, event: OpenAIChatEvent) =>
+         }
+       : state.finishReason
+     const delta = choice?.delta
++    // Некоторые шлюзы присылают logprobs отдельным чанком с пустой дельтой:
++    // копим их и отдаём вместе со следующей текстовой или reasoning-дельтой.
++    const chunkTruthprobe = truthprobeFromDelta(choice?.logprobs ?? delta?.logprobs)
++    if (chunkTruthprobe) state.pendingTruthprobe.push(...chunkTruthprobe)
+     const toolDeltas = delta?.tool_calls ?? []
+     let tools = state.tools
+     let pendingTools = state.pendingTools
+@@ -1268,7 +1274,18 @@ const step = (state: ParserState, event: OpenAIChatEvent) =>
+     const text = detailDelta?.length
+       ? (detailText(detailDelta, reasoningTextObserved) ?? reasoning?.text)
+       : reasoning?.text
+-    if (text !== undefined) lifecycle = Lifecycle.reasoningDelta(lifecycle, events, "reasoning-0", text, deltaMetadata)
++    if (text !== undefined) {
++      // Привязка токен→текст приблизительная: внутренние токены (например
++      // "</think>") не имеют видимого текста, поэтому scoreAnswer помечает ответ partial.
++      const buffered = state.pendingTruthprobe.length ? state.pendingTruthprobe.splice(0) : undefined
++      lifecycle = Lifecycle.reasoningDelta(
++        lifecycle,
++        events,
++        "reasoning-0",
++        text,
++        buffered === undefined ? deltaMetadata : { ...deltaMetadata, truthprobe: { tokens: buffered } },
++      )
++    }
+     else if (
+       (reasoningDetailsObserved || reasoningOpaque !== undefined) &&
+       !lifecycle.reasoning.has("reasoning-0") &&
+@@ -1281,13 +1298,13 @@ const step = (state: ParserState, event: OpenAIChatEvent) =>
+     // refusal output so late reasoning deltas and details join the same block,
+     // and `finishEvents` closes it once with the complete metadata.
+     if (delta?.content) {
+-      const tokens = truthprobeFromDelta(choice?.logprobs ?? delta?.logprobs)
++      const buffered = state.pendingTruthprobe.length ? state.pendingTruthprobe.splice(0) : undefined
+       lifecycle = Lifecycle.textDelta(
+         lifecycle,
+         events,
+         "text-0",
+         delta.content,
+-        tokens === undefined ? undefined : { truthprobe: { tokens } },
++        buffered === undefined ? undefined : { truthprobe: { tokens: buffered } },
+       )
+     }
+ 
+@@ -1397,6 +1414,7 @@ const step = (state: ParserState, event: OpenAIChatEvent) =>
+         latestToolIndex,
+         nextToolIndex,
+         requireFinishReason: state.requireFinishReason,
++        pendingTruthprobe: state.pendingTruthprobe,
+       },
+       events,
+     ] as const
+@@ -1439,15 +1457,22 @@ export const finishEvents = Effect.fnUntraced(function* (state: ParserState) {
+     state.reasoningDetailsObserved ? [...state.reasoningDetails] : undefined,
+     state.reasoningOpaque,
+   )
++  // Хвостовые токены (последний чанк с logprobs приходит уже без текста) —
++  // отдаём пустой текстовой дельтой, чтобы они не потерялись при скоринге.
++  const leftover = state.pendingTruthprobe.splice(0)
++  const withLeftover =
++    leftover.length > 0 && state.lifecycle.text.has("text-0")
++      ? Lifecycle.textDelta(state.lifecycle, events, "text-0", "", { truthprobe: { tokens: leftover } })
++      : state.lifecycle
+   const started =
+     (state.reasoningDetailsObserved || state.reasoningOpaque !== undefined) && !state.reasoningEmitted
+       ? Lifecycle.reasoningStart(
+-          state.lifecycle,
++          withLeftover,
+           events,
+           "reasoning-0",
+           reasoningMetadata(state.providerMetadataKey, state.reasoningField),
+         )
+-      : state.lifecycle
++      : withLeftover
+   const ended = Lifecycle.reasoningEnd(started, events, "reasoning-0", metadata)
+   const lifecycle = toolCallEvents.length ? Lifecycle.stepStart(ended, events) : ended
+   events.push(...toolCallEvents)
+@@ -1487,6 +1512,7 @@ export const protocol = Protocol.make({
+       reasoningEmitted: false,
+       nextToolIndex: 0,
+       requireFinishReason: request.model.compatibility?.requireFinishReason ?? true,
++      pendingTruthprobe: [],
+     }),
+     step: (state: ParserState, event) => (event === DONE ? Effect.succeed([state, []] as const) : step(state, event)),
+     terminal: (event) => event === DONE,
+diff --git a/packages/core/src/plugin/truthprobe.ts b/packages/core/src/plugin/truthprobe.ts
+index 1916a70..86930e1 100644
+--- a/packages/core/src/plugin/truthprobe.ts
++++ b/packages/core/src/plugin/truthprobe.ts
+@@ -25,6 +25,8 @@ import type { PluginInternal } from "./internal.js"
+ 
+ const PROBE_TIMEOUT_MS = 15_000
+ const CHAT_PATH = "/chat/completions"
++/** Столько же альтернатив, сколько просит боевой запрос (TRUTHPROBE_TOP_K). */
++const PROBE_TOP_K = 20
+ 
+ type HttpRequest = SessionHooks["http.request"]
+ 
+@@ -94,7 +96,7 @@ export const TruthprobePlugin = define({
+       const headers = new Headers(event.request.headers)
+       headers.delete("content-length")
+       headers.set("content-type", "application/json")
+-      const body = JSON.stringify(Capability.probeBody(modelID))
++      const body = JSON.stringify(Capability.probeBody(modelID, PROBE_TOP_K))
+       const response = yield* Effect.promise(async () => {
+         const result = await fetch(url, {
+           method: "POST",
+@@ -126,6 +128,9 @@ export const TruthprobePlugin = define({
+       if (status === "ok") yield* enable(providerID, event.model.id)
+     })
+ 
++    // Выключено пользователем: не трогаем ни каталог моделей, ни сеть.
++    if (disabled()) return
++
+     // Известные «да» включаем сразу: бейдж работает с первого же ответа.
+     const now = Date.now()
+     for (const [key, entry] of Object.entries(state.entries)) {
+@@ -135,7 +140,6 @@ export const TruthprobePlugin = define({
+       yield* enable(providerID, rest.join("/"))
+     }
+ 
+-    if (disabled()) return
+ 
+     // Очередь + одна fiber: хук не ждёт сети, проверки идут строго по одной.
+     const queue = yield* Queue.unbounded<HttpRequest>()
+diff --git a/packages/core/src/session/runner/publish-llm-event.ts b/packages/core/src/session/runner/publish-llm-event.ts
+index 9402901..cbf407c 100644
+--- a/packages/core/src/session/runner/publish-llm-event.ts
++++ b/packages/core/src/session/runner/publish-llm-event.ts
+@@ -1,3 +1,4 @@
++import fs from "node:fs"
+ import { type LLMEvent, type ProviderMetadata, type ToolResultValue } from "@opencode/ai/effect"
+ import { isRecord } from "@opencode/util/record"
+ import type { Agent } from "@opencode/schema/agent"
+@@ -274,6 +275,11 @@ export const createLLMEventPublisher = (bus: Pick<Bus.Interface, "publish">, inp
+   // TruthProbe: logprobs каждой текстовой дельты приходят в providerMetadata.
+   const truthprobeTokens = new Map<string, TokenLogprob[]>()
+   const truthprobeText = new Map<string, string>()
++  // Reasoning-модели (и шлюзы вроде freepi) отдают logprobs на reasoning-чанках,
++  // а видимый текст идёт уже без них. Копим отдельно, чтобы не потерять цифры.
++  const truthprobeReasoningTokens = new Map<string, TokenLogprob[]>()
++  const truthprobeReasoningText = new Map<string, string>()
++  let lastReasoningScore: ReturnType<typeof scoreAnswer> | undefined
+   const scoredText = new Map<string, ReturnType<typeof scoreAnswer>>()
+   const text = fragments(
+     "text",
+@@ -494,7 +500,24 @@ export const createLLMEventPublisher = (bus: Pick<Bus.Interface, "publish">, inp
+         const value = event.text ?? truthprobeText.get(event.id) ?? ""
+         truthprobeTokens.delete(event.id)
+         truthprobeText.delete(event.id)
+-        if (tokens?.length) scoredText.set(event.id, scoreAnswer(value, tokens))
++        // Поле ставим всегда: при отсутствии logprobs scoreAnswer вернёт
++        // status "unavailable" с причиной, и UI скажет об этом вслух вместо тишины.
++        if (value.length > 0) {
++          const scored = scoreAnswer(value, tokens ?? [])
++          // У reasoning-моделей logprobs приходят на скрытых рассуждениях: показываем
++          // уверенность по ним, но без списка предложений — их в ответе нет.
++          if (scored.status === "unavailable" && lastReasoningScore && lastReasoningScore.status === "ok")
++            scoredText.set(event.id, {
++              status: "ok",
++              score: lastReasoningScore.score,
++              risk: lastReasoningScore.risk,
++              first: lastReasoningScore.first,
++              sentences: [],
++              flagged: 0,
++              reason: "confidence from reasoning tokens",
++            })
++          else scoredText.set(event.id, scored)
++        }
+         yield* text.end(event.id, native(event.providerMetadata), event.text)
+         return
+       }
+@@ -509,12 +532,31 @@ export const createLLMEventPublisher = (bus: Pick<Bus.Interface, "publish">, inp
+           native: native(event.providerMetadata),
+         })
+         return
+-      case "reasoning-delta":
++      case "reasoning-delta": {
++        try {
++          fs.appendFileSync("C:/Users/adik/AppData/Local/Temp/opencode/parse.log", JSON.stringify({ w: "core-rsn", n: ((event.providerMetadata?.truthprobe as any)?.tokens ?? []).length }) + "\n")
++        } catch {}
++        const tokens = (
++          event.providerMetadata?.truthprobe as unknown as { tokens?: TokenLogprob[] } | undefined
++        )?.tokens
++        if (tokens?.length) {
++          const accumulated = truthprobeReasoningTokens.get(event.id)
++          if (accumulated) accumulated.push(...tokens)
++          else truthprobeReasoningTokens.set(event.id, [...tokens])
++        }
++        if (event.text) truthprobeReasoningText.set(event.id, (truthprobeReasoningText.get(event.id) ?? "") + event.text)
+         yield* reasoning.append(event.id, event.text, native(event.providerMetadata))
+         return
+-      case "reasoning-end":
++      }
++      case "reasoning-end": {
++        const tokens = truthprobeReasoningTokens.get(event.id)
++        const value = event.text ?? truthprobeReasoningText.get(event.id) ?? ""
++        truthprobeReasoningTokens.delete(event.id)
++        truthprobeReasoningText.delete(event.id)
++        if (tokens?.length && value.length > 0) lastReasoningScore = scoreAnswer(value, tokens)
+         yield* reasoning.end(event.id, native(event.providerMetadata), event.text)
+         return
++      }
+       case "tool-input-start":
+         outputStarted = true
+         yield* startToolInput(event)
+diff --git a/packages/core/src/truthprobe/score.ts b/packages/core/src/truthprobe/score.ts
+index 2f47b52..e024f93 100644
+--- a/packages/core/src/truthprobe/score.ts
++++ b/packages/core/src/truthprobe/score.ts
+@@ -22,7 +22,10 @@ export function isContentToken(token: string, minChars = 2): boolean {
+   if (!token) return false;
+   if (!/\S/.test(token)) return false;
+   if (PUNCT_ONLY.test(token)) return false;
+-  return token.replace(/\s/g, "").length >= minChars;
++  const visible = token.replace(/\s/g, "")
++  if (visible.length >= minChars) return true
++  // Иероглиф/канa/хангыль — самостоятельное слово в один символ, его нельзя терять.
++  return /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uac00-\ud7af]/.test(visible);
+ }
+ 
+ /**
+@@ -76,6 +79,46 @@ export function tokensWithOffsets(tokens: TokenLogprob[]): TokenWithOffset[] {
+   return out;
+ }
+ 
++/**
++ * Привязка токенов к тексту с терпимостью к «внутренним» токенам.
++ *
++ * Провайдеры (и reasoning-модели особенно) отдают токены, у которых нет
++ * видимого текста: `</think>`, служебные маркеры, обрезанные пробелы. Слепая
++ * конкатенация ломает смещения, поэтому каждый токен либо находится в тексте
++ * рядом с текущей позицией, либо пропускается.
++ */
++export function alignTokens(text: string, tokens: TokenLogprob[]): TokenWithOffset[] {
++  const out: TokenWithOffset[] = [];
++  let pos = 0;
++  for (const t of tokens) {
++    const tok = t.token;
++    if (!tok) continue;
++    if (text.startsWith(tok, pos)) {
++      out.push({ ...t, start: pos, end: pos + tok.length });
++      pos += tok.length;
++      continue;
++    }
++    // Токен мог потерять ведущий пробел/перенос: ищем его в пределах окна.
++    const at = text.indexOf(tok, pos);
++    if (at >= 0 && at - pos <= 8) {
++      out.push({ ...t, start: at, end: at + tok.length });
++      pos = at + tok.length;
++      continue;
++    }
++    const trimmed = tok.trimStart();
++    if (trimmed && trimmed !== tok) {
++      const at2 = text.indexOf(trimmed, pos);
++      if (at2 >= 0 && at2 - pos <= 8) {
++        out.push({ ...t, start: at2, end: at2 + trimmed.length });
++        pos = at2 + trimmed.length;
++        continue;
++      }
++    }
++    // Внутренний токен без видимого текста — пропускаем, не ломая смещения.
++  }
++  return out;
++}
++
+ /**
+  * Предложение, которому принадлежит диапазон токена.
+  *
+@@ -121,13 +164,13 @@ export function scoreAnswer(
+     };
+   }
+ 
+-  const withOffsets = tokensWithOffsets(tokens);
++  const withOffsets = alignTokens(text, tokens);
+   const sentences = splitSentences(text);
+ 
+-  // Дрейф смещений: если конкатенация токенов не совпала с текстом,
+-  // привязка к предложениям ненадёжна — сигнализируем partial.
++  // Дрейф смещений: хвост ответа не покрыт токенами — привязка к предложениям
++  // ненадёжна, сигнализируем partial.
+   const totalLen = withOffsets.length ? withOffsets[withOffsets.length - 1].end : 0;
+-  const offsetDrift = Math.abs(totalLen - text.length) > 2;
++  const offsetDrift = totalLen < text.length - 2;
+ 
+   const content = withOffsets.filter(
+     (t) =>
+diff --git a/packages/server/src/process.ts b/packages/server/src/process.ts
+index f29afe4..934530a 100644
+--- a/packages/server/src/process.ts
++++ b/packages/server/src/process.ts
+@@ -194,7 +194,11 @@ function dispatch(
+     const state = yield* status.current
+     const app = yield* Ref.get(application)
+     const ready = state.type === "ready" && Option.isSome(app)
+-    if (request.method === "GET" && url.pathname === "/api/info" && !ready) {
++    // Answered in every state: clients probe this endpoint to decide whether the service they
++    // spawned is the one answering. Serving it only while `!ready` made a ready service look like
++    // an unknown responder (the app answered with its HTML shell), so the client waited out its
++    // whole timeout and reported the background service as failed.
++    if (request.method === "GET" && url.pathname === "/api/info") {
+       if (!(yield* authorizedRequest(request, auth))) return unauthorizedResponse(request)
+       return yield* infoResponse(status, version, urls, tmp)
+     }
+diff --git a/packages/session-ui/src/message/message-content.tsx b/packages/session-ui/src/message/message-content.tsx
+index 2a7ef9d..b7b1a1e 100644
+--- a/packages/session-ui/src/message/message-content.tsx
++++ b/packages/session-ui/src/message/message-content.tsx
+@@ -1206,10 +1206,16 @@ export function AssistantTextContent(props: {
+       return [{ label: probe.reason ? `confidence unavailable · ${probe.reason}` : "confidence unavailable" }]
+     }
+ 
+-    const score = pct(probe.first?.score) ?? pct(probe.score)
+-    if (!score) return []
+-
+-    const parts = [`confidence ${score}`]
++    const firstScore = pct(probe.first?.score)
++    const answerScore = pct(probe.score)
++    if (!firstScore && !answerScore) return []
++
++    // Явно называем, что считаем: «первый токен» — это φ первого токена,
++    // «ответ» — агрегат по всем токенам. Раньше первое число называлось
++    // «первым предложением», что было неправдой.
++    const parts: string[] = []
++    if (firstScore) parts.push(`first-token ${firstScore}`)
++    if (answerScore) parts.push(`answer ${answerScore}`)
+     if (probe.status === "partial") parts.push("partial")
+     if (typeof probe.flagged === "number" && probe.flagged > 0) parts.push(`${probe.flagged} doubtful`)
+ 
+@@ -1248,10 +1254,18 @@ export function AssistantTextContent(props: {
+         <div data-slot="text-part-body">
+           <PacedMarkdown text={props.text} cacheKey={props.id} streaming={props.message.time.completed === undefined} />
+         </div>
+-        <Show when={doubtful().length > 0}>
++        <Show when={props.probe}>
+           <div data-slot="text-part-doubtful" class="mt-2 flex flex-col gap-0.5 text-[13px] leading-text-compact">
+             <span class="text-v2-text-text-faint">
+-              {`answer confidence ${answerConfidence()} \u00B7 ${doubtful().length} doubtful sentence${doubtful().length > 1 ? "s" : ""}`}
++              {props.probe?.status === "unavailable"
++                ? `answer confidence unavailable${props.probe?.reason ? ` \u00B7 ${props.probe.reason}` : ""}`
++                : `answer confidence ${answerConfidence()}${
++                    props.probe?.status === "partial" ? " \u00B7 partial match" : ""
++                  }${
++                    doubtful().length > 0
++                      ? ` \u00B7 ${doubtful().length} doubtful sentence${doubtful().length > 1 ? "s" : ""}`
++                      : ""
++                  }`}
+             </span>
+             <For each={doubtful()}>
+               {(sentence) => (
+diff --git a/packages/tui/src/routes/session/message-parts.tsx b/packages/tui/src/routes/session/message-parts.tsx
+index f21811e..edac0e3 100644
+--- a/packages/tui/src/routes/session/message-parts.tsx
++++ b/packages/tui/src/routes/session/message-parts.tsx
+@@ -190,7 +190,7 @@ export function TextPart(props: {
+           <text fg={theme.text.muted}>
+             {probe()?.status === "unavailable"
+               ? `confidence unavailable${probe()?.reason ? ` · ${probe()?.reason}` : ""}`
+-              : `first-sentence confidence ${pct(probe()?.first?.score)}${probe()?.status === "partial" ? " · partial match" : ""}`}
++              : `first-token confidence ${pct(probe()?.first?.score)}${probe()?.status === "partial" ? " · partial match" : ""}`}
+           </text>
+         </box>
+       </Show>
 -- 
 2.53.0
 
