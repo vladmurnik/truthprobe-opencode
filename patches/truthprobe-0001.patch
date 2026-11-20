@@ -1,7 +1,7 @@
 From 3ccda6cdf3320c8fbcfbb2c8656c34a2827932af Mon Sep 17 00:00:00 2001
 From: truthprobe <truthprobe@local>
 Date: Thu, 19 Nov 2026 00:59:59 +0300
-Subject: [PATCH 01/12] feat(truthprobe): score answers from token logprobs
+Subject: [PATCH 01/13] feat(truthprobe): score answers from token logprobs
 
 - schema: Truthprobe.Info, capabilities.logprobs, AssistantText.truthprobe, optional truthprobe on session.text.ended
 - ai/openai-chat: request logprobs/top_logprobs when enabled, parse choice-level logprobs into providerMetadata
@@ -1192,7 +1192,7 @@ index 6a844d7..f21811e 100644
 From a9db0dab3c3392b40e8c9366e3455be1f37b7dcf Mon Sep 17 00:00:00 2001
 From: adik <adik@local>
 Date: Thu, 19 Nov 2026 01:12:00 +0300
-Subject: [PATCH 02/12] fix(tui): apply truthprobe metadata from
+Subject: [PATCH 02/13] fix(tui): apply truthprobe metadata from
  session.text.ended events
 
 The solid client store only copied event.data.text into the in-memory
@@ -1222,7 +1222,7 @@ index 8b6d247..7368d0c 100644
 From 2870f64a9bcb19d1e1701d85101c5074646cdcac Mon Sep 17 00:00:00 2001
 From: adik <adik@local>
 Date: Thu, 19 Nov 2026 03:08:36 +0300
-Subject: [PATCH 03/12] test(truthprobe): cover segmentation, scoring and
+Subject: [PATCH 03/13] test(truthprobe): cover segmentation, scoring and
  protocol parsing
 
 - send logprobs from every chat-completions model that declares the capability
@@ -1985,7 +1985,7 @@ index eed85f3..5bde799 100755
 From f04342565c0963f466c9bae21dc1b0d9158bab44 Mon Sep 17 00:00:00 2001
 From: TruthProbe <truthprobe@local>
 Date: Thu, 19 Nov 2026 09:40:19 +0300
-Subject: [PATCH 04/12] feat(truthprobe): probe providers and enable logprobs
+Subject: [PATCH 04/13] feat(truthprobe): probe providers and enable logprobs
  automatically
 
 Adding a provider key no longer needs an environment variable.
@@ -2800,7 +2800,7 @@ index 0000000..e23e561
 From 3126939707e7c7c305f8b3c2a89d196dc1b5acd9 Mon Sep 17 00:00:00 2001
 From: adik <adik@local>
 Date: Thu, 19 Nov 2026 13:34:58 +0300
-Subject: [PATCH 05/12] feat(truthprobe): show confidence in the desktop
+Subject: [PATCH 05/13] feat(truthprobe): show confidence in the desktop
  session UI
 
 ---
@@ -2897,7 +2897,7 @@ index be526b4..659538f 100644
 From 335305a2e846ae50c7d31cec6a750b74a4d385a6 Mon Sep 17 00:00:00 2001
 From: TruthProbe <truthprobe@localhost>
 Date: Thu, 19 Nov 2026 13:44:43 +0300
-Subject: [PATCH 06/12] feat(truthprobe): list doubtful sentences in the
+Subject: [PATCH 06/13] feat(truthprobe): list doubtful sentences in the
  desktop footer
 
 ---
@@ -3082,7 +3082,7 @@ index b44a4df..2a7ef9d 100644
 From 6017d751fc1a7a9bf1eac92e2b40b161e0c48b49 Mon Sep 17 00:00:00 2001
 From: TruthProbe <truthprobe@localhost>
 Date: Thu, 19 Nov 2026 14:33:06 +0300
-Subject: [PATCH 07/12] feat(desktop): let a fork brand the desktop app
+Subject: [PATCH 07/13] feat(desktop): let a fork brand the desktop app
 
 A fork that ships its own Electron application sets OPENCODE_DESKTOP_APP and
 OPENCODE_DESKTOP_APP_ID before building. The window title, the AppUserModelID,
@@ -3294,7 +3294,7 @@ index 9688672..de655d5 100644
 From a478531b342afc1a07626aafcd1e085543cbaef2 Mon Sep 17 00:00:00 2001
 From: truthprobe <truthprobe@local>
 Date: Thu, 19 Nov 2026 19:21:40 +0300
-Subject: [PATCH 08/12] fix(truthprobe): keep logprobs that arrive without
+Subject: [PATCH 08/13] fix(truthprobe): keep logprobs that arrive without
  text, align tokens, always publish a verdict
 
 - ai: buffer token logprobs in parser state; gateways send them in a separate
@@ -3705,7 +3705,7 @@ index f21811e..edac0e3 100644
 From 5a335e31658d33202b76ac0fb58f795cb1db4e03 Mon Sep 17 00:00:00 2001
 From: truthprobe <truthprobe@local>
 Date: Thu, 19 Nov 2026 19:36:25 +0300
-Subject: [PATCH 09/12] fix(truthprobe): say so when tokens do not match the
+Subject: [PATCH 09/13] fix(truthprobe): say so when tokens do not match the
  answer text
 
 Dropping every token that cannot be found in the text silently produced
@@ -3737,7 +3737,7 @@ index e024f93..7d46333 100644
 From 3d8a5b1ac9a2b94bd6729f6e9de9b6b400ac5df6 Mon Sep 17 00:00:00 2001
 From: adik <adik@users.noreply.github.com>
 Date: Thu, 19 Nov 2026 21:10:26 +0300
-Subject: [PATCH 10/12] feat(truthprobe): confidence levels and sentence
+Subject: [PATCH 10/13] feat(truthprobe): confidence levels and sentence
  highlights
 
 ---
@@ -8105,7 +8105,7 @@ index 0000000..d3450d7
 From 51f6f1088316234b53fb7ba8b8b78619c9b3d570 Mon Sep 17 00:00:00 2001
 From: adik <adik@users.noreply.github.com>
 Date: Thu, 19 Nov 2026 21:13:56 +0300
-Subject: [PATCH 11/12] feat(truthprobe): pluggable scorer (geometric | linear
+Subject: [PATCH 11/13] feat(truthprobe): pluggable scorer (geometric | linear
  weights)
 
 ---
@@ -8487,7 +8487,7 @@ index 0000000..998bf44
 From 699374c936946d597addbc90680dd680e048a37c Mon Sep 17 00:00:00 2001
 From: adik <adik@users.noreply.github.com>
 Date: Thu, 19 Nov 2026 21:28:48 +0300
-Subject: [PATCH 12/12] fix(schema): accept null level so unavailable verdicts
+Subject: [PATCH 12/13] fix(schema): accept null level so unavailable verdicts
  decode
 
 ---
@@ -8538,6 +8538,142 @@ index 5d05c07..d6f7831 100644
 +  level: optional(Schema.NullOr(Level)),
    reason: optional(Schema.String),
  }).annotate({ identifier: "Truthprobe.Info" })
+-- 
+2.53.0
+
+
+From d153658602f327ff2f5f9a7ccbcfd4c2a6e6a9dc Mon Sep 17 00:00:00 2001
+From: TruthProbe <truthprobe@localhost>
+Date: Thu, 19 Nov 2026 21:58:03 +0300
+Subject: [PATCH 13/13] fix(truthprobe): make the patched tree typecheck clean
+
+- schema: Level is a type alias over the Literals union, not an interface
+- core: DEFAULT_SCORE_OPTIONS omits the optional scorer field
+- core: linear scorer guards indexed weights before use
+- core: reasoning fallback event carries its level
+- test: compare levels as strings to avoid overload mismatch
+---
+ .../src/session/runner/publish-llm-event.ts     |  1 +
+ packages/core/src/truthprobe/scorer.ts          | 17 ++++++++++-------
+ packages/core/src/truthprobe/types.ts           |  2 +-
+ packages/core/test/truthprobe-levels.test.ts    |  8 +++++---
+ packages/schema/src/truthprobe.ts               |  2 +-
+ 5 files changed, 18 insertions(+), 12 deletions(-)
+
+diff --git a/packages/core/src/session/runner/publish-llm-event.ts b/packages/core/src/session/runner/publish-llm-event.ts
+index 7c395a6..03af658 100644
+--- a/packages/core/src/session/runner/publish-llm-event.ts
++++ b/packages/core/src/session/runner/publish-llm-event.ts
+@@ -510,6 +510,7 @@ export const createLLMEventPublisher = (bus: Pick<Bus.Interface, "publish">, inp
+               status: "ok",
+               score: lastReasoningScore.score,
+               risk: lastReasoningScore.risk,
++              level: lastReasoningScore.level,
+               first: lastReasoningScore.first,
+               sentences: [],
+               flagged: 0,
+diff --git a/packages/core/src/truthprobe/scorer.ts b/packages/core/src/truthprobe/scorer.ts
+index e18f4c0..3d659e2 100644
+--- a/packages/core/src/truthprobe/scorer.ts
++++ b/packages/core/src/truthprobe/scorer.ts
+@@ -28,7 +28,8 @@ function clamp01(x: number): number {
+ export function geometricScorer(): Scorer {
+   return {
+     name: "geometric",
+-    score({ features }) {
++    score(input) {
++      const { features } = input
+       const geo = Math.exp(features.meanLp)
+       const worst = Math.exp(features.minLp)
+       return clamp01(0.4 * geo + 0.3 * worst + 0.3 * features.meanPhi)
+@@ -36,8 +37,7 @@ export function geometricScorer(): Scorer {
+   }
+ }
+ 
+-function sigmoid(x: number): number {
+-  if (x >= 0) return 1 / (1 + Math.exp(-x))
++function sigmoid(x: number): number {  if (x >= 0) return 1 / (1 + Math.exp(-x))
+   const e = Math.exp(x)
+   return e / (1 + e)
+ }
+@@ -46,7 +46,8 @@ function sigmoid(x: number): number {
+ export function linearScorer(weights: LinearWeights, name = "linear"): Scorer {
+   return {
+     name,
+-    score({ features }) {
++    score(input) {
++      const { features } = input
+       const x = [1, features.meanLp, features.minLp, features.meanPhi, features.fracLow]
+       const w = [
+         weights.bias,
+@@ -57,10 +58,12 @@ export function linearScorer(weights: LinearWeights, name = "linear"): Scorer {
+       ]
+       let z = 0
+       for (let i = 0; i < x.length; i++) {
+-        if (!Number.isFinite(w[i])) return geometricScorer().score({ features })
+-        z += w[i] * x[i]
++        const wi = w[i] ?? Number.NaN
++        const xi = x[i] ?? 0
++        if (!Number.isFinite(wi)) return geometricScorer().score(input)
++        z += wi * xi
+       }
+-      if (!Number.isFinite(z)) return geometricScorer().score({ features })
++      if (!Number.isFinite(z)) return geometricScorer().score(input)
+       return clamp01(sigmoid(z))
+     },
+   }
+diff --git a/packages/core/src/truthprobe/types.ts b/packages/core/src/truthprobe/types.ts
+index 932e53c..5053498 100644
+--- a/packages/core/src/truthprobe/types.ts
++++ b/packages/core/src/truthprobe/types.ts
+@@ -116,7 +116,7 @@ export interface LinearWeights {
+   fracLow: number;
+ }
+ 
+-export const DEFAULT_SCORE_OPTIONS: Required<ScoreOptions> = {
++export const DEFAULT_SCORE_OPTIONS: Required<Omit<ScoreOptions, "scorer">> = {
+   topK: 20,
+   riskyThreshold: 0.45,
+   shakyThreshold: 0.3,
+diff --git a/packages/core/test/truthprobe-levels.test.ts b/packages/core/test/truthprobe-levels.test.ts
+index ebc064a..14be703 100644
+--- a/packages/core/test/truthprobe-levels.test.ts
++++ b/packages/core/test/truthprobe-levels.test.ts
+@@ -46,7 +46,8 @@ describe("scoreAnswer проставляет уровень", () => {
+     expect(result.status).toBe("ok")
+     expect(result.score).not.toBeNull()
+     expect(result.level).toBe(levelOf(result.score))
+-    expect(result.sentences[0]?.level).toBe(levelOf(result.sentences[0]?.score))
++    const first = result.sentences[0]!
++    expect(String(first.level)).toBe(String(levelOf(first.score)))
+   })
+ 
+   test("неуверенный токен опускает уровень", () => {
+@@ -59,8 +60,9 @@ describe("scoreAnswer проставляет уровень", () => {
+       { token: ".", logprob: -0.01 },
+     ])
+     expect(result.level).not.toBe("safe")
+-    expect(result.sentences[0]?.level).not.toBe("safe")
+-    expect(result.sentences[0]?.level).toBe(levelOf(result.sentences[0]?.score))
++    const only = result.sentences[0]!
++    expect(String(only.level)).not.toBe("safe")
++    expect(String(only.level)).toBe(String(levelOf(only.score)))
+   })
+ 
+   test("без токенов уровень null, а не unreliable", () => {
+diff --git a/packages/schema/src/truthprobe.ts b/packages/schema/src/truthprobe.ts
+index d6f7831..99b4171 100644
+--- a/packages/schema/src/truthprobe.ts
++++ b/packages/schema/src/truthprobe.ts
+@@ -18,7 +18,7 @@ export const First = Schema.Struct({
+   token: Schema.String,
+ }).annotate({ identifier: "Truthprobe.First" })
+ 
+-export interface Level extends Schema.Schema.Type<typeof Level> {}
++export type Level = Schema.Schema.Type<typeof Level>
+ /** Уровень уверенности по score; отсутствует у ответов, записанных до 0.5. */
+ export const Level = Schema.Literals(["safe", "likely", "uncertain", "risky", "unreliable"]).annotate({
+   identifier: "Truthprobe.Level",
 -- 
 2.53.0
 
