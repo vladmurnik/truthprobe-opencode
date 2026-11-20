@@ -7,6 +7,11 @@
 
 **English** · [Русский](README.md)
 
+**TruthProbe exists to show you where exactly the model hallucinates or lies.** It does not rule
+"true or false" for you — it points at the **place in the answer** where the model was unsure:
+it highlights specific sentences and numbers their confidence, so you check two or three doubtful
+claims instead of re-reading the whole answer.
+
 Shows **how confident the model is in its own answer**, from the log-probabilities of the first
 tokens — no second pass, no self-check by the model, no second judge model.
 
