@@ -89,6 +89,15 @@ curl -LO <release>/opencode-truthprobe-windows-x64.exe
 
 Сборка из исходников — [`docs/BUILD.md`](docs/BUILD.md) (включая кросс-сборку Windows из Linux).
 
+### Desktop-приложение
+
+Тот же бейдж живёт и в Electron-приложении: чип `confidence` в футере ответа рисует общий компонент
+`@opencode/session-ui`, поэтому правка одна на desktop и на веб-интерфейс. Запуск из того же дерева:
+
+```bash
+bun run dev:desktop
+```
+
 ### Включение
 
 Автоматически. Плагин `opencode.truthprobe` слушает `http.request` — единственное место, где
@@ -148,7 +157,7 @@ score_answer   = 0.6 · globalGeo + 0.4 · mean(score_sentence)
 | Типизация UI-пакетов | session-ui / app / desktop | зелёная (380 / 2 443 / 3 567 файлов, desktop — 2 проекта) |
 | Сквозной прогон | мок-провайдер с настоящими `logprobs` | `logprobs: true, top_logprobs: 20` в запросе, `truthprobe` в базе |
 | Живой TUI | pty-проба | бейдж и блок спорных предложений отрендерились |
-| Desktop UI | чип `confidence` в Electron-рендерере | строка `confidence NN%` в футере ответа |
+| Desktop UI | чип `confidence` в общем компоненте `@opencode/session-ui` | типизация desktop (3 567 файлов) зелёная; строка `confidence NN%` в футере ответа |
 | Windows-бинарь | `.exe` на моке | `status: "ok", score: 0.417, first 0.708, flagged: 1` |
 
 Воспроизвести без ключей:

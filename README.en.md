@@ -90,6 +90,16 @@ curl -LO <release>/opencode-truthprobe-windows-x64.exe
 Building from source — [`docs/BUILD.md`](docs/BUILD.md) (including the Windows cross-build from
 Linux).
 
+### Desktop app
+
+The same badge lives in the Electron app: the `confidence` chip in the answer footer is drawn by the
+shared `@opencode/session-ui` component, so desktop and the web UI get it from one edit. Start it from
+the same tree:
+
+```bash
+bun run dev:desktop
+```
+
 ### How it turns on
 
 Automatically. The `opencode.truthprobe` plugin listens on `http.request` — the only place where the
@@ -154,7 +164,7 @@ States: `ok` — tokens matched the text; `partial` — offsets drifted; `unavai
 | Typecheck of the UI packages | session-ui / app / desktop | green (380 / 2 443 / 3 567 files, desktop 2 projects) |
 | End-to-end run | mock provider with real `logprobs` | `logprobs: true, top_logprobs: 20` in the request, `truthprobe` in the database |
 | Live TUI | pty probe | badge and the doubtful-sentence block rendered |
-| Desktop UI | session-ui chip in the Electron renderer | `confidence NN%` line in the answer footer |
+| Desktop UI | session-ui chip in the shared Electron component | green typecheck of desktop (3 567 files); `confidence NN%` line in the answer footer |
 | Windows binary | `.exe` against the mock | `status: "ok", score: 0.417, first: 0.708, flagged: 1` |
 
 Reproduce without keys:
