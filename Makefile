@@ -11,6 +11,8 @@
 #   make desktop   собрать desktop-приложение (нужен установленный bun)
 #   make clean     удалить рабочее дерево, собранное setup
 #   make eval      AUROC/ECE/Brier по размеченным строкам (data/eval-fixture.jsonl)
+#   make weights   обучить веса на data/rows-lie-vs-truth.jsonl (нужен python3)
+#   make data      собрать новые строки с шлюза (нужен COLLECT_URL и ключ)
 #
 # Переменные:
 #   TP_DIR   куда клонировать opencode (по умолчанию .worktree/opencode)
@@ -21,7 +23,7 @@ SHELL := bash
 BASE := 007afb1b0c8a36dff93d7945909d4e976545ba95
 TP_DIR ?= .worktree/opencode
 
-.PHONY: help setup test verify patch preview desktop clean eval
+.PHONY: help setup test verify patch preview desktop clean eval weights data
 
 help:
 	@sed -n '2,18p' Makefile
@@ -50,3 +52,16 @@ clean:
 
 eval:
 	python3 scripts/evaluate.py data/eval-fixture.jsonl $(if $(WEIGHTS),--weights $(WEIGHTS),)
+
+weights:
+	python3 scripts/calibrate.py data/rows-lie-vs-truth.jsonl --fit --by-model --out data/weights.json
+	@echo "готово: data/weights.json — включить так: TRUTHPROBE_SCORER=linear:data/weights.json"
+
+data:
+	python3 scripts/collect.py --url "$${COLLECT_URL:-http://127.0.0.1:3001/v1}" \
+		--provider "$${COLLECT_PROVIDER:-freepi}" \
+		--models "$${COLLECT_MODELS:-particle,deepseek-v4.1-flash,deepseek-v4-flash,glm-5.3-flash}" \
+		--prompts data/qa-hard2-bank.jsonl --auto-label data/qa-hard2-bank.jsonl \
+		--samples "$${COLLECT_SAMPLES:-4}" --temperature 0.8 --max-tokens 200 --workers 6 \
+		--out "$${COLLECT_OUT:-data/rows-new.jsonl}" --resume
+	@echo "дальше: python3 scripts/audit-bank.py data/rows-new.jsonl data/qa-hard2-bank.jsonl"

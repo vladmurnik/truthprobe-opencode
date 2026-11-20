@@ -12,6 +12,8 @@ cd truthprobe-opencode
 make setup          # клон opencode на BASE, git am патча, bun install, тесты
 make test           # юнит-тесты самого репозитория (~2 c, без клонирования)
 make preview        # мок-провайдер + один запрос через CLI, видно вердикт
+make data           # собрать новые калибровочные строки (нужен OpenAI-совместимый шлюз)
+make weights        # обучить веса на собранных строках → data/weights.json
 ```
 
 Windows (PowerShell):

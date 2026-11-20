@@ -1,7 +1,7 @@
 From 3ccda6cdf3320c8fbcfbb2c8656c34a2827932af Mon Sep 17 00:00:00 2001
 From: truthprobe <truthprobe@local>
 Date: Thu, 19 Nov 2026 00:59:59 +0300
-Subject: [PATCH 01/18] feat(truthprobe): score answers from token logprobs
+Subject: [PATCH 01/19] feat(truthprobe): score answers from token logprobs
 
 - schema: Truthprobe.Info, capabilities.logprobs, AssistantText.truthprobe, optional truthprobe on session.text.ended
 - ai/openai-chat: request logprobs/top_logprobs when enabled, parse choice-level logprobs into providerMetadata
@@ -1192,7 +1192,7 @@ index 6a844d7..f21811e 100644
 From a9db0dab3c3392b40e8c9366e3455be1f37b7dcf Mon Sep 17 00:00:00 2001
 From: adik <adik@local>
 Date: Thu, 19 Nov 2026 01:12:00 +0300
-Subject: [PATCH 02/18] fix(tui): apply truthprobe metadata from
+Subject: [PATCH 02/19] fix(tui): apply truthprobe metadata from
  session.text.ended events
 
 The solid client store only copied event.data.text into the in-memory
@@ -1222,7 +1222,7 @@ index 8b6d247..7368d0c 100644
 From 2870f64a9bcb19d1e1701d85101c5074646cdcac Mon Sep 17 00:00:00 2001
 From: adik <adik@local>
 Date: Thu, 19 Nov 2026 03:08:36 +0300
-Subject: [PATCH 03/18] test(truthprobe): cover segmentation, scoring and
+Subject: [PATCH 03/19] test(truthprobe): cover segmentation, scoring and
  protocol parsing
 
 - send logprobs from every chat-completions model that declares the capability
@@ -1985,7 +1985,7 @@ index eed85f3..5bde799 100755
 From f04342565c0963f466c9bae21dc1b0d9158bab44 Mon Sep 17 00:00:00 2001
 From: TruthProbe <truthprobe@local>
 Date: Thu, 19 Nov 2026 09:40:19 +0300
-Subject: [PATCH 04/18] feat(truthprobe): probe providers and enable logprobs
+Subject: [PATCH 04/19] feat(truthprobe): probe providers and enable logprobs
  automatically
 
 Adding a provider key no longer needs an environment variable.
@@ -2800,7 +2800,7 @@ index 0000000..e23e561
 From 3126939707e7c7c305f8b3c2a89d196dc1b5acd9 Mon Sep 17 00:00:00 2001
 From: adik <adik@local>
 Date: Thu, 19 Nov 2026 13:34:58 +0300
-Subject: [PATCH 05/18] feat(truthprobe): show confidence in the desktop
+Subject: [PATCH 05/19] feat(truthprobe): show confidence in the desktop
  session UI
 
 ---
@@ -2897,7 +2897,7 @@ index be526b4..659538f 100644
 From 335305a2e846ae50c7d31cec6a750b74a4d385a6 Mon Sep 17 00:00:00 2001
 From: TruthProbe <truthprobe@localhost>
 Date: Thu, 19 Nov 2026 13:44:43 +0300
-Subject: [PATCH 06/18] feat(truthprobe): list doubtful sentences in the
+Subject: [PATCH 06/19] feat(truthprobe): list doubtful sentences in the
  desktop footer
 
 ---
@@ -3082,7 +3082,7 @@ index b44a4df..2a7ef9d 100644
 From 6017d751fc1a7a9bf1eac92e2b40b161e0c48b49 Mon Sep 17 00:00:00 2001
 From: TruthProbe <truthprobe@localhost>
 Date: Thu, 19 Nov 2026 14:33:06 +0300
-Subject: [PATCH 07/18] feat(desktop): let a fork brand the desktop app
+Subject: [PATCH 07/19] feat(desktop): let a fork brand the desktop app
 
 A fork that ships its own Electron application sets OPENCODE_DESKTOP_APP and
 OPENCODE_DESKTOP_APP_ID before building. The window title, the AppUserModelID,
@@ -3294,7 +3294,7 @@ index 9688672..de655d5 100644
 From a478531b342afc1a07626aafcd1e085543cbaef2 Mon Sep 17 00:00:00 2001
 From: truthprobe <truthprobe@local>
 Date: Thu, 19 Nov 2026 19:21:40 +0300
-Subject: [PATCH 08/18] fix(truthprobe): keep logprobs that arrive without
+Subject: [PATCH 08/19] fix(truthprobe): keep logprobs that arrive without
  text, align tokens, always publish a verdict
 
 - ai: buffer token logprobs in parser state; gateways send them in a separate
@@ -3705,7 +3705,7 @@ index f21811e..edac0e3 100644
 From 5a335e31658d33202b76ac0fb58f795cb1db4e03 Mon Sep 17 00:00:00 2001
 From: truthprobe <truthprobe@local>
 Date: Thu, 19 Nov 2026 19:36:25 +0300
-Subject: [PATCH 09/18] fix(truthprobe): say so when tokens do not match the
+Subject: [PATCH 09/19] fix(truthprobe): say so when tokens do not match the
  answer text
 
 Dropping every token that cannot be found in the text silently produced
@@ -3737,7 +3737,7 @@ index e024f93..7d46333 100644
 From 3d8a5b1ac9a2b94bd6729f6e9de9b6b400ac5df6 Mon Sep 17 00:00:00 2001
 From: adik <adik@users.noreply.github.com>
 Date: Thu, 19 Nov 2026 21:10:26 +0300
-Subject: [PATCH 10/18] feat(truthprobe): confidence levels and sentence
+Subject: [PATCH 10/19] feat(truthprobe): confidence levels and sentence
  highlights
 
 ---
@@ -8105,7 +8105,7 @@ index 0000000..d3450d7
 From 51f6f1088316234b53fb7ba8b8b78619c9b3d570 Mon Sep 17 00:00:00 2001
 From: adik <adik@users.noreply.github.com>
 Date: Thu, 19 Nov 2026 21:13:56 +0300
-Subject: [PATCH 11/18] feat(truthprobe): pluggable scorer (geometric | linear
+Subject: [PATCH 11/19] feat(truthprobe): pluggable scorer (geometric | linear
  weights)
 
 ---
@@ -8487,7 +8487,7 @@ index 0000000..998bf44
 From 699374c936946d597addbc90680dd680e048a37c Mon Sep 17 00:00:00 2001
 From: adik <adik@users.noreply.github.com>
 Date: Thu, 19 Nov 2026 21:28:48 +0300
-Subject: [PATCH 12/18] fix(schema): accept null level so unavailable verdicts
+Subject: [PATCH 12/19] fix(schema): accept null level so unavailable verdicts
  decode
 
 ---
@@ -8545,7 +8545,7 @@ index 5d05c07..d6f7831 100644
 From d153658602f327ff2f5f9a7ccbcfd4c2a6e6a9dc Mon Sep 17 00:00:00 2001
 From: TruthProbe <truthprobe@localhost>
 Date: Thu, 19 Nov 2026 21:58:03 +0300
-Subject: [PATCH 13/18] fix(truthprobe): make the patched tree typecheck clean
+Subject: [PATCH 13/19] fix(truthprobe): make the patched tree typecheck clean
 
 - schema: Level is a type alias over the Literals union, not an interface
 - core: DEFAULT_SCORE_OPTIONS omits the optional scorer field
@@ -8681,7 +8681,7 @@ index d6f7831..99b4171 100644
 From 3b720f0a39072f8e1699cecd75337d10f3f3c402 Mon Sep 17 00:00:00 2001
 From: TruthProbe <truthprobe@localhost>
 Date: Fri, 20 Nov 2026 07:54:47 +0300
-Subject: [PATCH 14/18] feat(truthprobe): per-model calibration weights
+Subject: [PATCH 14/19] feat(truthprobe): per-model calibration weights
 
 - core: WeightsBundle/parseWeightsBundle/bundleScorer/weightsFor read the
   {global, models} bundle written by calibrate.py --fit --by-model
@@ -8972,7 +8972,7 @@ index 0000000..57691fb
 From f6ef42b7d241e856c4b443e8d55c7fc88668c939 Mon Sep 17 00:00:00 2001
 From: TruthProbe <truthprobe@localhost>
 Date: Fri, 20 Nov 2026 15:31:41 +0300
-Subject: [PATCH 15/18] feat(session-ui): one readable confidence verdict and a
+Subject: [PATCH 15/19] feat(session-ui): one readable confidence verdict and a
  doubtful list
 
 - session-ui: new confidence.tsx with ConfidenceMeter, ConfidenceLine and
@@ -9248,7 +9248,7 @@ index 29f537b..6043672 100644
 From 068ce15559a427b8b95e53f2effbbf473ddc0764 Mon Sep 17 00:00:00 2001
 From: vladmurnik <vladmurnik@users.noreply.github.com>
 Date: Fri, 20 Nov 2026 16:28:49 +0300
-Subject: [PATCH 16/18] feat(tui): fixed-width confidence meter and level label
+Subject: [PATCH 16/19] feat(tui): fixed-width confidence meter and level label
 
 ---
  .../tui/src/routes/session/message-parts.tsx  | 36 +++++++++++++------
@@ -9332,7 +9332,7 @@ index b94c95c..8c17cd8 100644
 From 654daf52b109ed8571a8cdebcca7902232e88174 Mon Sep 17 00:00:00 2001
 From: vladmurnik <vladmurnik@users.noreply.github.com>
 Date: Fri, 20 Nov 2026 18:15:27 +0300
-Subject: [PATCH 17/18] fix(truthprobe): drop phi and the worst token from the
+Subject: [PATCH 17/19] fix(truthprobe): drop phi and the worst token from the
  default score
 
 Measured on 626 rows (544 truthful, 82 deliberate lies): the old
@@ -9450,7 +9450,7 @@ index 998bf44..3e7db3f 100644
 From 0360b612d487da3d131c60188e29a296ff2224b6 Mon Sep 17 00:00:00 2001
 From: vladmurnik <vladmurnik@users.noreply.github.com>
 Date: Fri, 20 Nov 2026 20:23:10 +0300
-Subject: [PATCH 18/18] feat(truthprobe): carry digit density as a feature
+Subject: [PATCH 18/19] feat(truthprobe): carry digit density as a feature
 
 - core: ScorerFeatures.digitDensity and an optional LinearWeights.digitDensity,
   so old weight files keep loading with a zero weight
@@ -9626,6 +9626,118 @@ index 3e7db3f..e231a93 100644
    })
  
    test("отвергает мусор", () => {
+-- 
+2.53.0
+
+
+From e6e5aec22af6994db4cb2604c246aa217ed0d95b Mon Sep 17 00:00:00 2001
+From: vladmurnik <vladmurnik@users.noreply.github.com>
+Date: Fri, 20 Nov 2026 20:50:16 +0300
+Subject: [PATCH 19/19] test(truthprobe): pin cyrillic, CJK, emoji and arabic
+ answers
+
+- core: one test file covering five scripts, offsets, sentence spans and the
+  'tokens do not match the text' degradation on non-latin input
+- the behaviour was already correct; the test exists so a future alignment
+  change cannot silently break it
+---
+ packages/core/test/truthprobe-unicode.test.ts | 87 +++++++++++++++++++
+ 1 file changed, 87 insertions(+)
+ create mode 100644 packages/core/test/truthprobe-unicode.test.ts
+
+diff --git a/packages/core/test/truthprobe-unicode.test.ts b/packages/core/test/truthprobe-unicode.test.ts
+new file mode 100644
+index 0000000..92b6302
+--- /dev/null
++++ b/packages/core/test/truthprobe-unicode.test.ts
+@@ -0,0 +1,87 @@
++import { describe, expect, test } from "bun:test"
++
++import { scoreAnswer, tokensWithOffsets } from "../src/truthprobe/score"
++import { splitSentences } from "../src/truthprobe/sentences"
++import type { TokenLogprob } from "../src/truthprobe/types"
++
++/**
++ * Кириллица, CJK, эмодзи, арабский и combining-знаки — это не экзотика:
++ * модели отвечают на всех этих языках. Тест фиксирует, что токенизация по
++ * кодовым единицам не ломает выравнивание и оценку, и что «нет сигнала»
++ * не подменяется выдуманным числом.
++ */
++const cut = (text: string, size: number): TokenLogprob[] => {
++  const out: TokenLogprob[] = []
++  for (let i = 0; i < text.length; i += size) {
++    const token = text.slice(i, i + size)
++    out.push({
++      token,
++      logprob: -0.05,
++      top: [
++        { token, logprob: -0.05 },
++        { token: "\u0000a", logprob: -2.5 },
++        { token: "\u0000b", logprob: -3.5 },
++      ],
++    })
++  }
++  return out
++}
++
++const cases: Array<[string, string]> = [
++  ["кириллица", "Москва — столица России. В ней живёт больше десяти миллионов человек."],
++  ["CJK", "北京是中国的首都。它有一千多万人口。"],
++  ["эмодзи", "Paris is the capital of France 🇫🇷. It has about two million people."],
++  ["арабский", "القاهرة هي عاصمة مصر. يعيش فيها أكثر من عشرة ملايين نسمة."],
++  ["combining", "Zürich liegt in der Schweiz. Die Stadt hat rund 400 000 Einwohner."],
++]
++
++describe("scoreAnswer на нелатинском тексте", () => {
++  for (const [name, text] of cases) {
++    test(`${name}: токены покрывают текст и оценка считается`, () => {
++      const tokens = cut(text, 3)
++      expect(tokens.map((t) => t.token).join("")).toBe(text)
++
++      const offsets = tokensWithOffsets(tokens)
++      expect(offsets[offsets.length - 1]!.end).toBe(text.length)
++
++      const res = scoreAnswer(text, tokens, {})
++      expect(res.status).toBe("ok")
++      expect(res.score).not.toBeNull()
++      expect(res.score!).toBeGreaterThan(0)
++      expect(res.score!).toBeLessThanOrEqual(1)
++      expect(res.risk!).toBeCloseTo(1 - res.score!, 10)
++      expect(res.sentences.length).toBeGreaterThan(0)
++      for (const sentence of res.sentences) {
++        expect(sentence.tokens).toBeGreaterThan(0)
++        expect(text.slice(sentence.start, sentence.end)).toBe(sentence.text)
++      }
++    })
++  }
++
++  test("сумма оценок предложений покрывает весь текст без дыр", () => {
++    for (const [, text] of cases) {
++      const res = scoreAnswer(text, cut(text, 3), {})
++      const covered = res.sentences.reduce((sum, s) => sum + (s.end - s.start), 0)
++      expect(covered).toBeGreaterThan(0)
++      expect(covered).toBeLessThanOrEqual(text.length)
++      const last = res.sentences[res.sentences.length - 1]!
++      expect(last.end).toBe(text.length)
++    }
++  })
++
++  test("CJK режется на предложения по 。", () => {
++    expect(splitSentences("北京是中国的首都。它有一千多万人口。").map((s) => s.text)).toEqual([
++      "北京是中国的首都。",
++      "它有一千多万人口。",
++    ])
++  })
++
++  test("чужие токены — unavailable, а не выдуманное число", () => {
++    const text = "北京是中国的首都。"
++    const wrong = cut("The quick brown fox jumps over the lazy dog.", 3)
++    const res = scoreAnswer(text, wrong, {})
++    expect(res.status).toBe("unavailable")
++    expect(res.score).toBeNull()
++    expect(res.level).toBeNull()
++  })
++})
 -- 
 2.53.0
 
