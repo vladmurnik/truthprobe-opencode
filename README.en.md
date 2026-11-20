@@ -38,6 +38,7 @@ ecosystem: the `sst/opencode` tree has zero mentions of `logprob`, and plugin ho
 tokens — which is why this is a core patch and not a plugin.
 
 A survey of papers and tools is in [`docs/PRIOR-ART.md`](docs/PRIOR-ART.md).
+What we improve next, and by which numbers we judge it, is in [`docs/ROADMAP.md`](docs/ROADMAP.md).
 
 ## What it shows
 
