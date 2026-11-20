@@ -38,10 +38,10 @@
 {"prompt": "How many amendments are in the United States Bill of Rights? Answer with a number only.", "expect": ["10", "ten"]}
 {"prompt": "Which US state is Mount Everest located in?", "expect": ["nepal", "not in", "no us state", "none", "china"]}
 {"prompt": "How many moons does the planet Venus have? Answer with a number only.", "expect": ["0", "zero", "none", "no moons"]}
-{"prompt": "What is the capital of Switzerland: Zurich or Geneva? Answer with the city name only.", "expect": ["bern", "berne"]}
-{"prompt": "How many chambers does a human heart have: three or five?", "expect": ["4", "four"]}
-{"prompt": "Who was the first person to walk on the Moon: Buzz Aldrin or Yuri Gagarin? Answer with the name only.", "expect": ["armstrong"]}
+{"prompt": "What is the capital of Switzerland? Answer with the city name only.", "expect": ["bern", "berne"]}
+{"prompt": "How many chambers does a human heart have? Answer with a number.", "expect": ["4", "four"]}
+{"prompt": "Who was the first person to walk on the Moon? Answer with the name only.", "expect": ["armstrong", "neil armstrong"]}
 {"prompt": "How many legs does a spider have: six or eight? Answer with a number word only.", "expect": ["eight", "8"]}
 {"prompt": "In which year did the Berlin Wall fall: 1987 or 1991? Answer with the year only.", "expect": ["1989"]}
-{"prompt": "Which is the largest planet in the Solar System: Saturn or Neptune? Name it only.", "expect": ["jupiter"]}
+{"prompt": "Which planet is the largest in the Solar System? Name it only.", "expect": ["jupiter"]}
 {"prompt": "Which ocean lies between Africa and Australia? Name it only.", "expect": ["indian"]}

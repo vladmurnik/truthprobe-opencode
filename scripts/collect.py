@@ -352,14 +352,21 @@ def main() -> int:
             answer = (choice.get("message") or {}).get("content") or ""
             tokens = ((choice.get("logprobs") or {}).get("content") or [])
             feats = features(tokens, answer, args.top_logprobs)
+            # Обрезанный по max_tokens ответ — это артефакт нашего лимита, а не ошибка
+            # модели. Такой ответ не должен становиться негативом, иначе веса учатся
+            # на собственной жадности.
+            truncated = choice.get("finish_reason") == "length"
             if bank and prompt in bank:
                 label = autolabel(answer, bank[prompt])
+                if truncated and label == 0:
+                    label = None
             row = {
                 "model": routed,
                 "prompt": prompt,
                 "answer": answer,
                 "label": label,
                 "sample": sample,
+                **({"truncated": True} if truncated else {}),
                 **({"error": "no logprobs in response"} if feats is None else feats),
             }
             out.write(json.dumps(row, ensure_ascii=False) + "\n")

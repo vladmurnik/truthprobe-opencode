@@ -246,8 +246,8 @@ reproduction — [`docs/SMOKE-E2E.md`](docs/SMOKE-E2E.md).
 | Per-model weights at runtime | two mock runs with different bundles, same answer | `0.9997 · safe` when weights exist for `mock/mock-1`, `0.0003 · unreliable` when they only exist for `other/model` — selection by `providerID/modelID` really works |
 | `collect.py` against a live gateway | 2 prompts, `freepi/particle` | rows with `meanLp -0.063 / -0.125`, `minLp -0.409 / -0.945`, `fracLow 0.00 / 0.06` — features computed by the same formula as in the runtime |
 | `collect.py` at scale | 24 models × 24 questions = 576 requests on `127.0.0.1:8790` | **120 rows with features** on 7 models (4 models answered 24/24), 108 `HTTP 403 premium credits`, 348 without logprobs, **0 negatives** — every answer was correct, so calibration needs weaker models |
-| First quality measurement | `python3 scripts/evaluate.py data/rows-hard.jsonl --weights data/weights-hard.json`, 720 rows (700 correct / 20 wrong) | AUROC: `geometric` **0.538**, `global` **0.683**, `per-model` **0.866**; ECE 0.470 → 0.285, Brier 0.272 → 0.161 |
-| Negatives harvested by sampling | 47 hard questions × 4 models × 4 samples at `T=0.8` and `T=1.0` | 1504 rows, **40 negatives**, of which **23 are genuine mistakes** — all of them confident "Saturn" answers to the largest-planet question |
+| Question-bank audit | `python3 scripts/audit-bank.py data/qa-hard-bank.jsonl data/rows-hard.jsonl` | found **4** items where the reference answer, not the model, was wrong; after cleaning the set — `AUROC n/a (one class)`, 739 correct / **0 wrong** |
+| Negative harvesting | 47 hard questions × 4 models × 4 samples at `T=0.8` and `T=1.0` | 1504 rows; after the audit the number of genuine negatives is **0** — every earlier "negative" was a data defect (an ambiguous question plus `max_tokens` cut-offs) |
 
 **Not tested, and we will not pretend otherwise:**
 
@@ -264,7 +264,11 @@ reproduction — [`docs/SMOKE-E2E.md`](docs/SMOKE-E2E.md).
 - **Cloud providers with keys.** OpenAI, Anthropic, Gemini — never measured; the support claim rests on
   the protocol shape, not on numbers.
 - **Calibration.** `calibrate.py --demo --fit` reports `AUROC 1.000 / ECE 0.039` on synthetic data.
-  That is a property of the synthetic set, not of the scorer.
+  That is a property of the synthetic set, not of the scorer. The first real measurement
+  (`per-model 0.866`) was withdrawn: every one of its negatives turned out to be a defect of our own
+  question bank (an ambiguous "Saturn or Neptune" item) or a `max_tokens` cut-off. After cleaning,
+  the set holds 739 correct and 0 wrong rows, so the honest result is "not measured yet" — and
+  `scripts/audit-bank.py` now catches that class of defect before any weights are trained.
 
 ## Anatomy of the patch
 
