@@ -365,6 +365,11 @@ SchemaError: Expected Truthprobe.Level | undefined
 отрабатывает кликами. Локальных Hyper-V/VirtualBox/VMware/Windows Sandbox на машине разработчика
 по-прежнему нет.
 
+Прогон [`44761971781`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44761971781) на `128b5f4` (патч из 17 коммитов, где формула по умолчанию
+переписана на `exp(meanLp)`) снова дал **7 job'ов из 7**: пропатченное дерево на ubuntu и
+windows собирается и проходит 110 truthprobe-тестов, установщики применяют 17 коммитов,
+e2e-прогон через мок-провайдера кладёт вердикт в базу, CLI собирается.
+
 Чего по-прежнему нет: запуска `install.sh` на macOS, замеров на облачных провайдерах с ключами
 (OpenAI/Anthropic/Gemini) и AUROC/ECE на наборе, где есть обе метки — см. §12.
 
