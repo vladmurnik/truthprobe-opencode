@@ -1,6 +1,7 @@
 # TruthProbe for opencode
 
-[![unit tests](https://img.shields.io/badge/unit%20tests-91%20pass-brightgreen)](docs/VALIDATION.md)
+[![unit tests](https://img.shields.io/badge/unit%20tests-97%20pass-brightgreen)](docs/VALIDATION.md)
+[![CI](https://github.com/vladmurnik/truthprobe-opencode/actions/workflows/verify.yml/badge.svg)](https://github.com/vladmurnik/truthprobe-opencode/actions/workflows/verify.yml)
 [![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![opencode base](https://img.shields.io/badge/opencode-007afb1-informational)](patches/truthprobe-0001.patch)
 
@@ -264,8 +265,9 @@ python3 scripts/tui-probe.py && python3 scripts/screen-dump.py /tmp/tui-probe.lo
 | Ответ `freepi/particle` | живой запрос через боевой бинарь | `score 0.7595 · likely`, предложение `#0 0.603 · uncertain` |
 | Ответ `freepi/deepseek-v4.1-flash` | живой запрос | `score 0.6893`, первый флаг `0.4849` |
 | Сменный скорер | `TRUTHPROBE_SCORER=linear:weights.json` | score сместился с `0.7595` до `0.9992` — подмена реально работает |
-| Установщик Windows | `install.ps1 -Dir <пусто> -DryRun` | клон, `git apply --check`, 12 коммитов применились, ошибок нет |
+| Установщик Windows | `install.ps1 -Dir <пусто> -DryRun` | клон, `git apply --check`, 13 коммитов применились, ошибок нет |
 | Сборка desktop | electron-builder | приложение 246 МБ, вложенный CLI 279 МБ |
+| CI на чужих машинах | GitHub Actions, прогон [`44593481931`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44593481931) | **все 7 job'ов success** на hosted-раннерах ubuntu-latest и windows-latest |
 
 **Про 62 падения в монорепо:** ни одно не относится к truthprobe. Причины видны в логе и не связаны
 с патчем: `tool-search` тянет ripgrep с github.com, `provider-gitlab-oauth` ходит на gitlab.com,
@@ -274,18 +276,21 @@ python3 scripts/tui-probe.py && python3 scripts/screen-dump.py /tmp/tui-probe.lo
 
 Чего мы **не** проверяли, и врать об этом не будем:
 
-- **Чистые виртуальные машины.** На машине разработчика нет Hyper-V, VirtualBox, VMware и Windows
-  Sandbox — установщик и приложение прогонялись только на одной Windows 11. Установка «с нуля» на
-  чистой ОС не подтверждена.
-- **Linux и macOS.** `install.sh` ни разу не запускался: проверен только `install.ps1`.
+- **Чистые виртуальные машины — теперь проверено в CI.** GitHub Actions поднимает раннеры
+  `ubuntu-latest` и `windows-latest` с нуля: прогон
+  [`44593481931`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44593481931) подтвердил,
+  что установщики проходят `--dry-run` на обеих ОС, патч применяется к чистому дереву и ведёт себя
+  одинаково. Это не ручная установка на десктоп, но это чистая ОС.
+- **Linux и macOS.** `install.sh` теперь проверяется в CI на ubuntu-latest (dry-run, без установки
+  в систему). macOS-раннер в матрице установщика не участвует — там проверялись только юнит-тесты.
 - **Облачные провайдеры с ключами.** OpenAI, Anthropic, Gemini не проверялись — только локальный
-  шлюз free-pi. Вывод об их поддержке основан на формате протокола, а не на замерах.
+  шлюз free-pi и мок-провайдер в e2e. Вывод об их поддержке основан на формате протокола, а не на замерах.
 - **Калибровка.** `calibrate.py --demo --fit` даёт `AUROC 1.000 / ECE 0.039` на синтетике; это
   свойство синтетики, а не качество скорера. На реальных размеченных данных AUROC/ECE не измерены.
 
 ## Устройство патча
 
-43 файла, +6565/−40, двенадцать коммитов поверх `007afb1`. Шов тонкий и аддитивный:
+43 файла, +6565/−40, тринадцать коммитов поверх `007afb1`. Шов тонкий и аддитивный:
 
 | Слой | Файл | Что делает |
 | --- | --- | --- |

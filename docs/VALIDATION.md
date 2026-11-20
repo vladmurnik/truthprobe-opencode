@@ -334,5 +334,23 @@ SchemaError: Expected Truthprobe.Level | undefined
 `provider-gitlab-oauth` ходит на gitlab.com, `cross-spawn`/MCP зависят от spawn — в harness
 исходящая сеть заблокирована (`test attempted network request: GET https://github.com/...`).
 
-Чего по-прежнему нет: прогона на чистых VM (Hyper-V/VirtualBox/VMware/Windows Sandbox на машине
-отсутствуют), запуска `install.sh` на Linux/macOS и замеров на облачных провайдерах с ключами.
+## 11. CI на чужих чистых машинах (проверено)
+
+19.11.2026 прогон GitHub Actions
+[`44593481931`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44593481931)
+(коммит `ee82265`) завершился **success**: 7 job'ов из 7 на hosted-раннерах.
+
+| Job | Раннер | Что доказывает |
+| --- | --- | --- |
+| `patched tree` | `ubuntu-latest`, `windows-latest` | клон opencode на `007afb1`, `git am` патча, `bun install`, typecheck 4 пакетов, 97 truthprobe-тестов |
+| `installer dry-run` | `ubuntu-latest`, `windows-latest` | `install.sh` / `install.ps1 -DryRun`: клон, `git apply --check`, 13 коммитов, без установки в систему |
+| `repo tests` | `ubuntu-latest` | юнит-тесты репозитория TruthProbe |
+| `end-to-end verdict` | `ubuntu-latest` | мок-провайдер с logprobs → вердикт в SQLite |
+| `cli build` | `ubuntu-latest` | CLI собирается из пропатченного дерева |
+
+Это чистые ОС, но не ручная интерактивная установка: человек не наблюдал, как установщик
+отрабатывает кликами. Локальных Hyper-V/VirtualBox/VMware/Windows Sandbox на машине разработчика
+по-прежнему нет.
+
+Чего по-прежнему нет: запуска `install.sh` на macOS, замеров на облачных провайдерах с ключами
+(OpenAI/Anthropic/Gemini) и калибровки AUROC/ECE на размеченном наборе.

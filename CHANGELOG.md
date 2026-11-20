@@ -1,3 +1,23 @@
+# 0.6.2 — 2026-11-19
+
+Патч проверен на чужих чистых машинах.
+
+**Добавлено**
+
+- `.github/workflows/verify.yml`: GitHub Actions на hosted-раннерах `ubuntu-latest` и `windows-latest`.
+  Матрица: `patched tree` (клон opencode на `007afb1` → `git am` → `bun install` → typecheck четырёх
+  пакетов → truthprobe-тесты), `installer dry-run` (оба установщика), `repo tests`, `end-to-end verdict`
+  через мок-провайдер с logprobs, `cli build`.
+- Прогон [`44593481931`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44593481931):
+  **все 7 job'ов success**.
+
+**Исправлено**
+
+- Патч перегенерирован после починки 7 ошибок типов, которые всплыли только при typecheck
+  пропатченного дерева (`packages/schema`, `packages/core`: `Level` → type alias, `Required<Omit<…>>`,
+  guard'ы весов в скорере, `level` в reasoning-fallback, сравнение уровней через `String(...)`).
+  Теперь `git am` патча даёт побайтово то же дерево, что dev-ветка, и оно проходит typecheck.
+
 # 0.6.1 — 2026-11-19
 
 Найдено прогоном полного набора тестов монорепо (7 713 тестов), а не на глаз.

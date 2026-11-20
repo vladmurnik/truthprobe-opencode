@@ -1,6 +1,7 @@
 # TruthProbe for opencode
 
-[![unit tests](https://img.shields.io/badge/unit%20tests-91%20pass-brightgreen)](docs/VALIDATION.md)
+[![unit tests](https://img.shields.io/badge/unit%20tests-97%20pass-brightgreen)](docs/VALIDATION.md)
+[![CI](https://github.com/vladmurnik/truthprobe-opencode/actions/workflows/verify.yml/badge.svg)](https://github.com/vladmurnik/truthprobe-opencode/actions/workflows/verify.yml)
 [![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![opencode base](https://img.shields.io/badge/opencode-007afb1-informational)](patches/truthprobe-0001.patch)
 
@@ -233,14 +234,19 @@ reproduction — [`docs/SMOKE-E2E.md`](docs/SMOKE-E2E.md).
 | Live answer, `freepi/particle` | `score 0.7595 · likely`, sentence `#0 0.603 · uncertain` |
 | Live answer, `freepi/deepseek-v4.1-flash` | `score 0.6893`, first doubtful sentence `0.4849` |
 | Scorer swap `TRUTHPROBE_SCORER=linear:weights.json` | score moved `0.7595 → 0.9992`, so the custom scorer is really used |
-| Windows installer, `install.ps1 -Dir <empty> -DryRun` | clean clone, `git apply --check` passed, 12 commits applied |
+| Windows installer, `install.ps1 -Dir <empty> -DryRun` | clean clone, `git apply --check` passed, 13 commits applied |
 | Desktop build | app 246 MB, bundled CLI 279 MB |
+| CI on foreign machines | GitHub Actions [run `44593481931`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44593481931) | **all 7 jobs success** on hosted `ubuntu-latest` and `windows-latest` runners |
 
 **Not tested, and we will not pretend otherwise:**
 
-- **Fresh virtual machines.** The dev machine has no Hyper-V, VirtualBox, VMware or Windows Sandbox;
-  everything ran on a single Windows 11 install. A clean-OS install is unconfirmed.
-- **Linux and macOS.** `install.sh` has never been executed; only `install.ps1` was.
+- **Clean machines — verified through CI only.** GitHub-hosted `ubuntu-latest` and `windows-latest`
+  runners are clean VMs, and on 19.11.2026 all 7 jobs passed there: installer dry-runs, patch
+  application, typecheck, truthprobe tests, e2e through the mock provider, CLI build. There is still no
+  Hyper-V/VirtualBox/VMware/Windows Sandbox on the dev machine, so a human watching a one-click install
+  on a fresh OS has not happened.
+- **Linux and macOS.** `install.sh` is now exercised in CI (`installer-dry-run` on `ubuntu-latest`);
+  macOS is not — the matrix only has ubuntu and windows.
 - **Cloud providers with keys.** OpenAI, Anthropic, Gemini — never measured; the support claim rests on
   the protocol shape, not on numbers.
 - **Calibration.** `calibrate.py --demo --fit` reports `AUROC 1.000 / ECE 0.039` on synthetic data.
@@ -248,7 +254,7 @@ reproduction — [`docs/SMOKE-E2E.md`](docs/SMOKE-E2E.md).
 
 ## Anatomy of the patch
 
-43 files, +6565/−40, twelve commits on top of `007afb1`. The seam is thin and additive:
+43 files, +6565/−40, thirteen commits on top of `007afb1`. The seam is thin and additive:
 
 | Layer | File | What it does |
 | --- | --- | --- |
