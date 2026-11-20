@@ -1,6 +1,6 @@
 # TruthProbe for opencode
 
-[![unit tests](https://img.shields.io/badge/unit%20tests-85%20pass-brightgreen)](docs/VALIDATION.md)
+[![unit tests](https://img.shields.io/badge/unit%20tests-91%20pass-brightgreen)](docs/VALIDATION.md)
 [![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![opencode base](https://img.shields.io/badge/opencode-007afb1-informational)](patches/truthprobe-0001.patch)
 
@@ -39,7 +39,7 @@
 | --- | --- | --- |
 | **L1** | строка перед ответом | уверенность в первом предложении: «сходу ли модель знает» |
 | **L2** | блок после ответа | уверенность по всему ответу и число спорных предложений |
-| **L3** | подсветка | каждое спорное предложение: номер, процент, текст |
+| **L3** | список под ответом (TUI и desktop) | каждое спорное предложение: номер, процент, начало текста |
 
 Уверенность — не приговор: бывает уверенная ложь (`docs/PRIOR-ART.md`, ECLIPSE 2512.03107).
 Поэтому в UI написано `confidence`, а не `truth`.
@@ -148,16 +148,17 @@ score_answer   = 0.6 · globalGeo + 0.4 · mean(score_sentence)
 | --- | --- | --- |
 | Скоринг и сегментация | `bun test test/score.test.ts` | **45 pass / 0 fail**, 104 expect |
 | Логика автопроверки (TTL, классификация ответов, кэш) | `bun test test/capability.test.ts` | **32 pass / 0 fail**, 70 expect |
+| Список спорных предложений в desktop | `bun test src/message/doubtful.test.ts` из `packages/session-ui` | **6 pass / 0 fail**, 14 expect |
 | Протокол OpenAI (гейт, тело запроса, разбор `choices[i].logprobs`) | `packages/ai/test/truthprobe.test.ts` | **8 pass / 0 fail** |
 | Автовключение без переменных окружения | мок + два прогона подряд | RUN1: проба → `{"status":"ok"}`; RUN2: **2 из 2** запросов с `logprobs: true, top_logprobs: 20` |
 | Регрессия вокруг событий текста | `test/session*.test.ts test/projector*.test.ts test/message*.test.ts` | **811 pass / 0 fail** |
 | Полный прогон core | `bun run script/test.ts` | 7 272 pass / 39 fail — все 39 падают и на чистой базе (сеть: GitLab OAuth, ripgrep) |
 | Патч на чистом дереве | `git am` в worktree `007afb1` | применяется без конфликтов, тесты 45 + 8 зелёные |
 | Типизация | schema / ai / core / client / tui | зелёная (132 / 357+322 / 2 030 / 181 / 1 942 файла) |
-| Типизация UI-пакетов | session-ui / app / desktop | зелёная (380 / 2 443 / 3 567 файлов, desktop — 2 проекта) |
+| Типизация UI-пакетов | session-ui / app / desktop | зелёная (382 / 2 443 / 3 567 файлов, desktop — 2 проекта) |
 | Сквозной прогон | мок-провайдер с настоящими `logprobs` | `logprobs: true, top_logprobs: 20` в запросе, `truthprobe` в базе |
 | Живой TUI | pty-проба | бейдж и блок спорных предложений отрендерились |
-| Desktop UI | чип `confidence` в общем компоненте `@opencode/session-ui` | типизация desktop (3 567 файлов) зелёная; строка `confidence NN%` в футере ответа |
+| Desktop UI | чип `confidence` в общем компоненте `@opencode/session-ui` | типизация desktop (3 567 файлов) зелёная; чип `confidence NN%` и список спорных предложений в футере |
 | Windows-бинарь | `.exe` на моке | `status: "ok", score: 0.417, first 0.708, flagged: 1` |
 
 Воспроизвести без ключей:
@@ -175,7 +176,7 @@ python3 scripts/tui-probe.py && python3 scripts/screen-dump.py /tmp/tui-probe.lo
 
 ## Устройство патча
 
-27 файлов, +1961/−27, пять коммитов поверх `007afb1`. Шов тонкий и аддитивный:
+29 файлов, +2084/−27, шесть коммитов поверх `007afb1`. Шов тонкий и аддитивный:
 
 | Слой | Файл | Что делает |
 | --- | --- | --- |
@@ -190,6 +191,7 @@ python3 scripts/tui-probe.py && python3 scripts/screen-dump.py /tmp/tui-probe.lo
 | клиент | `client/src/solid/data.ts` | **не теряет** поле при живом обновлении стора |
 | TUI | `tui/src/routes/session/message-parts.tsx` | бейдж + блок спорных предложений |
 | desktop | `session-ui/src/message/message-content.tsx` | чип `confidence` в футере ответа — общий для desktop-приложения и веба |
+| desktop | `session-ui/src/message/doubtful.ts` | список спорных предложений: нумерация, процент, обрезка до 96 символов |
 | скоринг | `core/src/truthprobe/*` | чистые функции, ноль внешних зависимостей |
 
 Почему именно так и что можно было сломать — в [`PLAN.md`](PLAN.md) §11 «жизнь патча при

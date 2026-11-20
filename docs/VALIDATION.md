@@ -2,7 +2,7 @@
 
 Всё ниже — измеренное, не задуманное. Если чего-то не проверяли, это написано отдельным разделом.
 
-База: `sst/opencode` @ `007afb1`. Ветка `feat/truthprobe`, пять коммитов:
+База: `sst/opencode` @ `007afb1`. Ветка `feat/truthprobe`, шесть коммитов:
 
 | Коммит | Что |
 | --- | --- |
@@ -11,8 +11,9 @@
 | `2870f64` | test(truthprobe): cover segmentation, scoring and protocol parsing |
 | `f043425` | feat(truthprobe): probe providers and enable logprobs automatically |
 | `3126939` | feat(truthprobe): show confidence in the desktop session UI |
+| `335305a` | feat(truthprobe): list doubtful sentences in the desktop footer |
 
-Итог: **27 файлов, +1961 / −27**. Патч — `patches/truthprobe-0001.patch` (2895 строк, `git am`).
+Итог: **29 файлов, +2084 / −27**. Патч — `patches/truthprobe-0001.patch` (3080 строк, `git am`).
 
 ## 1. Слои патча
 
@@ -40,6 +41,8 @@
 | 20 | `packages/core/test/truthprobe-capability.test.ts` | 32 теста |
 | 21 | `packages/session-ui/src/message/message-content.tsx` | чип `confidence` в футере ответа (desktop и веб) |
 | 22 | `packages/session-ui/src/timeline-next/tools/assistant-content.tsx`, `packages/session-ui/src/message/current-message.tsx` | проброс `truthprobe` в текстовый парт |
+| 23 | `packages/session-ui/src/message/doubtful.ts` | список спорных предложений для футера |
+| 24 | `packages/session-ui/src/message/doubtful.test.ts` | 6 тестов маппинга |
 
 ## 2. Тесты
 
@@ -47,6 +50,7 @@
 45 pass / 0 fail   104 expect   packages/core/test/truthprobe.test.ts
 32 pass / 0 fail    70 expect   packages/core/test/truthprobe-capability.test.ts
  8 pass / 0 fail    23 expect   packages/ai/test/truthprobe.test.ts
+ 6 pass / 0 fail    14 expect   packages/session-ui/src/message/doubtful.test.ts
 ```
 
 Что покрыто:
@@ -79,6 +83,13 @@
   `unsupported` на 404/405/501 и на «другую» 400.
 - `originOf` / `modelFromBody`: в кэш не попадают путь, query и ключи; модель читается из тела.
 
+Что покрыто (desktop, `doubtful.test.ts`):
+
+- `percentOf`: округление, нечисла и `null` дают `?`.
+- `doubtfulSentences`: пустая проба и `status: "unavailable"` дают пустой список, берутся только
+  предложения с `flag`, нумерация начинается с 1, текст обрезается до 96 символов, битые `i`/`score`
+  не ломают рендер.
+
 ## 3. Полные прогоны
 
 | Пакет | Команда | Результат |
@@ -88,10 +99,10 @@
 | schema | `bun test` | **95 pass / 0 fail**, 231 ms |
 | регрессия сессий | `test/session*.test.ts test/projector*.test.ts test/message*.test.ts` | **811 pass / 0 fail**, 30 s |
 | типизация | schema / ai / core / client / tui | 132 / 357+322 / 2 030 / 181 / 1 942 файла, 0 ошибок |
-| типизация UI | session-ui / app / desktop | 380 / 2 443 / 3 567 файлов (desktop — 2 проекта), 0 ошибок |
+| типизация UI | session-ui / app / desktop | 382 / 2 443 / 3 567 файлов (desktop — 2 проекта), 0 ошибок |
 
-Отдельно проверено, что **патч самодостаточен**: на чистом worktree `007afb1` (27 файлов,
-+1961/−27, без моих рабочих копий) `git am patches/truthprobe-0001.patch` применяется без
+Отдельно проверено, что **патч самодостаточен**: на чистом worktree `007afb1` (29 файлов,
++2084/−27, без моих рабочих копий) `git am patches/truthprobe-0001.patch` применяется без
 конфликтов, `typecheck` пакетов ai и core — 0 ошибок, тесты в применённом дереве — **45 pass / 0 fail**,
 **32 pass / 0 fail** и **8 pass / 0 fail**. То есть зелёные тесты не зависят от локального состояния
 моей машины.

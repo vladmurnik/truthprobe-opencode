@@ -1,7 +1,7 @@
 From 3ccda6cdf3320c8fbcfbb2c8656c34a2827932af Mon Sep 17 00:00:00 2001
 From: truthprobe <truthprobe@local>
 Date: Thu, 19 Nov 2026 00:59:59 +0300
-Subject: [PATCH 1/5] feat(truthprobe): score answers from token logprobs
+Subject: [PATCH 1/6] feat(truthprobe): score answers from token logprobs
 
 - schema: Truthprobe.Info, capabilities.logprobs, AssistantText.truthprobe, optional truthprobe on session.text.ended
 - ai/openai-chat: request logprobs/top_logprobs when enabled, parse choice-level logprobs into providerMetadata
@@ -1192,7 +1192,7 @@ index 6a844d7..f21811e 100644
 From a9db0dab3c3392b40e8c9366e3455be1f37b7dcf Mon Sep 17 00:00:00 2001
 From: adik <adik@local>
 Date: Thu, 19 Nov 2026 01:12:00 +0300
-Subject: [PATCH 2/5] fix(tui): apply truthprobe metadata from
+Subject: [PATCH 2/6] fix(tui): apply truthprobe metadata from
  session.text.ended events
 
 The solid client store only copied event.data.text into the in-memory
@@ -1222,7 +1222,7 @@ index 8b6d247..7368d0c 100644
 From 2870f64a9bcb19d1e1701d85101c5074646cdcac Mon Sep 17 00:00:00 2001
 From: adik <adik@local>
 Date: Thu, 19 Nov 2026 03:08:36 +0300
-Subject: [PATCH 3/5] test(truthprobe): cover segmentation, scoring and
+Subject: [PATCH 3/6] test(truthprobe): cover segmentation, scoring and
  protocol parsing
 
 - send logprobs from every chat-completions model that declares the capability
@@ -1985,7 +1985,7 @@ index eed85f3..5bde799 100755
 From f04342565c0963f466c9bae21dc1b0d9158bab44 Mon Sep 17 00:00:00 2001
 From: TruthProbe <truthprobe@local>
 Date: Thu, 19 Nov 2026 09:40:19 +0300
-Subject: [PATCH 4/5] feat(truthprobe): probe providers and enable logprobs
+Subject: [PATCH 4/6] feat(truthprobe): probe providers and enable logprobs
  automatically
 
 Adding a provider key no longer needs an environment variable.
@@ -2800,7 +2800,7 @@ index 0000000..e23e561
 From 3126939707e7c7c305f8b3c2a89d196dc1b5acd9 Mon Sep 17 00:00:00 2001
 From: adik <adik@local>
 Date: Thu, 19 Nov 2026 13:34:58 +0300
-Subject: [PATCH 5/5] feat(truthprobe): show confidence in the desktop session
+Subject: [PATCH 5/6] feat(truthprobe): show confidence in the desktop session
  UI
 
 ---
@@ -2890,6 +2890,191 @@ index be526b4..659538f 100644
              showCopy={props.showAssistantCopyPartID === props.contentID}
              keepCopyVisible={props.keepCopyVisible}
              turnDurationMs={props.turnDurationMs}
+-- 
+2.53.0
+
+
+From 335305a2e846ae50c7d31cec6a750b74a4d385a6 Mon Sep 17 00:00:00 2001
+From: TruthProbe <truthprobe@localhost>
+Date: Thu, 19 Nov 2026 13:44:43 +0300
+Subject: [PATCH 6/6] feat(truthprobe): list doubtful sentences in the desktop
+ footer
+
+---
+ .../session-ui/src/message/doubtful.test.ts   | 74 +++++++++++++++++++
+ packages/session-ui/src/message/doubtful.ts   | 28 +++++++
+ .../src/message/message-content.tsx           | 21 ++++++
+ 3 files changed, 123 insertions(+)
+ create mode 100644 packages/session-ui/src/message/doubtful.test.ts
+ create mode 100644 packages/session-ui/src/message/doubtful.ts
+
+diff --git a/packages/session-ui/src/message/doubtful.test.ts b/packages/session-ui/src/message/doubtful.test.ts
+new file mode 100644
+index 0000000..7aabfd2
+--- /dev/null
++++ b/packages/session-ui/src/message/doubtful.test.ts
+@@ -0,0 +1,74 @@
++import { describe, expect, test } from "bun:test"
++import type { TruthprobeInfo, TruthprobeSentence } from "@opencode/client/promise"
++import { doubtfulSentences, percentOf } from "./doubtful"
++
++const sentence = (over: Partial<TruthprobeSentence>): TruthprobeSentence => ({
++  i: 0,
++  start: 0,
++  end: 10,
++  text: "The answer is 42.",
++  score: 0.8,
++  risk: 0.2,
++  meanLp: -0.2,
++  minLp: -0.4,
++  phi: 0.5,
++  tokens: 4,
++  flag: false,
++  ...over,
++})
++
++const info = (over: Partial<TruthprobeInfo>): TruthprobeInfo => ({
++  status: "ok",
++  score: 0.7,
++  risk: 0.3,
++  first: { score: 0.9, entropy: 0.1, token: "The" },
++  sentences: [],
++  flagged: 0,
++  ...over,
++})
++
++describe("percentOf", () => {
++  test("округляет число", () => {
++    expect(percentOf(0.708)).toBe("71%")
++    expect(percentOf(0)).toBe("0%")
++    expect(percentOf(1)).toBe("100%")
++  })
++  test("нечисловые значения дают ?", () => {
++    expect(percentOf(undefined)).toBe("?")
++    expect(percentOf(null)).toBe("?")
++    expect(percentOf("Infinity")).toBe("?")
++    expect(percentOf(Number.NaN)).toBe("?")
++    expect(percentOf(Number.POSITIVE_INFINITY)).toBe("?")
++  })
++})
++
++describe("doubtfulSentences", () => {
++  test("без пробы и при unavailable список пуст", () => {
++    expect(doubtfulSentences(undefined)).toEqual([])
++    expect(doubtfulSentences(info({ status: "unavailable", reason: "no logprobs" }))).toEqual([])
++  })
++
++  test("берёт только помеченные предложения, номер с единицы", () => {
++    const result = doubtfulSentences(
++      info({
++        flagged: 1,
++        sentences: [sentence({ i: 1, flag: true, score: 0.08, text: "It was built in 1755." }), sentence({ i: 2 })],
++      }),
++    )
++    expect(result).toEqual([{ index: 2, score: "8%", text: "It was built in 1755." }])
++  })
++
++  test("длинное предложение обрезается до 96 символов", () => {
++    const long = "a".repeat(200)
++    const [item] = doubtfulSentences(info({ sentences: [sentence({ flag: true, text: long })] }))
++    expect(item?.text.length).toBe(96)
++    expect(item?.text.endsWith("...")).toBe(true)
++  })
++
++  test("битый индекс и битый score не ломают строку", () => {
++    const [item] = doubtfulSentences(
++      info({ sentences: [sentence({ i: Number.NaN, score: Number.NaN, flag: true, text: "x" })] }),
++    )
++    expect(item).toEqual({ index: undefined, score: "?", text: "x" })
++  })
++})
+diff --git a/packages/session-ui/src/message/doubtful.ts b/packages/session-ui/src/message/doubtful.ts
+new file mode 100644
+index 0000000..0393d10
+--- /dev/null
++++ b/packages/session-ui/src/message/doubtful.ts
+@@ -0,0 +1,28 @@
++import type { TruthprobeInfo } from "@opencode/client/promise"
++
++/** Процент из числа из схемы: там score бывает number | "Infinity" | "NaN" | null. */
++export const percentOf = (value: unknown) =>
++  typeof value === "number" && Number.isFinite(value) ? `${Math.round(value * 100)}%` : "?"
++
++export interface DoubtfulSentence {
++  readonly index?: number
++  readonly score: string
++  readonly text: string
++}
++
++/**
++ * Спорные предложения для подписи под ответом — ровно те же строки, что печатает
++ * TUI: `! #N 8%: <начало предложения>`. Логика вынесена из компонента, чтобы её
++ * можно было проверить тестом без монтирования интерфейса.
++ */
++export function doubtfulSentences(probe: TruthprobeInfo | undefined): DoubtfulSentence[] {
++  if (!probe || probe.status === "unavailable") return []
++
++  return (probe.sentences ?? [])
++    .filter((item) => item.flag)
++    .map((item) => ({
++      index: typeof item.i === "number" && Number.isFinite(item.i) ? item.i + 1 : undefined,
++      score: percentOf(item.score),
++      text: item.text.length > 96 ? `${item.text.slice(0, 93)}...` : item.text,
++    }))
++}
+diff --git a/packages/session-ui/src/message/message-content.tsx b/packages/session-ui/src/message/message-content.tsx
+index b44a4df..2a7ef9d 100644
+--- a/packages/session-ui/src/message/message-content.tsx
++++ b/packages/session-ui/src/message/message-content.tsx
+@@ -17,6 +17,7 @@ import {
+ import { createStore } from "solid-js/store"
+ import { createMediaQuery } from "@solid-primitives/media"
+ import type { TruthprobeInfo } from "@opencode/client/promise"
++import { doubtfulSentences, percentOf } from "./doubtful"
+ import { useData } from "../context"
+ import { useDialog } from "@opencode/ui/context/dialog"
+ import { useI18n } from "@opencode/ui/context/i18n"
+@@ -98,6 +99,7 @@ import { createCopyFeedback, writeClipboard } from "../components/copy"
+ 
+ type MetaItem = { label: string; variant?: boolean }
+ 
++
+ // The variant follows the model name without a separator, so the model leads.
+ function modelItems(data: ReturnType<typeof useData>, model: SessionMessageAssistant["model"]): MetaItem[] {
+   const name = data.store.provider?.all?.get(model.providerID)?.models?.[model.id]?.name ?? model.id
+@@ -1214,6 +1216,11 @@ export function AssistantTextContent(props: {
+     return [{ label: parts.join(" · ") }]
+   })
+ 
++  // Спорные предложения: тот же список, что печатает TUI.
++  const doubtful = createMemo(() => doubtfulSentences(props.probe))
++
++  const answerConfidence = createMemo(() => percentOf(props.probe?.score))
++
+   const meta = createMemo<MetaItem[]>(() => [
+     ...(mobile() ? [] : labels()),
+     ...[duration(), interrupted() ? i18n.t("ui.message.interrupted") : ""].flatMap((label) =>
+@@ -1241,6 +1248,20 @@ export function AssistantTextContent(props: {
+         <div data-slot="text-part-body">
+           <PacedMarkdown text={props.text} cacheKey={props.id} streaming={props.message.time.completed === undefined} />
+         </div>
++        <Show when={doubtful().length > 0}>
++          <div data-slot="text-part-doubtful" class="mt-2 flex flex-col gap-0.5 text-[13px] leading-text-compact">
++            <span class="text-v2-text-text-faint">
++              {`answer confidence ${answerConfidence()} \u00B7 ${doubtful().length} doubtful sentence${doubtful().length > 1 ? "s" : ""}`}
++            </span>
++            <For each={doubtful()}>
++              {(sentence) => (
++                <span class="text-[var(--v2-yellow-900)] [[data-color-scheme=dark]_&]:text-v2-state-fg-warning">
++                  {`! ${sentence.index === undefined ? "" : `#${sentence.index} `}${sentence.score}: ${sentence.text}`}
++                </span>
++              )}
++            </For>
++          </div>
++        </Show>
+         <Show when={sources()} fallback={<Show when={props.showCopy}>{copyFooter()}</Show>}>
+           {(value) => (
+             <div data-slot="text-part-footer">
 -- 
 2.53.0
 

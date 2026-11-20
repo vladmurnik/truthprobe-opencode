@@ -1,6 +1,6 @@
 # TruthProbe for opencode
 
-[![unit tests](https://img.shields.io/badge/unit%20tests-85%20pass-brightgreen)](docs/VALIDATION.md)
+[![unit tests](https://img.shields.io/badge/unit%20tests-91%20pass-brightgreen)](docs/VALIDATION.md)
 [![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![opencode base](https://img.shields.io/badge/opencode-007afb1-informational)](patches/truthprobe-0001.patch)
 
@@ -39,7 +39,7 @@ A survey of papers and tools is in [`docs/PRIOR-ART.md`](docs/PRIOR-ART.md).
 | --- | --- | --- |
 | **L1** | the line before the answer | confidence in the first sentence: does the model know this off the top of its head |
 | **L2** | the block after the answer | confidence over the whole answer plus the number of doubtful sentences |
-| **L3** | highlighting | every doubtful sentence: number, percentage, text |
+| **L3** | the list under the answer (TUI and desktop) | every doubtful sentence: number, percentage, start of the text |
 
 Confidence is not a verdict: confident lies exist (`docs/PRIOR-ART.md`, ECLIPSE 2512.03107). That is
 why the UI says `confidence`, not `truth`.
@@ -155,16 +155,17 @@ States: `ok` — tokens matched the text; `partial` — offsets drifted; `unavai
 | --- | --- | --- |
 | Scoring and segmentation | `bun test test/score.test.ts` | **45 pass / 0 fail**, 104 expect |
 | Probe logic (TTL, response classification, cache) | `bun test test/capability.test.ts` | **32 pass / 0 fail**, 70 expect |
+| Doubtful sentences in desktop | `bun test src/message/doubtful.test.ts` from `packages/session-ui` | **6 pass / 0 fail**, 14 expect |
 | OpenAI protocol (gate, request body, `choices[i].logprobs` parsing) | `packages/ai/test/truthprobe.test.ts` | **8 pass / 0 fail**, 23 expect |
 | Auto-enable without environment variables | mock + two consecutive runs | RUN1: probe → `{"status":"ok"}`; RUN2: **2 of 2** requests with `logprobs: true, top_logprobs: 20` |
 | Regression around text events | `test/session*.test.ts test/projector*.test.ts test/message*.test.ts` | **811 pass / 0 fail** |
 | Full core run | `bun run script/test.ts` | 7 272 pass / 39 fail — the same 39 fail on a clean base (network: GitLab OAuth, ripgrep) |
 | Patch on a clean tree | `git am` in a `007afb1` worktree | applies without conflicts, tests 45 + 8 green |
 | Typecheck | schema / ai / core / client / tui | green (132 / 357+322 / 2 030 / 181 / 1 942 files) |
-| Typecheck of the UI packages | session-ui / app / desktop | green (380 / 2 443 / 3 567 files, desktop 2 projects) |
+| Typecheck of the UI packages | session-ui / app / desktop | green (382 / 2 443 / 3 567 files, desktop 2 projects) |
 | End-to-end run | mock provider with real `logprobs` | `logprobs: true, top_logprobs: 20` in the request, `truthprobe` in the database |
 | Live TUI | pty probe | badge and the doubtful-sentence block rendered |
-| Desktop UI | session-ui chip in the shared Electron component | green typecheck of desktop (3 567 files); `confidence NN%` line in the answer footer |
+| Desktop UI | session-ui chip in the shared Electron component | green typecheck of desktop (3 567 files); `confidence NN%` chip and the doubtful-sentence list in the footer |
 | Windows binary | `.exe` against the mock | `status: "ok", score: 0.417, first: 0.708, flagged: 1` |
 
 Reproduce without keys:
@@ -182,7 +183,7 @@ reproduction — [`docs/SMOKE-E2E.md`](docs/SMOKE-E2E.md).
 
 ## Anatomy of the patch
 
-27 files, +1961/−27, five commits on top of `007afb1`. The seam is thin and additive:
+29 files, +2084/−27, six commits on top of `007afb1`. The seam is thin and additive:
 
 | Layer | File | What it does |
 | --- | --- | --- |
@@ -197,6 +198,7 @@ reproduction — [`docs/SMOKE-E2E.md`](docs/SMOKE-E2E.md).
 | client | `client/src/solid/data.ts` | **does not drop** the field on live store updates |
 | TUI | `tui/src/routes/session/message-parts.tsx` | badge and the doubtful-sentence block |
 | desktop | `session-ui/src/message/message-content.tsx` | `confidence` chip in the answer footer, shared by the desktop app and the web UI |
+| desktop | `session-ui/src/message/doubtful.ts` | doubtful-sentence list: numbering, percentage, 96-char truncation |
 | scoring | `core/src/truthprobe/*` | pure functions, zero external dependencies |
 
 Why it is shaped this way and what could break — [`PLAN.md`](PLAN.md) §11 "the life of the patch
