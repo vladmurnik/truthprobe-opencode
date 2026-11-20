@@ -14,8 +14,9 @@
 | `335305a` | feat(truthprobe): list doubtful sentences in the desktop footer |
 | `6017d75` | feat(desktop): let a fork brand the desktop app |
 | `a478531` | fix(truthprobe): keep logprobs that arrive without text, align tokens, always publish a verdict |
+| `5a335e3` | fix(truthprobe): say so when tokens do not match the answer text |
 
-Итог: **38 файлов, +2278 / −40**, восемь коммитов. Патч — `patches/truthprobe-0001.patch` (3703 строки, `git am`).
+Итог: **38 файлов, +2280 / −40**, девять коммитов. Патч — `patches/truthprobe-0001.patch` (3735 строк, `git am`).
 
 ## 1. Слои патча
 

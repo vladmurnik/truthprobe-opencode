@@ -1,7 +1,7 @@
 From 3ccda6cdf3320c8fbcfbb2c8656c34a2827932af Mon Sep 17 00:00:00 2001
 From: truthprobe <truthprobe@local>
 Date: Thu, 19 Nov 2026 00:59:59 +0300
-Subject: [PATCH 1/8] feat(truthprobe): score answers from token logprobs
+Subject: [PATCH 1/9] feat(truthprobe): score answers from token logprobs
 
 - schema: Truthprobe.Info, capabilities.logprobs, AssistantText.truthprobe, optional truthprobe on session.text.ended
 - ai/openai-chat: request logprobs/top_logprobs when enabled, parse choice-level logprobs into providerMetadata
@@ -1192,7 +1192,7 @@ index 6a844d7..f21811e 100644
 From a9db0dab3c3392b40e8c9366e3455be1f37b7dcf Mon Sep 17 00:00:00 2001
 From: adik <adik@local>
 Date: Thu, 19 Nov 2026 01:12:00 +0300
-Subject: [PATCH 2/8] fix(tui): apply truthprobe metadata from
+Subject: [PATCH 2/9] fix(tui): apply truthprobe metadata from
  session.text.ended events
 
 The solid client store only copied event.data.text into the in-memory
@@ -1222,7 +1222,7 @@ index 8b6d247..7368d0c 100644
 From 2870f64a9bcb19d1e1701d85101c5074646cdcac Mon Sep 17 00:00:00 2001
 From: adik <adik@local>
 Date: Thu, 19 Nov 2026 03:08:36 +0300
-Subject: [PATCH 3/8] test(truthprobe): cover segmentation, scoring and
+Subject: [PATCH 3/9] test(truthprobe): cover segmentation, scoring and
  protocol parsing
 
 - send logprobs from every chat-completions model that declares the capability
@@ -1985,7 +1985,7 @@ index eed85f3..5bde799 100755
 From f04342565c0963f466c9bae21dc1b0d9158bab44 Mon Sep 17 00:00:00 2001
 From: TruthProbe <truthprobe@local>
 Date: Thu, 19 Nov 2026 09:40:19 +0300
-Subject: [PATCH 4/8] feat(truthprobe): probe providers and enable logprobs
+Subject: [PATCH 4/9] feat(truthprobe): probe providers and enable logprobs
  automatically
 
 Adding a provider key no longer needs an environment variable.
@@ -2800,7 +2800,7 @@ index 0000000..e23e561
 From 3126939707e7c7c305f8b3c2a89d196dc1b5acd9 Mon Sep 17 00:00:00 2001
 From: adik <adik@local>
 Date: Thu, 19 Nov 2026 13:34:58 +0300
-Subject: [PATCH 5/8] feat(truthprobe): show confidence in the desktop session
+Subject: [PATCH 5/9] feat(truthprobe): show confidence in the desktop session
  UI
 
 ---
@@ -2897,7 +2897,7 @@ index be526b4..659538f 100644
 From 335305a2e846ae50c7d31cec6a750b74a4d385a6 Mon Sep 17 00:00:00 2001
 From: TruthProbe <truthprobe@localhost>
 Date: Thu, 19 Nov 2026 13:44:43 +0300
-Subject: [PATCH 6/8] feat(truthprobe): list doubtful sentences in the desktop
+Subject: [PATCH 6/9] feat(truthprobe): list doubtful sentences in the desktop
  footer
 
 ---
@@ -3082,7 +3082,7 @@ index b44a4df..2a7ef9d 100644
 From 6017d751fc1a7a9bf1eac92e2b40b161e0c48b49 Mon Sep 17 00:00:00 2001
 From: TruthProbe <truthprobe@localhost>
 Date: Thu, 19 Nov 2026 14:33:06 +0300
-Subject: [PATCH 7/8] feat(desktop): let a fork brand the desktop app
+Subject: [PATCH 7/9] feat(desktop): let a fork brand the desktop app
 
 A fork that ships its own Electron application sets OPENCODE_DESKTOP_APP and
 OPENCODE_DESKTOP_APP_ID before building. The window title, the AppUserModelID,
@@ -3294,7 +3294,7 @@ index 9688672..de655d5 100644
 From a478531b342afc1a07626aafcd1e085543cbaef2 Mon Sep 17 00:00:00 2001
 From: truthprobe <truthprobe@local>
 Date: Thu, 19 Nov 2026 19:21:40 +0300
-Subject: [PATCH 8/8] fix(truthprobe): keep logprobs that arrive without text,
+Subject: [PATCH 8/9] fix(truthprobe): keep logprobs that arrive without text,
  align tokens, always publish a verdict
 
 - ai: buffer token logprobs in parser state; gateways send them in a separate
@@ -3698,6 +3698,38 @@ index f21811e..edac0e3 100644
            </text>
          </box>
        </Show>
+-- 
+2.53.0
+
+
+From 5a335e31658d33202b76ac0fb58f795cb1db4e03 Mon Sep 17 00:00:00 2001
+From: truthprobe <truthprobe@local>
+Date: Thu, 19 Nov 2026 19:36:25 +0300
+Subject: [PATCH 9/9] fix(truthprobe): say so when tokens do not match the
+ answer text
+
+Dropping every token that cannot be found in the text silently produced
+'unavailable / no content tokens'; the honest reason is that the stream and the
+rendered text disagree.
+---
+ packages/core/src/truthprobe/score.ts | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/packages/core/src/truthprobe/score.ts b/packages/core/src/truthprobe/score.ts
+index e024f93..7d46333 100644
+--- a/packages/core/src/truthprobe/score.ts
++++ b/packages/core/src/truthprobe/score.ts
+@@ -186,7 +186,9 @@ export function scoreAnswer(
+       first: null,
+       sentences: [],
+       flagged: 0,
+-      reason: "no content tokens",
++      // Токены пришли, но ни один не нашёлся в тексте ответа: числа по такому
++      // потоку были бы выдумкой, честнее сказать «не могу сопоставить».
++      reason: withOffsets.length ? "no content tokens" : "tokens do not match the answer text",
+     };
+   }
+ 
 -- 
 2.53.0
 
