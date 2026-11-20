@@ -21,6 +21,10 @@
 - `cd packages/core && bun test test/truthprobe`: **109 pass / 0 fail**.
 - Патч: **15 коммитов**, `45 файлов, +6875/−40`, 406 664 Б, `git am` на `007afb1`
   даёт побайтово то же дерево (`WT_TREE == DEV_TREE`, 0 расхождений).
+- CI [`44736706708`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44736706708):
+  **7 job'ов из 7 success** на hosted ubuntu-latest и windows-latest, включая `cli build`.
+- Desktop пересобран и установлен: `TruthProbe.exe` 246 624 768 Б, сборка 15:39,
+  в `app.asar` лежат `confidence-meter` и `doubtful-list` — новый вердикт в сборке есть.
 
 # 0.7.0 — 2026-11-20
 

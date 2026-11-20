@@ -267,7 +267,7 @@ python3 scripts/tui-probe.py && python3 scripts/screen-dump.py /tmp/tui-probe.lo
 | Сменный скорер | `TRUTHPROBE_SCORER=linear:weights.json` | score сместился с `0.7595` до `0.9992` — подмена реально работает |
 | Установщик Windows | `install.ps1 -Dir <пусто> -DryRun` | клон, `git apply --check`, 15 коммитов применились, ошибок нет |
 | Сборка desktop | electron-builder | приложение 246 МБ, вложенный CLI 279 МБ |
-| CI на чужих машинах | GitHub Actions, прогоны [`44593481931`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44593481931) и [`44678633546`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44678633546) | **все 7 job'ов success** в обоих, на hosted-раннерах ubuntu-latest и windows-latest |
+| CI на чужих машинах | GitHub Actions, прогоны [`44593481931`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44593481931), [`44678633546`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44678633546) и [`44736706708`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44736706708) | **все 7 job'ов success** в каждом, на hosted-раннерах ubuntu-latest и windows-latest |
 | Веса на модель в рантайме | два прогона на моке с разными бандлами, один и тот же ответ | `0.9997 · safe`, когда веса есть для `mock/mock-1`, и `0.0003 · unreliable`, когда они только у `other/model` — выбор по `providerID/modelID` реально работает |
 | `collect.py` на живом шлюзе | 2 промпта, `freepi/particle` | строки с `meanLp -0.063 / -0.125`, `minLp -0.409 / -0.945`, `fracLow 0.00 / 0.06` — признаки считаются той же формулой, что в рантайме |
 

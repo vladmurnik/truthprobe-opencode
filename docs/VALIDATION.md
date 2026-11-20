@@ -348,11 +348,15 @@ SchemaError: Expected Truthprobe.Level | undefined
 [`44678633546`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44678633546)
 (коммит `7bf2eed`), тоже **7 из 7**: сборка, установщики и truthprobe-тесты не сломались от
 изменений в скорере.
+Третий прогон — уже на патче с новым UI и пересобранными весами —
+[`44736706708`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44736706708)
+(коммит `83bb9a2`, 15 коммитов в патче): снова **7 из 7 success**, то есть `ConfidenceLine`
+и `DoubtfulList` в `packages/session-ui` не сломали ни typecheck, ни сборку CLI.
 
 | Job | Раннер | Что доказывает |
 | --- | --- | --- |
 | `patched tree` | `ubuntu-latest`, `windows-latest` | клон opencode на `007afb1`, `git am` патча, `bun install`, typecheck 4 пакетов, 109 truthprobe-тестов |
-| `installer dry-run` | `ubuntu-latest`, `windows-latest` | `install.sh` / `install.ps1 -DryRun`: клон, `git apply --check`, 14 коммитов, без установки в систему |
+| `installer dry-run` | `ubuntu-latest`, `windows-latest` | `install.sh` / `install.ps1 -DryRun`: клон, `git apply --check`, 15 коммитов, без установки в систему |
 | `repo tests` | `ubuntu-latest` | юнит-тесты репозитория TruthProbe |
 | `end-to-end verdict` | `ubuntu-latest` | мок-провайдер с logprobs → вердикт в SQLite |
 | `cli build` | `ubuntu-latest` | CLI собирается из пропатченного дерева |
