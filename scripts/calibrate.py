@@ -26,6 +26,15 @@ import sys
 COLUMNS = ("score", "phi", "meanLp", "minLp")
 
 
+def truthy_label(value):
+    """label из JSON: true/false, но также 1/0 — так их пишет `collect.py`."""
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)) and value in (0, 1):
+        return bool(value)
+    return None
+
+
 def load(path: str) -> tuple[list[dict], int]:
     rows: list[dict] = []
     skipped = 0
@@ -39,9 +48,11 @@ def load(path: str) -> tuple[list[dict], int]:
             except json.JSONDecodeError:
                 skipped += 1
                 continue
-            if not isinstance(row.get("label"), bool):
+            label = truthy_label(row.get("label"))
+            if label is None:
                 skipped += 1
                 continue
+            row["label"] = label
             rows.append(row)
     return rows, skipped
 

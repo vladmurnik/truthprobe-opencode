@@ -1,0 +1,71 @@
+{
+  "version": 1,
+  "features": [
+    "bias",
+    "meanLp",
+    "minLp",
+    "meanPhi",
+    "fracLow"
+  ],
+  "global": {
+    "bias": 0.2302,
+    "meanLp": -3.8722,
+    "minLp": 0.6056,
+    "meanPhi": -0.5982,
+    "fracLow": 1.4692
+  },
+  "models": {
+    "deepseek-v4-flash": {
+      "rows": 175,
+      "positives": 170,
+      "auroc": 0.6118,
+      "ece": 0.3985,
+      "weights": {
+        "bias": -0.8977,
+        "meanLp": -1.2308,
+        "minLp": -0.2103,
+        "meanPhi": 5.0003,
+        "fracLow": 1.4281
+      }
+    },
+    "deepseek-v4.1-flash": {
+      "rows": 178,
+      "positives": 171,
+      "auroc": 0.726,
+      "ece": 0.3567,
+      "weights": {
+        "bias": -0.7084,
+        "meanLp": -6.8397,
+        "minLp": 0.4371,
+        "meanPhi": -0.389,
+        "fracLow": 5.1941
+      }
+    },
+    "glm-5.3-flash": {
+      "rows": 185,
+      "positives": 181,
+      "auroc": 0.9641,
+      "ece": 0.1245,
+      "weights": {
+        "bias": 4.448,
+        "meanLp": -5.1636,
+        "minLp": 4.1627,
+        "meanPhi": 5.885,
+        "fracLow": 3.0441
+      }
+    },
+    "particle": {
+      "rows": 182,
+      "positives": 178,
+      "auroc": 0.7907,
+      "ece": 0.2628,
+      "weights": {
+        "bias": 3.7413,
+        "meanLp": -1.7439,
+        "minLp": 1.2715,
+        "meanPhi": -3.0067,
+        "fracLow": -4.0667
+      }
+    }
+  }
+}

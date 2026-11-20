@@ -10,19 +10,21 @@
 #   make preview   поднять мок-провайдер и прогнать один запрос через CLI
 #   make desktop   собрать desktop-приложение (нужен установленный bun)
 #   make clean     удалить рабочее дерево, собранное setup
+#   make eval      AUROC/ECE/Brier по размеченным строкам (data/eval-fixture.jsonl)
 #
 # Переменные:
 #   TP_DIR   куда клонировать opencode (по умолчанию .worktree/opencode)
 #   BASE     коммит sst/opencode, на который нарезан патч
+#   WEIGHTS  JSON с весами для linear-скорера (make eval WEIGHTS=weights.json)
 
 SHELL := bash
 BASE := 007afb1b0c8a36dff93d7945909d4e976545ba95
 TP_DIR ?= .worktree/opencode
 
-.PHONY: help setup test verify patch preview desktop clean
+.PHONY: help setup test verify patch preview desktop clean eval
 
 help:
-	@sed -n '2,20p' Makefile
+	@sed -n '2,18p' Makefile
 
 setup:
 	bash scripts/dev-setup.sh --dir "$(TP_DIR)"
@@ -45,3 +47,6 @@ desktop:
 clean:
 	rm -rf "$(TP_DIR)" scripts/.mock.log
 	@echo "удалено: $(TP_DIR)"
+
+eval:
+	python3 scripts/evaluate.py data/eval-fixture.jsonl $(if $(WEIGHTS),--weights $(WEIGHTS),)

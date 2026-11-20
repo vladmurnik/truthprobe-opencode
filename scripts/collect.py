@@ -42,7 +42,15 @@ JSONL ровно в том виде, который ест `scripts/calibrate.py
     # только план, без сети
     python3 scripts/collect.py --prompts data/qa-bank.jsonl --models auto --dry-run
 
-`--resume` пропускает пары (модель, промпт), которые уже лежат в `--out`.
+    # несколько сэмплов на пару (модель, промпт): при temperature > 0 разные ответы
+    python3 scripts/collect.py --url http://127.0.0.1:8790/v1 --key x \\
+        --models particle,deepseek-v4.1-flash --prompts data/qa-hard-bank.jsonl \\
+        --auto-label data/qa-hard-bank.jsonl --temperature 0.8 --samples 4 \\
+        --workers 4 --out data/rows-hard.jsonl --resume
+
+`--resume` пропускает пары (модель, промпт) — а при `--samples N` тройки
+(модель, промпт, сэмпл) — которые уже лежат в `--out`. Строки без поля
+`sample` считаются сэмплом 0, поэтому старые файлы остаются совместимыми.
 """
 
 from __future__ import annotations
@@ -209,18 +217,28 @@ def autolabel(answer: str, expect: list[str]) -> int | None:
     return 1 if matches(answer, expect) else 0
 
 
-def seen_pairs(path: str) -> set[tuple[str, str]]:
+def seen_pairs(path: str) -> set[tuple[str, str, int]]:
+    """Уже собранные тройки (модель, промпт, сэмпл).
+
+    Строки без поля `sample` — это сэмпл 0: старые наборы писались до
+    появления `--samples`, и после `--resume` их не нужно перезапрашивать.
+    """
     if not path or not os.path.exists(path):
         return set()
-    done: set[tuple[str, str]] = set()
+    done: set[tuple[str, str, int]] = set()
     with open(path, encoding="utf-8") as handle:
         for line in handle:
             try:
                 row = json.loads(line)
             except json.JSONDecodeError:
                 continue
-            if row.get("model") and row.get("prompt") and row.get("answer"):
-                done.add((row["model"], row["prompt"]))
+            if not (row.get("model") and row.get("prompt") and row.get("answer")):
+                continue
+            try:
+                sample = int(row.get("sample") or 0)
+            except (TypeError, ValueError):
+                sample = 0
+            done.add((row["model"], row["prompt"], sample))
     return done
 
 
@@ -239,9 +257,10 @@ def main() -> int:
     parser.add_argument("--temperature", type=float, default=0.0)
     parser.add_argument("--top-logprobs", type=int, default=3)
     parser.add_argument("--sleep", type=float, default=0.3, help="пауза между запросами, сек (на поток)")
+    parser.add_argument("--samples", type=int, default=1, help="сколько раз запросить каждую пару (модель, промпт)")
     parser.add_argument("--workers", type=int, default=1, help="сколько запросов держать в полёте")
     parser.add_argument("--limit", type=int, help="не больше N запросов за запуск")
-    parser.add_argument("--resume", action="store_true", help="пропускать уже собранные пары (модель, промпт)")
+    parser.add_argument("--resume", action="store_true", help="пропускать уже собранные (модель, промпт, сэмпл)")
     parser.add_argument("--dry-run", action="store_true", help="только показать план, без сети")
     args = parser.parse_args()
 
@@ -272,12 +291,16 @@ def main() -> int:
 
     bank = read_bank(args.auto_label) if args.auto_label else {}
 
-    plan = [(m, p["prompt"], p["label"]) for m in models for p in prompts]
-    print(f"план: {len(models)} модел(ей) x {len(prompts)} промпт(ов) = {len(plan)} запросов -> {args.out}")
+    samples = max(1, args.samples)
+    plan = [(m, p["prompt"], p["label"], s) for m in models for p in prompts for s in range(samples)]
+    print(
+        f"план: {len(models)} модел(ей) x {len(prompts)} промпт(ов) x {samples} сэмпл(ов) "
+        f"= {len(plan)} запросов -> {args.out}"
+    )
 
     if args.dry_run:
-        for model, prompt, label in plan[:20]:
-            print(f"  {model} | label={label} | {prompt[:70]}")
+        for model, prompt, label, sample in plan[:20]:
+            print(f"  {model} sample={sample} | label={label} | {prompt[:70]}")
         if len(plan) > 20:
             print(f"  ... ещё {len(plan) - 20}")
         return 0
@@ -287,9 +310,9 @@ def main() -> int:
     lock = threading.Lock()
     counters = {"written": 0, "skipped": 0, "failed": 0}
 
-    def run_one(item: tuple[int, str, str, int | None]) -> None:
-        index, model, prompt, label = item
-        if (model, prompt) in done:
+    def run_one(item: tuple[int, str, str, int | None, int]) -> None:
+        index, model, prompt, label, sample = item
+        if (model, prompt, sample) in done:
             with lock:
                 counters["skipped"] += 1
             return
@@ -306,17 +329,24 @@ def main() -> int:
         with lock:
             if status != 200:
                 counters["failed"] += 1
-                row = {"model": routed, "prompt": prompt, "answer": "", "label": label, "error": f"HTTP {status}: {body[:200]}"}
+                row = {
+                    "model": routed,
+                    "prompt": prompt,
+                    "answer": "",
+                    "label": label,
+                    "sample": sample,
+                    "error": f"HTTP {status}: {body[:200]}",
+                }
                 out.write(json.dumps(row, ensure_ascii=False) + "\n")
                 out.flush()
-                print(f"[{index}/{len(plan)}] {model} -> HTTP {status}")
+                print(f"[{index}/{len(plan)}] {model} sample={sample} -> HTTP {status}")
                 time.sleep(args.sleep)
                 return
             try:
                 choice = json.loads(body)["choices"][0]
             except (json.JSONDecodeError, KeyError, IndexError):
                 counters["failed"] += 1
-                print(f"[{index}/{len(plan)}] {model} -> не разобрал ответ")
+                print(f"[{index}/{len(plan)}] {model} sample={sample} -> не разобрал ответ")
                 time.sleep(args.sleep)
                 return
             answer = (choice.get("message") or {}).get("content") or ""
@@ -329,23 +359,25 @@ def main() -> int:
                 "prompt": prompt,
                 "answer": answer,
                 "label": label,
+                "sample": sample,
                 **({"error": "no logprobs in response"} if feats is None else feats),
             }
             out.write(json.dumps(row, ensure_ascii=False) + "\n")
             out.flush()
             if feats is None:
                 counters["failed"] += 1
-                print(f"[{index}/{len(plan)}] {routed} -> без logprobs")
+                print(f"[{index}/{len(plan)}] {routed} sample={sample} -> без logprobs")
             else:
                 counters["written"] += 1
                 print(
-                    f"[{index}/{len(plan)}] {routed} label={label} -> meanLp {feats['meanLp']:.3f} "
-                    f"minLp {feats['minLp']:.3f} phi {feats['phi']:.3f} fracLow {feats['fracLow']:.2f}"
+                    f"[{index}/{len(plan)}] {routed} sample={sample} label={label} -> "
+                    f"meanLp {feats['meanLp']:.3f} minLp {feats['minLp']:.3f} "
+                    f"phi {feats['phi']:.3f} fracLow {feats['fracLow']:.2f}"
                 )
             time.sleep(args.sleep)
 
     with open(args.out, "a", encoding="utf-8", newline="\n") as out:
-        items = [(i, m, p, l) for i, (m, p, l) in enumerate(plan, start=1)]
+        items = [(i, m, p, l, s) for i, (m, p, l, s) in enumerate(plan, start=1)]
         if args.workers > 1:
             with concurrent.futures.ThreadPoolExecutor(max_workers=args.workers) as pool:
                 list(pool.map(run_one, items))

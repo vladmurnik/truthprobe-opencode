@@ -1,7 +1,7 @@
 From 3ccda6cdf3320c8fbcfbb2c8656c34a2827932af Mon Sep 17 00:00:00 2001
 From: truthprobe <truthprobe@local>
 Date: Thu, 19 Nov 2026 00:59:59 +0300
-Subject: [PATCH 01/15] feat(truthprobe): score answers from token logprobs
+Subject: [PATCH 01/16] feat(truthprobe): score answers from token logprobs
 
 - schema: Truthprobe.Info, capabilities.logprobs, AssistantText.truthprobe, optional truthprobe on session.text.ended
 - ai/openai-chat: request logprobs/top_logprobs when enabled, parse choice-level logprobs into providerMetadata
@@ -1192,7 +1192,7 @@ index 6a844d7..f21811e 100644
 From a9db0dab3c3392b40e8c9366e3455be1f37b7dcf Mon Sep 17 00:00:00 2001
 From: adik <adik@local>
 Date: Thu, 19 Nov 2026 01:12:00 +0300
-Subject: [PATCH 02/15] fix(tui): apply truthprobe metadata from
+Subject: [PATCH 02/16] fix(tui): apply truthprobe metadata from
  session.text.ended events
 
 The solid client store only copied event.data.text into the in-memory
@@ -1222,7 +1222,7 @@ index 8b6d247..7368d0c 100644
 From 2870f64a9bcb19d1e1701d85101c5074646cdcac Mon Sep 17 00:00:00 2001
 From: adik <adik@local>
 Date: Thu, 19 Nov 2026 03:08:36 +0300
-Subject: [PATCH 03/15] test(truthprobe): cover segmentation, scoring and
+Subject: [PATCH 03/16] test(truthprobe): cover segmentation, scoring and
  protocol parsing
 
 - send logprobs from every chat-completions model that declares the capability
@@ -1985,7 +1985,7 @@ index eed85f3..5bde799 100755
 From f04342565c0963f466c9bae21dc1b0d9158bab44 Mon Sep 17 00:00:00 2001
 From: TruthProbe <truthprobe@local>
 Date: Thu, 19 Nov 2026 09:40:19 +0300
-Subject: [PATCH 04/15] feat(truthprobe): probe providers and enable logprobs
+Subject: [PATCH 04/16] feat(truthprobe): probe providers and enable logprobs
  automatically
 
 Adding a provider key no longer needs an environment variable.
@@ -2800,7 +2800,7 @@ index 0000000..e23e561
 From 3126939707e7c7c305f8b3c2a89d196dc1b5acd9 Mon Sep 17 00:00:00 2001
 From: adik <adik@local>
 Date: Thu, 19 Nov 2026 13:34:58 +0300
-Subject: [PATCH 05/15] feat(truthprobe): show confidence in the desktop
+Subject: [PATCH 05/16] feat(truthprobe): show confidence in the desktop
  session UI
 
 ---
@@ -2897,7 +2897,7 @@ index be526b4..659538f 100644
 From 335305a2e846ae50c7d31cec6a750b74a4d385a6 Mon Sep 17 00:00:00 2001
 From: TruthProbe <truthprobe@localhost>
 Date: Thu, 19 Nov 2026 13:44:43 +0300
-Subject: [PATCH 06/15] feat(truthprobe): list doubtful sentences in the
+Subject: [PATCH 06/16] feat(truthprobe): list doubtful sentences in the
  desktop footer
 
 ---
@@ -3082,7 +3082,7 @@ index b44a4df..2a7ef9d 100644
 From 6017d751fc1a7a9bf1eac92e2b40b161e0c48b49 Mon Sep 17 00:00:00 2001
 From: TruthProbe <truthprobe@localhost>
 Date: Thu, 19 Nov 2026 14:33:06 +0300
-Subject: [PATCH 07/15] feat(desktop): let a fork brand the desktop app
+Subject: [PATCH 07/16] feat(desktop): let a fork brand the desktop app
 
 A fork that ships its own Electron application sets OPENCODE_DESKTOP_APP and
 OPENCODE_DESKTOP_APP_ID before building. The window title, the AppUserModelID,
@@ -3294,7 +3294,7 @@ index 9688672..de655d5 100644
 From a478531b342afc1a07626aafcd1e085543cbaef2 Mon Sep 17 00:00:00 2001
 From: truthprobe <truthprobe@local>
 Date: Thu, 19 Nov 2026 19:21:40 +0300
-Subject: [PATCH 08/15] fix(truthprobe): keep logprobs that arrive without
+Subject: [PATCH 08/16] fix(truthprobe): keep logprobs that arrive without
  text, align tokens, always publish a verdict
 
 - ai: buffer token logprobs in parser state; gateways send them in a separate
@@ -3705,7 +3705,7 @@ index f21811e..edac0e3 100644
 From 5a335e31658d33202b76ac0fb58f795cb1db4e03 Mon Sep 17 00:00:00 2001
 From: truthprobe <truthprobe@local>
 Date: Thu, 19 Nov 2026 19:36:25 +0300
-Subject: [PATCH 09/15] fix(truthprobe): say so when tokens do not match the
+Subject: [PATCH 09/16] fix(truthprobe): say so when tokens do not match the
  answer text
 
 Dropping every token that cannot be found in the text silently produced
@@ -3737,7 +3737,7 @@ index e024f93..7d46333 100644
 From 3d8a5b1ac9a2b94bd6729f6e9de9b6b400ac5df6 Mon Sep 17 00:00:00 2001
 From: adik <adik@users.noreply.github.com>
 Date: Thu, 19 Nov 2026 21:10:26 +0300
-Subject: [PATCH 10/15] feat(truthprobe): confidence levels and sentence
+Subject: [PATCH 10/16] feat(truthprobe): confidence levels and sentence
  highlights
 
 ---
@@ -8105,7 +8105,7 @@ index 0000000..d3450d7
 From 51f6f1088316234b53fb7ba8b8b78619c9b3d570 Mon Sep 17 00:00:00 2001
 From: adik <adik@users.noreply.github.com>
 Date: Thu, 19 Nov 2026 21:13:56 +0300
-Subject: [PATCH 11/15] feat(truthprobe): pluggable scorer (geometric | linear
+Subject: [PATCH 11/16] feat(truthprobe): pluggable scorer (geometric | linear
  weights)
 
 ---
@@ -8487,7 +8487,7 @@ index 0000000..998bf44
 From 699374c936946d597addbc90680dd680e048a37c Mon Sep 17 00:00:00 2001
 From: adik <adik@users.noreply.github.com>
 Date: Thu, 19 Nov 2026 21:28:48 +0300
-Subject: [PATCH 12/15] fix(schema): accept null level so unavailable verdicts
+Subject: [PATCH 12/16] fix(schema): accept null level so unavailable verdicts
  decode
 
 ---
@@ -8545,7 +8545,7 @@ index 5d05c07..d6f7831 100644
 From d153658602f327ff2f5f9a7ccbcfd4c2a6e6a9dc Mon Sep 17 00:00:00 2001
 From: TruthProbe <truthprobe@localhost>
 Date: Thu, 19 Nov 2026 21:58:03 +0300
-Subject: [PATCH 13/15] fix(truthprobe): make the patched tree typecheck clean
+Subject: [PATCH 13/16] fix(truthprobe): make the patched tree typecheck clean
 
 - schema: Level is a type alias over the Literals union, not an interface
 - core: DEFAULT_SCORE_OPTIONS omits the optional scorer field
@@ -8681,7 +8681,7 @@ index d6f7831..99b4171 100644
 From 3b720f0a39072f8e1699cecd75337d10f3f3c402 Mon Sep 17 00:00:00 2001
 From: TruthProbe <truthprobe@localhost>
 Date: Fri, 20 Nov 2026 07:54:47 +0300
-Subject: [PATCH 14/15] feat(truthprobe): per-model calibration weights
+Subject: [PATCH 14/16] feat(truthprobe): per-model calibration weights
 
 - core: WeightsBundle/parseWeightsBundle/bundleScorer/weightsFor read the
   {global, models} bundle written by calibrate.py --fit --by-model
@@ -8972,7 +8972,7 @@ index 0000000..57691fb
 From f6ef42b7d241e856c4b443e8d55c7fc88668c939 Mon Sep 17 00:00:00 2001
 From: TruthProbe <truthprobe@localhost>
 Date: Fri, 20 Nov 2026 15:31:41 +0300
-Subject: [PATCH 15/15] feat(session-ui): one readable confidence verdict and a
+Subject: [PATCH 15/16] feat(session-ui): one readable confidence verdict and a
  doubtful list
 
 - session-ui: new confidence.tsx with ConfidenceMeter, ConfidenceLine and
@@ -9241,6 +9241,90 @@ index 29f537b..6043672 100644
            </div>
          </Show>
          <Show when={sources()} fallback={<Show when={props.showCopy}>{copyFooter()}</Show>}>
+-- 
+2.53.0
+
+
+From 068ce15559a427b8b95e53f2effbbf473ddc0764 Mon Sep 17 00:00:00 2001
+From: vladmurnik <vladmurnik@users.noreply.github.com>
+Date: Fri, 20 Nov 2026 16:28:49 +0300
+Subject: [PATCH 16/16] feat(tui): fixed-width confidence meter and level label
+
+---
+ .../tui/src/routes/session/message-parts.tsx  | 36 +++++++++++++------
+ 1 file changed, 26 insertions(+), 10 deletions(-)
+
+diff --git a/packages/tui/src/routes/session/message-parts.tsx b/packages/tui/src/routes/session/message-parts.tsx
+index b94c95c..8c17cd8 100644
+--- a/packages/tui/src/routes/session/message-parts.tsx
++++ b/packages/tui/src/routes/session/message-parts.tsx
+@@ -171,6 +171,15 @@ function ReasoningHeader(props: {
+   )
+ }
+ 
++const BAR_CELLS = 5
++
++/** Terminal-safe confidence meter: five cells, filled by score. Width never changes. */
++function bar(value: unknown) {
++  const score = typeof value === "number" && Number.isFinite(value) ? Math.min(1, Math.max(0, value)) : 0
++  const filled = Math.round(score * BAR_CELLS)
++  return `${"▰".repeat(filled)}${"░".repeat(BAR_CELLS - filled)}`
++}
++
+ export function TextPart(props: {
+   last: boolean
+   part: SessionMessageAssistantText
+@@ -183,7 +192,7 @@ export function TextPart(props: {
+   const probe = createMemo(() => props.part.truthprobe)
+   const flagged = createMemo(() => (props.part.truthprobe?.sentences ?? []).filter((item) => item.flag))
+   const pct = (value: unknown) => (typeof value === "number" ? `${Math.round(value * 100)}%` : "?")
+-  const level = (value: { level?: string; score?: unknown }) => {
++  const level = (value: { level?: string | null; score?: unknown }) => {
+     if (value.level === "safe" || value.level === "likely" || value.level === "uncertain" || value.level === "risky" || value.level === "unreliable")
+       return value.level
+     const score = typeof value.score === "number" ? value.score : undefined
+@@ -195,6 +204,15 @@ export function TextPart(props: {
+     return "unreliable"
+   }
+   const answerLevel = createMemo(() => (probe() ? level({ level: probe()?.level, score: probe()?.score }) : undefined))
++  // Levels map onto the theme's own semantic feedback colours; no palette of our own.
++  const tone = (value?: string) =>
++    value === "safe" || value === "likely"
++      ? theme.text.feedback.success.base
++      : value === "uncertain"
++        ? theme.text.feedback.warning.base
++        : value === "risky" || value === "unreliable"
++          ? theme.text.feedback.error.base
++          : theme.text.muted
+   return (
+     <>
+       <Show when={probe()}>
+@@ -226,18 +244,16 @@ export function TextPart(props: {
+       <Show when={flagged().length > 0}>
+         <box paddingLeft={3} flexShrink={0} flexDirection="column">
+           <text fg={theme.text.muted}>
+-            {`answer confidence ${pct(probe()?.score)}${answerLevel() ? ` · ${answerLevel()}` : ""} · ${flagged().length} doubtful sentence${flagged().length > 1 ? "s" : ""}`}
++            {`answer confidence ${pct(probe()?.score)} `}
++            <span style={{ fg: tone(answerLevel()) }}>{bar(probe()?.score)}</span>
++            {answerLevel() ? " · " : ""}
++            <span style={{ fg: tone(answerLevel()) }}>{answerLevel() ?? ""}</span>
++            {` · ${flagged().length} doubtful sentence${flagged().length > 1 ? "s" : ""}`}
+           </text>
+           <For each={flagged()}>
+             {(sentence) => (
+-              <text
+-                fg={
+-                  level(sentence) === "unreliable"
+-                    ? theme.text.feedback.error.base
+-                    : theme.text.feedback.warning.base
+-                }
+-              >
+-                {`  ▌ #${Number(sentence.i) + 1} ${pct(sentence.score)}${level(sentence) ? ` · ${level(sentence)}` : ""}: ${sentence.text.length > 96 ? `${sentence.text.slice(0, 93)}...` : sentence.text}`}
++              <text fg={tone(level(sentence))}>
++                {`  ▌ #${Number(sentence.i) + 1} ${bar(sentence.score)} ${pct(sentence.score)}${level(sentence) ? ` · ${level(sentence)}` : ""}: ${sentence.text.length > 96 ? `${sentence.text.slice(0, 93)}...` : sentence.text}`}
+               </text>
+             )}
+           </For>
 -- 
 2.53.0
 

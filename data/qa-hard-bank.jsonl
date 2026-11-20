@@ -1,0 +1,47 @@
+{"prompt": "How many kilometers are in 5 miles? Use 1 mile = 1.609 km and give the nearest whole number only.", "expect": ["8", "eight", "8.05"]}
+{"prompt": "Convert 100 degrees Fahrenheit to Celsius and give the nearest whole degree, number only.", "expect": ["38", "thirty-eight", "37.8"]}
+{"prompt": "How many bytes are in one mebibyte (MiB)? Answer with digits only.", "expect": ["1048576", "1,048,576", "1 048 576"]}
+{"prompt": "How many bytes are in one gibibyte (GiB)? Answer with digits only.", "expect": ["1073741824", "1,073,741,824", "1 073 741 824"]}
+{"prompt": "How many meters are in one mile? Give the nearest whole number only.", "expect": ["1609", "1,609"]}
+{"prompt": "How many inches are in one meter? Give the nearest whole number only.", "expect": ["39", "thirty-nine"]}
+{"prompt": "Convert 100 degrees Celsius to Fahrenheit. Answer with the number only.", "expect": ["212"]}
+{"prompt": "How many grams are in one troy ounce? Give the nearest whole number only.", "expect": ["31", "thirty-one"]}
+{"prompt": "How many days were there in February of the year 1900?", "expect": ["28", "twenty-eight"]}
+{"prompt": "How many days are there in the year 2100?", "expect": ["365", "three hundred sixty-five"]}
+{"prompt": "How many days passed between 1 January 2000 and 1 January 2001? Answer with a number only.", "expect": ["366", "three hundred sixty-six"]}
+{"prompt": "On what date was the Treaty of Versailles signed? Give the day and the month.", "expect": ["28 june", "june 28"]}
+{"prompt": "On what date did Apollo 11 land on the Moon (UTC)? Give the day and the month.", "expect": ["20 july", "july 20"]}
+{"prompt": "What weekday was 1 January 2000?", "expect": ["saturday"]}
+{"prompt": "In which year was the Treaty of Rome signed?", "expect": ["1957"]}
+{"prompt": "How many days are there in a full 400-year Gregorian cycle? Answer with a number only.", "expect": ["146097", "146,097"]}
+{"prompt": "A train covers 60 km in 45 minutes. What is its average speed in km/h? Answer with a number only.", "expect": ["80", "eighty"]}
+{"prompt": "If 3 workers build a wall in 12 days, how many days would 4 workers need at the same rate? Answer with a number only.", "expect": ["9", "nine"]}
+{"prompt": "A shirt costs 80 dollars. It is discounted by 25 percent, then 10 percent tax is added on the discounted price. What is the final price in dollars?", "expect": ["66", "sixty-six"]}
+{"prompt": "What is 24 percent of 250? Answer with a number only.", "expect": ["60", "sixty"]}
+{"prompt": "How many minutes are there in 2.5 hours? Answer with a number only.", "expect": ["150"]}
+{"prompt": "A rectangle measures 12 cm by 7 cm. What is its area in square centimeters? Answer with a number only.", "expect": ["84", "eighty-four"]}
+{"prompt": "What is the sum of the interior angles of a hexagon, in degrees? Answer with a number only.", "expect": ["720"]}
+{"prompt": "How many diagonals does a regular octagon have? Answer with a number only.", "expect": ["20", "twenty"]}
+{"prompt": "What is the atomic number of gold? Answer with a number only.", "expect": ["79"]}
+{"prompt": "What is the atomic number of uranium? Answer with a number only.", "expect": ["92"]}
+{"prompt": "What is the chemical symbol for tungsten? Answer with the symbol only.", "expect": ["w"]}
+{"prompt": "What is the chemical symbol for antimony? Answer with the symbol only.", "expect": ["sb"]}
+{"prompt": "Which element has the chemical symbol Hg? Name the element only.", "expect": ["mercury"]}
+{"prompt": "Which planet is the seventh from the Sun? Name it only.", "expect": ["uranus"]}
+{"prompt": "In the NATO phonetic alphabet, which word stands for the letter K? Answer with the word only.", "expect": ["kilo"]}
+{"prompt": "What is the capital of Kazakhstan? Answer with the city name only.", "expect": ["astana"]}
+{"prompt": "What is the capital of Myanmar? Answer with the city name only.", "expect": ["naypyidaw", "nay pyi taw", "naypyitaw"]}
+{"prompt": "What is the currency of Kazakhstan? Answer with the currency name only.", "expect": ["tenge"]}
+{"prompt": "Which river is longer: the Volga or the Danube? Name the longer river only.", "expect": ["volga"]}
+{"prompt": "What is the capital of the only country that shares a land border with the United Kingdom? Answer with the city name only.", "expect": ["dublin"]}
+{"prompt": "Which country has Ulaanbaatar as its capital? Answer with the country name only.", "expect": ["mongolia"]}
+{"prompt": "How many amendments are in the United States Bill of Rights? Answer with a number only.", "expect": ["10", "ten"]}
+{"prompt": "Which US state is Mount Everest located in?", "expect": ["nepal", "not in", "no us state", "none", "china"]}
+{"prompt": "How many moons does the planet Venus have? Answer with a number only.", "expect": ["0", "zero", "none", "no moons"]}
+{"prompt": "What is the capital of Switzerland: Zurich or Geneva? Answer with the city name only.", "expect": ["bern", "berne"]}
+{"prompt": "How many chambers does a human heart have: three or five?", "expect": ["4", "four"]}
+{"prompt": "Who was the first person to walk on the Moon: Buzz Aldrin or Yuri Gagarin? Answer with the name only.", "expect": ["armstrong"]}
+{"prompt": "How many legs does a spider have: six or eight? Answer with a number word only.", "expect": ["eight", "8"]}
+{"prompt": "In which year did the Berlin Wall fall: 1987 or 1991? Answer with the year only.", "expect": ["1989"]}
+{"prompt": "Which is the largest planet in the Solar System: Saturn or Neptune? Name it only.", "expect": ["jupiter"]}
+{"prompt": "Which ocean lies between Africa and Australia? Name it only.", "expect": ["indian"]}
