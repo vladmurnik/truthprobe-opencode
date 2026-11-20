@@ -1,7 +1,7 @@
 From 3ccda6cdf3320c8fbcfbb2c8656c34a2827932af Mon Sep 17 00:00:00 2001
 From: truthprobe <truthprobe@local>
 Date: Thu, 19 Nov 2026 00:59:59 +0300
-Subject: [PATCH 01/14] feat(truthprobe): score answers from token logprobs
+Subject: [PATCH 01/15] feat(truthprobe): score answers from token logprobs
 
 - schema: Truthprobe.Info, capabilities.logprobs, AssistantText.truthprobe, optional truthprobe on session.text.ended
 - ai/openai-chat: request logprobs/top_logprobs when enabled, parse choice-level logprobs into providerMetadata
@@ -1192,7 +1192,7 @@ index 6a844d7..f21811e 100644
 From a9db0dab3c3392b40e8c9366e3455be1f37b7dcf Mon Sep 17 00:00:00 2001
 From: adik <adik@local>
 Date: Thu, 19 Nov 2026 01:12:00 +0300
-Subject: [PATCH 02/14] fix(tui): apply truthprobe metadata from
+Subject: [PATCH 02/15] fix(tui): apply truthprobe metadata from
  session.text.ended events
 
 The solid client store only copied event.data.text into the in-memory
@@ -1222,7 +1222,7 @@ index 8b6d247..7368d0c 100644
 From 2870f64a9bcb19d1e1701d85101c5074646cdcac Mon Sep 17 00:00:00 2001
 From: adik <adik@local>
 Date: Thu, 19 Nov 2026 03:08:36 +0300
-Subject: [PATCH 03/14] test(truthprobe): cover segmentation, scoring and
+Subject: [PATCH 03/15] test(truthprobe): cover segmentation, scoring and
  protocol parsing
 
 - send logprobs from every chat-completions model that declares the capability
@@ -1985,7 +1985,7 @@ index eed85f3..5bde799 100755
 From f04342565c0963f466c9bae21dc1b0d9158bab44 Mon Sep 17 00:00:00 2001
 From: TruthProbe <truthprobe@local>
 Date: Thu, 19 Nov 2026 09:40:19 +0300
-Subject: [PATCH 04/14] feat(truthprobe): probe providers and enable logprobs
+Subject: [PATCH 04/15] feat(truthprobe): probe providers and enable logprobs
  automatically
 
 Adding a provider key no longer needs an environment variable.
@@ -2800,7 +2800,7 @@ index 0000000..e23e561
 From 3126939707e7c7c305f8b3c2a89d196dc1b5acd9 Mon Sep 17 00:00:00 2001
 From: adik <adik@local>
 Date: Thu, 19 Nov 2026 13:34:58 +0300
-Subject: [PATCH 05/14] feat(truthprobe): show confidence in the desktop
+Subject: [PATCH 05/15] feat(truthprobe): show confidence in the desktop
  session UI
 
 ---
@@ -2897,7 +2897,7 @@ index be526b4..659538f 100644
 From 335305a2e846ae50c7d31cec6a750b74a4d385a6 Mon Sep 17 00:00:00 2001
 From: TruthProbe <truthprobe@localhost>
 Date: Thu, 19 Nov 2026 13:44:43 +0300
-Subject: [PATCH 06/14] feat(truthprobe): list doubtful sentences in the
+Subject: [PATCH 06/15] feat(truthprobe): list doubtful sentences in the
  desktop footer
 
 ---
@@ -3082,7 +3082,7 @@ index b44a4df..2a7ef9d 100644
 From 6017d751fc1a7a9bf1eac92e2b40b161e0c48b49 Mon Sep 17 00:00:00 2001
 From: TruthProbe <truthprobe@localhost>
 Date: Thu, 19 Nov 2026 14:33:06 +0300
-Subject: [PATCH 07/14] feat(desktop): let a fork brand the desktop app
+Subject: [PATCH 07/15] feat(desktop): let a fork brand the desktop app
 
 A fork that ships its own Electron application sets OPENCODE_DESKTOP_APP and
 OPENCODE_DESKTOP_APP_ID before building. The window title, the AppUserModelID,
@@ -3294,7 +3294,7 @@ index 9688672..de655d5 100644
 From a478531b342afc1a07626aafcd1e085543cbaef2 Mon Sep 17 00:00:00 2001
 From: truthprobe <truthprobe@local>
 Date: Thu, 19 Nov 2026 19:21:40 +0300
-Subject: [PATCH 08/14] fix(truthprobe): keep logprobs that arrive without
+Subject: [PATCH 08/15] fix(truthprobe): keep logprobs that arrive without
  text, align tokens, always publish a verdict
 
 - ai: buffer token logprobs in parser state; gateways send them in a separate
@@ -3705,7 +3705,7 @@ index f21811e..edac0e3 100644
 From 5a335e31658d33202b76ac0fb58f795cb1db4e03 Mon Sep 17 00:00:00 2001
 From: truthprobe <truthprobe@local>
 Date: Thu, 19 Nov 2026 19:36:25 +0300
-Subject: [PATCH 09/14] fix(truthprobe): say so when tokens do not match the
+Subject: [PATCH 09/15] fix(truthprobe): say so when tokens do not match the
  answer text
 
 Dropping every token that cannot be found in the text silently produced
@@ -3737,7 +3737,7 @@ index e024f93..7d46333 100644
 From 3d8a5b1ac9a2b94bd6729f6e9de9b6b400ac5df6 Mon Sep 17 00:00:00 2001
 From: adik <adik@users.noreply.github.com>
 Date: Thu, 19 Nov 2026 21:10:26 +0300
-Subject: [PATCH 10/14] feat(truthprobe): confidence levels and sentence
+Subject: [PATCH 10/15] feat(truthprobe): confidence levels and sentence
  highlights
 
 ---
@@ -8105,7 +8105,7 @@ index 0000000..d3450d7
 From 51f6f1088316234b53fb7ba8b8b78619c9b3d570 Mon Sep 17 00:00:00 2001
 From: adik <adik@users.noreply.github.com>
 Date: Thu, 19 Nov 2026 21:13:56 +0300
-Subject: [PATCH 11/14] feat(truthprobe): pluggable scorer (geometric | linear
+Subject: [PATCH 11/15] feat(truthprobe): pluggable scorer (geometric | linear
  weights)
 
 ---
@@ -8487,7 +8487,7 @@ index 0000000..998bf44
 From 699374c936946d597addbc90680dd680e048a37c Mon Sep 17 00:00:00 2001
 From: adik <adik@users.noreply.github.com>
 Date: Thu, 19 Nov 2026 21:28:48 +0300
-Subject: [PATCH 12/14] fix(schema): accept null level so unavailable verdicts
+Subject: [PATCH 12/15] fix(schema): accept null level so unavailable verdicts
  decode
 
 ---
@@ -8545,7 +8545,7 @@ index 5d05c07..d6f7831 100644
 From d153658602f327ff2f5f9a7ccbcfd4c2a6e6a9dc Mon Sep 17 00:00:00 2001
 From: TruthProbe <truthprobe@localhost>
 Date: Thu, 19 Nov 2026 21:58:03 +0300
-Subject: [PATCH 13/14] fix(truthprobe): make the patched tree typecheck clean
+Subject: [PATCH 13/15] fix(truthprobe): make the patched tree typecheck clean
 
 - schema: Level is a type alias over the Literals union, not an interface
 - core: DEFAULT_SCORE_OPTIONS omits the optional scorer field
@@ -8681,7 +8681,7 @@ index d6f7831..99b4171 100644
 From 3b720f0a39072f8e1699cecd75337d10f3f3c402 Mon Sep 17 00:00:00 2001
 From: TruthProbe <truthprobe@localhost>
 Date: Fri, 20 Nov 2026 07:54:47 +0300
-Subject: [PATCH 14/14] feat(truthprobe): per-model calibration weights
+Subject: [PATCH 14/15] feat(truthprobe): per-model calibration weights
 
 - core: WeightsBundle/parseWeightsBundle/bundleScorer/weightsFor read the
   {global, models} bundle written by calibrate.py --fit --by-model
@@ -8965,6 +8965,282 @@ index 0000000..57691fb
 +    expect(scorer).toBeNull()
 +  })
 +})
+-- 
+2.53.0
+
+
+From f6ef42b7d241e856c4b443e8d55c7fc88668c939 Mon Sep 17 00:00:00 2001
+From: TruthProbe <truthprobe@localhost>
+Date: Fri, 20 Nov 2026 15:31:41 +0300
+Subject: [PATCH 15/15] feat(session-ui): one readable confidence verdict and a
+ doubtful list
+
+- session-ui: new confidence.tsx with ConfidenceMeter, ConfidenceLine and
+  DoubtfulList, so the desktop shows a level dot, a bar and coloured pills
+  instead of a wall of spans
+- session-ui: message-content.tsx renders those two components under a
+  data-slot=text-part-doubtful block and drops the dead memos
+- level colours are literals so the same tone is used by meter and list
+---
+ .../session-ui/src/message/confidence.tsx     | 172 ++++++++++++++++++
+ .../src/message/message-content.tsx           |  51 +-----
+ 2 files changed, 178 insertions(+), 45 deletions(-)
+ create mode 100644 packages/session-ui/src/message/confidence.tsx
+
+diff --git a/packages/session-ui/src/message/confidence.tsx b/packages/session-ui/src/message/confidence.tsx
+new file mode 100644
+index 0000000..98d30ec
+--- /dev/null
++++ b/packages/session-ui/src/message/confidence.tsx
+@@ -0,0 +1,172 @@
++/**
++ * Визуальная часть вердикта TruthProbe: один и тот же язык для веба, desktop и TUI.
++ *
++ * Здесь нет логики скоринга — только представление. Числа приходят из парта
++ * (`truthprobe`), уровни уже посчитаны ядром; если старый парт уровня не нёс,
++ * `levelOfSentence`/`levelOfInfo` восстанавливают его по score.
++ */
++
++import type { TruthprobeInfo } from "@opencode/client/promise"
++import { For, Show } from "solid-js"
++
++import { type ConfidenceLevel, doubtfulSentences, levelOfInfo, percentOf } from "./doubtful"
++
++/** Цвета уровней. Одна палитра на все темы, поэтому заданы литералами. */
++export function toneOf(level?: ConfidenceLevel): string {
++  switch (level) {
++    case "safe":
++      return "#3fbf6f"
++    case "likely":
++      return "#8bc34a"
++    case "uncertain":
++      return "#e0a032"
++    case "risky":
++      return "#e2683c"
++    case "unreliable":
++      return "#d64545"
++    default:
++      return "currentColor"
++  }
++}
++
++function ratio(value: unknown): number {
++  return typeof value === "number" && Number.isFinite(value) ? Math.min(1, Math.max(0, value)) : 0
++}
++
++/**
++ * Тонкая шкала 0..100%. Ширина фиксирована, чтобы строки метаданных не прыгали
++ * при стриминге; заливка красится по уровню.
++ */
++export function ConfidenceMeter(props: { value: unknown; level?: ConfidenceLevel; width?: number }) {
++  return (
++    <span
++      data-slot="confidence-meter"
++      data-level={props.level ?? "unknown"}
++      style={{
++        display: "inline-block",
++        position: "relative",
++        width: `${props.width ?? 56}px`,
++        height: "4px",
++        "border-radius": "999px",
++        background: "currentColor",
++        opacity: 0.9,
++        "vertical-align": "middle",
++        overflow: "hidden",
++        "margin-inline": "6px",
++      }}
++    >
++      <span
++        style={{
++          position: "absolute",
++          top: "0",
++          bottom: "0",
++          left: "0",
++          width: `${Math.round(ratio(props.value) * 100)}%`,
++          background: toneOf(props.level),
++          "border-radius": "999px",
++          transition: "width 200ms ease-out",
++        }}
++      />
++      <span
++        style={{
++          position: "absolute",
++          inset: "0",
++          background: "currentColor",
++          opacity: 0.18,
++        }}
++      />
++    </span>
++  )
++}
++
++/**
++ * Строка-вердикт под ответом: точка уровня, процент, название уровня и шкала.
++ * `unavailable` — отдельный чип с причиной, без выдуманных процентов.
++ */
++export function ConfidenceLine(props: { probe?: TruthprobeInfo }) {
++  const level = () => levelOfInfo(props.probe)
++  const score = () => props.probe?.score
++  const available = () => !!props.probe && props.probe.status !== "unavailable"
++
++  return (
++    <Show when={props.probe}>
++      <span data-slot="confidence-line" class="inline-flex items-center gap-1.5">
++        <Show
++          when={available()}
++          fallback={
++            <span
++              data-slot="confidence-unavailable"
++              class="inline-flex items-center gap-1 rounded-full border px-2 py-0.5"
++              style={{
++                "border-color": "color-mix(in oklab, var(--v2-yellow-900) 40%, transparent)",
++                color: "var(--v2-yellow-900)",
++              }}
++              title={props.probe?.reason ?? "provider sent no token probabilities"}
++            >
++              no confidence signal
++            </span>
++          }
++        >
++          <span
++            aria-hidden="true"
++            style={{
++              width: "7px",
++              height: "7px",
++              "border-radius": "999px",
++              display: "inline-block",
++              background: toneOf(level()),
++            }}
++          />
++          <span class="text-v2-text-text-faint">
++            {`confidence ${percentOf(score())}`}
++            {level() ? ` \u00B7 ${level()}` : ""}
++            {props.probe?.status === "partial" ? " \u00B7 partial" : ""}
++          </span>
++          <ConfidenceMeter value={score()} level={level()} />
++        </Show>
++      </span>
++    </Show>
++  )
++}
++
++/**
++ * Спорные предложения: плашка уровня, процент, мини-шкала уверенности и начало
++ * текста. Раньше был только цвет левой границы — на глаз он почти не отличался
++ * от обычного текста, теперь уровень читается и по цвету, и по числу.
++ */
++export function DoubtfulList(props: { probe?: TruthprobeInfo }) {
++  const rows = () => doubtfulSentences(props.probe)
++
++  return (
++    <Show when={rows().length > 0}>
++      <div data-slot="doubtful-list" class="mt-1 flex flex-col gap-1">
++        <For each={rows()}>
++          {(sentence) => (
++            <div
++              data-slot="doubtful-sentence"
++              data-level={sentence.level ?? "unknown"}
++              class="flex items-start gap-2 border-l-2 py-0.5 pl-2 text-[13px] leading-text-compact"
++              style={{
++                "border-left-color": toneOf(sentence.level),
++                "background-color": `color-mix(in oklab, ${toneOf(sentence.level)} 8%, transparent)`,
++              }}
++              title={sentence.text}
++            >
++              <span
++                class="shrink-0 rounded-full px-1.5 py-px text-[11px] font-medium tabular-nums"
++                style={{
++                  color: toneOf(sentence.level),
++                  "background-color": `color-mix(in oklab, ${toneOf(sentence.level)} 14%, transparent)`,
++                }}
++              >
++                {`${sentence.index === undefined ? "" : `#${sentence.index} `}${sentence.score}`}
++                {sentence.level ? ` ${sentence.level}` : ""}
++              </span>
++              <span class="min-w-0 flex-1 text-v2-text-text-faint">{sentence.text}</span>
++            </div>
++          )}
++        </For>
++      </div>
++    </Show>
++  )
++}
+diff --git a/packages/session-ui/src/message/message-content.tsx b/packages/session-ui/src/message/message-content.tsx
+index 29f537b..6043672 100644
+--- a/packages/session-ui/src/message/message-content.tsx
++++ b/packages/session-ui/src/message/message-content.tsx
+@@ -17,7 +17,8 @@ import {
+ import { createStore } from "solid-js/store"
+ import { createMediaQuery } from "@solid-primitives/media"
+ import type { TruthprobeInfo } from "@opencode/client/promise"
+-import { doubtfulSentences, levelOfInfo, percentOf } from "./doubtful"
++import { ConfidenceLine, DoubtfulList } from "./confidence"
++import { levelOfInfo } from "./doubtful"
+ import { useData } from "../context"
+ import { useDialog } from "@opencode/ui/context/dialog"
+ import { useI18n } from "@opencode/ui/context/i18n"
+@@ -1223,10 +1224,7 @@ export function AssistantTextContent(props: {
+     return [{ label: parts.join(" · ") }]
+   })
+ 
+-  // Спорные предложения: тот же список, что печатает TUI.
+-  const doubtful = createMemo(() => doubtfulSentences(props.probe))
+-
+-  const answerConfidence = createMemo(() => percentOf(props.probe?.score))
++  // Спорные предложения рисует DoubtfulList из ./confidence — тот же список, что печатает TUI.
+ 
+   const meta = createMemo<MetaItem[]>(() => [
+     ...(mobile() ? [] : labels()),
+@@ -1256,46 +1254,9 @@ export function AssistantTextContent(props: {
+           <PacedMarkdown text={props.text} cacheKey={props.id} streaming={props.message.time.completed === undefined} />
+         </div>
+         <Show when={props.probe}>
+-          <div data-slot="text-part-doubtful" class="mt-2 flex flex-col gap-0.5 text-[13px] leading-text-compact">
+-            {props.probe?.status === "unavailable" ? (
+-              <span class="text-[var(--v2-yellow-900)] [[data-color-scheme=dark]_&]:text-v2-state-fg-warning">
+-                {`! no confidence signal — the provider sent no token probabilities (logprobs)${
+-                  props.probe?.reason ? ` [${props.probe.reason}]` : ""
+-                }`}
+-              </span>
+-            ) : (
+-              <span class="text-v2-text-text-faint">
+-                {`answer confidence ${answerConfidence()}${
+-                  levelOfInfo(props.probe) ? ` \u00B7 ${levelOfInfo(props.probe)}` : ""
+-                }${props.probe?.status === "partial" ? " \u00B7 partial match" : ""}${
+-                  doubtful().length > 0
+-                    ? ` \u00B7 ${doubtful().length} doubtful sentence${doubtful().length > 1 ? "s" : ""}`
+-                    : ""
+-                }`}
+-              </span>
+-            )}
+-            <For each={doubtful()}>
+-              {(sentence) => (
+-                // Подсветка уровня: плашка с левой границей, цвета из темы, поэтому
+-                // работает в обеих темах. Раньше был только цвет текста, который на
+-                // тёмной теме почти не отличался от обычного.
+-                <span
+-                  class="border-l-2 py-0.5 pl-2"
+-                  style={{
+-                    "border-left-color": `var(${
+-                      sentence.level === "unreliable" ? "--v2-state-border-danger" : "--v2-state-border-warning"
+-                    })`,
+-                    "background-color": `color-mix(in oklab, var(${
+-                      sentence.level === "unreliable" ? "--v2-red-900" : "--v2-yellow-900"
+-                    }) 10%, transparent)`,
+-                  }}
+-                >
+-                  {`! ${sentence.index === undefined ? "" : `#${sentence.index} `}${sentence.score}${
+-                    sentence.level ? ` \u00B7 ${sentence.level}` : ""
+-                  }: ${sentence.text}`}
+-                </span>
+-              )}
+-            </For>
++          <div data-slot="text-part-doubtful" class="mt-2 flex flex-col gap-1 text-[13px] leading-text-compact">
++            <ConfidenceLine probe={props.probe} />
++            <DoubtfulList probe={props.probe} />
+           </div>
+         </Show>
+         <Show when={sources()} fallback={<Show when={props.showCopy}>{copyFooter()}</Show>}>
 -- 
 2.53.0
 

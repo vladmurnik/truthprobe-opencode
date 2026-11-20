@@ -21,7 +21,7 @@
 | `d153658` | fix(truthprobe): make the patched tree typecheck clean |
 | `3b720f0` | feat(truthprobe): per-model calibration weights |
 
-Итог: **43 файла, +6565 / −40**, четырнадцать коммитов. Патч — `patches/truthprobe-0001.patch` (394 805 Б, `git am`).
+Итог: **45 файлов, +6875 / −40**, пятнадцать коммитов. Патч — `patches/truthprobe-0001.patch` (406 664 Б, `git am`).
 
 ## 1. Слои патча
 

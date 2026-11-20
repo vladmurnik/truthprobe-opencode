@@ -265,7 +265,7 @@ python3 scripts/tui-probe.py && python3 scripts/screen-dump.py /tmp/tui-probe.lo
 | Ответ `freepi/particle` | живой запрос через боевой бинарь | `score 0.7595 · likely`, предложение `#0 0.603 · uncertain` |
 | Ответ `freepi/deepseek-v4.1-flash` | живой запрос | `score 0.6893`, первый флаг `0.4849` |
 | Сменный скорер | `TRUTHPROBE_SCORER=linear:weights.json` | score сместился с `0.7595` до `0.9992` — подмена реально работает |
-| Установщик Windows | `install.ps1 -Dir <пусто> -DryRun` | клон, `git apply --check`, 14 коммитов применились, ошибок нет |
+| Установщик Windows | `install.ps1 -Dir <пусто> -DryRun` | клон, `git apply --check`, 15 коммитов применились, ошибок нет |
 | Сборка desktop | electron-builder | приложение 246 МБ, вложенный CLI 279 МБ |
 | CI на чужих машинах | GitHub Actions, прогоны [`44593481931`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44593481931) и [`44678633546`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44678633546) | **все 7 job'ов success** в обоих, на hosted-раннерах ubuntu-latest и windows-latest |
 | Веса на модель в рантайме | два прогона на моке с разными бандлами, один и тот же ответ | `0.9997 · safe`, когда веса есть для `mock/mock-1`, и `0.0003 · unreliable`, когда они только у `other/model` — выбор по `providerID/modelID` реально работает |
@@ -332,7 +332,7 @@ python3 scripts/calibrate.py data/rows.jsonl --fit --by-model --out truthprobe-w
 
 ## Устройство патча
 
-43 файла, +6565/−40, четырнадцать коммитов поверх `007afb1`. Шов тонкий и аддитивный:
+45 файлов, +6875/−40, пятнадцать коммитов поверх `007afb1`. Шов тонкий и аддитивный:
 
 | Слой | Файл | Что делает |
 | --- | --- | --- |

@@ -1,3 +1,27 @@
+# 0.8.0 — 2026-11-20
+
+Вердикт уверенности стало видно глазами, а не только числом в мета-строке.
+
+**Добавлено**
+
+- `packages/session-ui/src/message/confidence.tsx` — общий компонент для desktop:
+  `ConfidenceMeter` (шкала 4px с заливкой по проценту и цветом уровня),
+  `ConfidenceLine` (точка уровня + «confidence NN% · level» + шкала; при
+  `status: unavailable` — чип «no confidence signal» с причиной в `title`),
+  `DoubtfulList` (список спорных предложений: плашка «#N NN% level» + текст,
+  левая граница и подложка в цвете уровня, `data-slot` для тестов и стилей).
+- `packages/session-ui/src/message/message-content.tsx` — блок
+  `data-slot="text-part-doubtful"` теперь рендерит `ConfidenceLine` + `DoubtfulList`
+  вместо россыпи `span`; мёртвые мемо `doubtful` и `answerConfidence` удалены.
+
+**Проверено**
+
+- `bun check --no-script -b` в `packages/session-ui`: «No type errors in 383 files».
+- `bun test src/message/doubtful.test.ts`: 8 pass / 0 fail.
+- `cd packages/core && bun test test/truthprobe`: **109 pass / 0 fail**.
+- Патч: **15 коммитов**, `45 файлов, +6875/−40`, 406 664 Б, `git am` на `007afb1`
+  даёт побайтово то же дерево (`WT_TREE == DEV_TREE`, 0 расхождений).
+
 # 0.7.0 — 2026-11-20
 
 Веса калибровки теперь работают на модель, а не «на всех сразу», и их стало чем собирать.
