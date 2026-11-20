@@ -15,7 +15,8 @@
 # is set locally in that directory only.
 set -euo pipefail
 
-BASE=007afb1
+BASE=007afb1b0c8a36dff93d7945909d4e976545ba95
+BASE_SHORT=007afb1
 UPSTREAM=https://github.com/sst/opencode.git
 REPO=https://raw.githubusercontent.com/vladmurnik/truthprobe-opencode/master
 PATCH_NAME=patches/truthprobe-0001.patch
@@ -37,7 +38,7 @@ else
 fi
 printf '    git %s\n    bun %s\n' "$(git --version | awk '{print $3}')" "$(bun --version)"
 
-step "fetching sst/opencode @ $BASE into $DIR"
+step "fetching sst/opencode @ ${BASE_SHORT} into $DIR"
 if [ -d "$DIR/.git" ] && git -C "$DIR" rev-parse --git-dir >/dev/null 2>&1; then
   printf '    reusing existing checkout\n'
   cd "$DIR"

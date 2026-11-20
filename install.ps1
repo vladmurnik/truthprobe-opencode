@@ -17,7 +17,8 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-$Base = "007afb1"
+$Base = "007afb1b0c8a36dff93d7945909d4e976545ba95"
+$BaseShort = "007afb1"
 $Upstream = "https://github.com/sst/opencode.git"
 $Repo = "https://raw.githubusercontent.com/vladmurnik/truthprobe-opencode/master"
 $PatchName = "patches/truthprobe-0001.patch"
@@ -31,7 +32,7 @@ Step "checking requirements"
 Write-Host "    $gitVersion"
 Write-Host "    bun $bunVersion"
 
-Step "fetching sst/opencode @ $Base into $Dir"
+Step "fetching sst/opencode @ $BaseShort into $Dir"
 if (Test-Path (Join-Path $Dir ".git")) {
   Write-Host "    reusing existing checkout"
   Push-Location $Dir
