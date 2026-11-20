@@ -1,26 +1,27 @@
 #!/usr/bin/env python3
-"""Ищет в банке вопросов такие, где ошибается не модель, а сам эталон.
+"""Проверяет банк вопросов: где ошибка в данных, а где модели действительно врут.
 
-Идея простая. Если несколько РАЗНЫХ моделей независимо дают один и тот же ответ,
-которого нет в `expect`, то вероятнее всего неправ эталон (или вопрос
-сформулирован двусмысленно), а не все модели сразу. Именно так и появились
-«уверенно неверные» ответы: на вопрос «Which is the largest planet in the Solar
-System: Saturn or Neptune?» три модели из четырёх ответили «Saturn» — потому что
-вопрос предлагает выбор между Сатурном и Нептуном, а ожидался «jupiter», которого
-среди вариантов нет. Лейбл `0` в этом случае — брак данных, а не сигнал.
+Три разных диагноза, и путать их нельзя:
 
-Скрипт ничего не меняет: он только показывает, какие пункты банка надо
-перечитать руками, и выходит с кодом 1, если такие есть (годится для CI).
+- `bank_error` — вопрос сам подсказывает неверный ответ («Saturn or Neptune», а в
+  эталоне `jupiter`). Такой лейбл `0` — брак данных, а не сигнал. Это exit 1.
+- `ambiguous` — модели расходятся между собой (у них разные модальные ответы).
+  Значит вопрос допускает разные прочтения, и на нём нельзя учить. Это exit 1.
+- `suspect` — все модели независимо дают ОДИН И ТОТ ЖЕ ответ, которого нет в
+  эталоне. Либо эталон врёт, либо модели одинаково ошибаются. Это именно тот
+  случай, ради которого собирают негативы, поэтому по умолчанию это
+  предупреждение, а не провал (`--strict` превращает его в провал).
+
+Скрипт ничего не меняет: только показывает пункты, которые надо перечитать руками.
 
     python3 scripts/audit-bank.py data/qa-hard-bank.jsonl data/rows-hard.jsonl
-    python3 scripts/audit-bank.py bank.jsonl rows.jsonl --json
+    python3 scripts/audit-bank.py bank.jsonl rows.jsonl --json --strict
 """
 
 from __future__ import annotations
 
 import argparse
 import json
-import math
 import re
 import sys
 from collections import Counter, defaultdict
@@ -72,12 +73,33 @@ def premise_conflict(prompt: str, expect: list[str]) -> bool:
     return not any(norm(item) in offered for item in expect)
 
 
+def classify(prompt: str, expect: list[str], modals: dict[str, str]) -> tuple[str | None, str]:
+    """Возвращает (диагноз, человеческое объяснение) или (None, '')."""
+    total = len(modals)
+    if total < 2:
+        return None, ""
+    if premise_conflict(prompt, expect):
+        return "bank_error", "выбор в вопросе противоречит эталону"
+    wrong = {model: answer for model, answer in modals.items() if not matches(answer, expect)}
+    if not wrong:
+        return None, ""
+    distinct = {answer for answer in wrong.values()}
+    if len(wrong) == total and len(distinct) == 1:
+        return "suspect", "все модели дают один и тот же ответ мимо эталона"
+    if len(distinct) > 1:
+        return "ambiguous", "модели расходятся между собой — вопрос допускает разные прочтения"
+    if len(wrong) >= max(2, (total + 1) // 2):
+        return "suspect", "большинство моделей согласно против эталона"
+    return None, ""
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("bank")
     parser.add_argument("rows")
     parser.add_argument("--json", action="store_true", help="машиночитаемый вывод")
-    parser.add_argument("--min-models", type=int, default=2, help="сколько моделей должны согласиться (default 2)")
+    parser.add_argument("--strict", action="store_true", help="считать suspect провалом")
+    parser.add_argument("--min-models", type=int, default=2, help="сколько моделей нужно для диагноза (default 2)")
     args = parser.parse_args()
 
     bank = {row["prompt"]: row.get("expect") or [] for row in load_jsonl(args.bank) if row.get("prompt")}
@@ -93,40 +115,62 @@ def main() -> int:
     findings = []
     for prompt, expect in bank.items():
         per_model = by_prompt.get(prompt, {})
-        if not per_model:
+        if len(per_model) < args.min_models:
             continue
         modals = {model: counter.most_common(1)[0][0] for model, counter in per_model.items()}
-        agree = [model for model, answer in modals.items() if not matches(answer, expect)]
-        total = len(modals)
-        conflict = premise_conflict(prompt, expect)
-        if conflict or (len(agree) >= max(args.min_models, math.ceil(total / 2)) and total >= 2):
-            findings.append(
-                {
-                    "prompt": prompt,
-                    "expect": expect,
-                    "models": total,
-                    "disagreeing": len(agree),
-                    "modals": modals,
-                    "premise_conflict": conflict,
-                }
-            )
+        diagnosis, why = classify(prompt, expect, modals)
+        if not diagnosis:
+            continue
+        findings.append(
+            {
+                "prompt": prompt,
+                "expect": expect,
+                "diagnosis": diagnosis,
+                "why": why,
+                "models": len(modals),
+                "modals": modals,
+            }
+        )
 
-    findings.sort(key=lambda item: (-item["disagreeing"], item["prompt"]))
+    order = {"bank_error": 0, "ambiguous": 1, "suspect": 2}
+    findings.sort(key=lambda item: (order[item["diagnosis"]], item["prompt"]))
+
+    failed = [item for item in findings if item["diagnosis"] != "suspect" or args.strict]
 
     if args.json:
-        print(json.dumps({"findings": findings, "checked": len(bank)}, ensure_ascii=False, indent=2))
+        print(
+            json.dumps(
+                {
+                    "checked": len(bank),
+                    "bank_error": sum(1 for item in findings if item["diagnosis"] == "bank_error"),
+                    "ambiguous": sum(1 for item in findings if item["diagnosis"] == "ambiguous"),
+                    "suspect": sum(1 for item in findings if item["diagnosis"] == "suspect"),
+                    "findings": findings,
+                },
+                ensure_ascii=False,
+                indent=2,
+            )
+        )
     else:
-        print(f"проверено пунктов банка: {len(bank)}, подозрительных: {len(findings)}")
+        errors = sum(1 for item in findings if item["diagnosis"] == "bank_error")
+        ambiguous = sum(1 for item in findings if item["diagnosis"] == "ambiguous")
+        suspects = sum(1 for item in findings if item["diagnosis"] == "suspect")
+        print(
+            f"проверено пунктов банка: {len(bank)} | брак банка: {errors} | "
+            f"двусмысленных: {ambiguous} | моделей поймали на неверном ответе: {suspects}"
+        )
         for item in findings:
-            why = "выбор в вопросе противоречит эталону" if item["premise_conflict"] else "модели согласны против эталона"
-            print(f"\n- {item['prompt']}")
-            print(f"  эталон: {item['expect']} | причина: {why}")
+            print(f"\n- [{item['diagnosis']}] {item['prompt']}")
+            print(f"  эталон: {item['expect']} | {item['why']}")
             for model, answer in item["modals"].items():
                 mark = " " if matches(answer, item["expect"]) else "!"
                 print(f"  {mark} {model}: {answer!r}")
-        if findings:
-            print("\nЭто брак банка, а не ошибки моделей: такие лейблы нельзя использовать в обучении.")
-    return 1 if findings else 0
+        if errors or ambiguous:
+            print("\nПервые два диагноза — брак данных: такие пункты нельзя использовать в обучении.")
+        if suspects:
+            print("\nsuspect — это либо брак эталона, либо настоящая ошибка всех моделей; решается руками.")
+
+    return 1 if failed else 0
 
 
 if __name__ == "__main__":

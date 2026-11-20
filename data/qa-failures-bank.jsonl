@@ -1,0 +1,10 @@
+{"prompt": "How many times does the letter r appear in the word strawberry? Answer with a number only.", "expect": ["3", "three"]}
+{"prompt": "What day of the week was 14 March 1987? Answer with the day name only.", "expect": ["saturday"]}
+{"prompt": "What is 8371 multiplied by 4629? Answer with the number only.", "expect": ["38749359", "38,749,359"]}
+{"prompt": "How many letters are in the word mischievous? Answer with a number only.", "expect": ["11", "eleven"]}
+{"prompt": "What day of the week will 1 January 2030 be? Answer with the day name only.", "expect": ["tuesday"]}
+{"prompt": "What is 2 to the power of 64? Answer with the number only.", "expect": ["18446744073709551616", "18,446,744,073,709,551,616"]}
+{"prompt": "How many prime numbers are there between 1 and 50 inclusive? Answer with a number only.", "expect": ["15", "fifteen"]}
+{"prompt": "What is 17 percent of 3500? Answer with the number only.", "expect": ["595"]}
+{"prompt": "How many times does the letter s appear in the word possession? Answer with a number only.", "expect": ["4", "four"]}
+{"prompt": "What is 123456789 multiplied by 9? Answer with the number only.", "expect": ["1111111101", "1,111,111,101"]}

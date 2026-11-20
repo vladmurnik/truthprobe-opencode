@@ -258,6 +258,11 @@ def main() -> int:
     parser.add_argument("--top-logprobs", type=int, default=3)
     parser.add_argument("--sleep", type=float, default=0.3, help="пауза между запросами, сек (на поток)")
     parser.add_argument("--samples", type=int, default=1, help="сколько раз запросить каждую пару (модель, промпт)")
+    parser.add_argument(
+        "--provider",
+        default="",
+        help="префикс для поля model в строках (например freepi): в рантайме ключ весов — providerID/modelID",
+    )
     parser.add_argument("--workers", type=int, default=1, help="сколько запросов держать в полёте")
     parser.add_argument("--limit", type=int, help="не больше N запросов за запуск")
     parser.add_argument("--resume", action="store_true", help="пропускать уже собранные (модель, промпт, сэмпл)")
@@ -312,7 +317,8 @@ def main() -> int:
 
     def run_one(item: tuple[int, str, str, int | None, int]) -> None:
         index, model, prompt, label, sample = item
-        if (model, prompt, sample) in done:
+        plan_model = f"{args.provider}/{model}" if args.provider else model
+        if (plan_model, prompt, sample) in done:
             with lock:
                 counters["skipped"] += 1
             return
@@ -326,11 +332,14 @@ def main() -> int:
         }
         status, headers, body = request(f"{base}/chat/completions", args.key, payload)
         routed = headers.get("X-Routed-Via") or headers.get("x-routed-via") or model
+        # Ключ весов в рантайме — `providerID/modelID`, поэтому запись в строке
+        # должна быть в том же виде, иначе per-model калибровка не найдёт модель.
+        model_id = f"{args.provider}/{routed}" if args.provider else routed
         with lock:
             if status != 200:
                 counters["failed"] += 1
                 row = {
-                    "model": routed,
+                    "model": model_id,
                     "prompt": prompt,
                     "answer": "",
                     "label": label,
@@ -361,7 +370,7 @@ def main() -> int:
                 if truncated and label == 0:
                     label = None
             row = {
-                "model": routed,
+                "model": model_id,
                 "prompt": prompt,
                 "answer": answer,
                 "label": label,

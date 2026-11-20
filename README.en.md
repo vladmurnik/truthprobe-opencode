@@ -247,7 +247,8 @@ reproduction — [`docs/SMOKE-E2E.md`](docs/SMOKE-E2E.md).
 | `collect.py` against a live gateway | 2 prompts, `freepi/particle` | rows with `meanLp -0.063 / -0.125`, `minLp -0.409 / -0.945`, `fracLow 0.00 / 0.06` — features computed by the same formula as in the runtime |
 | `collect.py` at scale | 24 models × 24 questions = 576 requests on `127.0.0.1:8790` | **120 rows with features** on 7 models (4 models answered 24/24), 108 `HTTP 403 premium credits`, 348 without logprobs, **0 negatives** — every answer was correct, so calibration needs weaker models |
 | Question-bank audit | `python3 scripts/audit-bank.py data/qa-hard-bank.jsonl data/rows-hard.jsonl` | found **4** items where the reference answer, not the model, was wrong; after cleaning the set — `AUROC n/a (one class)`, 739 correct / **0 wrong** |
-| Negative harvesting | 47 hard questions × 4 models × 4 samples at `T=0.8` and `T=1.0` | 1504 rows; after the audit the number of genuine negatives is **0** — every earlier "negative" was a data defect (an ambiguous question plus `max_tokens` cut-offs) |
+| Negative harvesting | 47 hard questions × 4 models × 4 samples at `T=0.8` and `T=1.0`, then three more banks (34 questions, classic LLM failures, list counting) | 1504 + 688 rows; **0** genuine negatives — the models either answer correctly or stay silent |
+| Instructed lies: can the scorer see them | `scripts/measure-lies.py` on 626 rows (544 truthful / 82 lies) | built-in `geometric` gives AUROC **0.388**, i.e. worse than chance; fitted weights on the same features give **0.774** out-of-fold. Caveat: instructed lies are not spontaneous hallucinations |
 
 **Not tested, and we will not pretend otherwise:**
 
