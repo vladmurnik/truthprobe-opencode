@@ -239,6 +239,7 @@ reproduction — [`docs/SMOKE-E2E.md`](docs/SMOKE-E2E.md).
 | CI on foreign machines | GitHub Actions [run `44593481931`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44593481931) and [run `44678633546`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44678633546) | **all 7 jobs success** in both, on hosted `ubuntu-latest` and `windows-latest` runners |
 | Per-model weights at runtime | two mock runs with different bundles, same answer | `0.9997 · safe` when weights exist for `mock/mock-1`, `0.0003 · unreliable` when they only exist for `other/model` — selection by `providerID/modelID` really works |
 | `collect.py` against a live gateway | 2 prompts, `freepi/particle` | rows with `meanLp -0.063 / -0.125`, `minLp -0.409 / -0.945`, `fracLow 0.00 / 0.06` — features computed by the same formula as in the runtime |
+| `collect.py` at scale | 24 models × 24 questions = 576 requests on `127.0.0.1:8790` | **120 rows with features** on 7 models (4 models answered 24/24), 108 `HTTP 403 premium credits`, 348 without logprobs, **0 negatives** — every answer was correct, so calibration needs weaker models |
 
 **Not tested, and we will not pretend otherwise:**
 

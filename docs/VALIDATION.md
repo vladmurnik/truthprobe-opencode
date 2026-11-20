@@ -2,7 +2,7 @@
 
 Всё ниже — измеренное, не задуманное. Если чего-то не проверяли, это написано отдельным разделом.
 
-База: `sst/opencode` @ `007afb1`. Ветка `feat/truthprobe`, семь коммитов:
+База: `sst/opencode` @ `007afb1`. Ветка `feat/truthprobe`, четырнадцать коммитов:
 
 | Коммит | Что |
 | --- | --- |
@@ -15,8 +15,13 @@
 | `6017d75` | feat(desktop): let a fork brand the desktop app |
 | `a478531` | fix(truthprobe): keep logprobs that arrive without text, align tokens, always publish a verdict |
 | `5a335e3` | fix(truthprobe): say so when tokens do not match the answer text |
+| `3d8a5b1` | feat(truthprobe): confidence levels and sentence highlights |
+| `51f6f10` | feat(truthprobe): pluggable scorer (geometric \| linear weights) |
+| `699374c` | fix(schema): accept null level so unavailable verdicts decode |
+| `d153658` | fix(truthprobe): make the patched tree typecheck clean |
+| `3b720f0` | feat(truthprobe): per-model calibration weights |
 
-Итог: **38 файлов, +2280 / −40**, девять коммитов. Патч — `patches/truthprobe-0001.patch` (3735 строк, `git am`).
+Итог: **43 файла, +6565 / −40**, четырнадцать коммитов. Патч — `patches/truthprobe-0001.patch` (394 805 Б, `git am`).
 
 ## 1. Слои патча
 
@@ -338,10 +343,10 @@ SchemaError: Expected Truthprobe.Level | undefined
 
 19.11.2026 прогон GitHub Actions
 [`44593481931`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44593481931)
-(коммит `ee82265`) завершился **success**: 7 job'ов из 7 на hosted-раннерах.
+(коммит `9011dfe`) завершился **success**: 7 job'ов из 7 на hosted-раннерах.
 20.11.2026 то же самое повторено на патче с per-model весами —
 [`44678633546`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44678633546)
-(коммит `9aa333a`), тоже **7 из 7**: сборка, установщики и truthprobe-тесты не сломались от
+(коммит `7bf2eed`), тоже **7 из 7**: сборка, установщики и truthprobe-тесты не сломались от
 изменений в скорере.
 
 | Job | Раннер | Что доказывает |
