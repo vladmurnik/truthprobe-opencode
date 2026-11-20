@@ -33,6 +33,20 @@
 Девятнадцать коммитов, `46 файлов, +7023/−40`, 431 079 Б, `git am` на `007afb1` даёт
 побайтово то же дерево.
 
+**CI**: прогон [`44787911144`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44787911144) на `92f1c65` — **7 job'ов из 7**: патч из 19
+коммитов применяется на ubuntu и windows, 119 truthprobe-тестов зелёные, установщики
+применяют 19 коммитов, e2e кладёт вердикт в базу, CLI собирается.
+
+**Исправлено в DX**
+
+- `scripts/build-desktop.sh`: desktop молча упаковывал старый CLI — electron-builder берёт бинарь
+  из `packages/desktop/resources/opencode-cli[.exe]` (`extraResources`), а не из `packages/cli/dist`.
+  Добавлен шаг staging (2/4) и предупреждение в `docs/DEVELOPMENT.md`.
+- `scripts/build-desktop.sh`: запуск из неинтерактивного `bash -lc` не подхватывал `~/.bun/bin`,
+  и сборка падала на `error: preload not found "@opentui/solid/preload"`. Теперь скрипт сам
+  ставит `$HOME/.bun/bin` в начало `PATH`. Полная сборка скриптом проверена: `TruthProbe.exe`
+  246 624 768 Б, в `resources/opencode-cli.exe` есть `digitDensity`.
+
 # 0.12.0 — 2026-11-20
 
 Первый текстовый признак, у которого замер нашёл вклад: доля цифр в ответе.

@@ -19,6 +19,12 @@
 # Брендинг берётся из OPENCODE_DESKTOP_APP / OPENCODE_DESKTOP_APP_ID — см. docs/DEVELOPMENT.md.
 set -euo pipefail
 
+# Нативный bun лежит в ~/.bun/bin и часто не попадает в PATH неинтерактивного
+# `bash -lc`; без него сборка падает на preload'ах (`@opentui/solid/preload`).
+if [ -x "$HOME/.bun/bin/bun" ]; then
+  export PATH="$HOME/.bun/bin:$PATH"
+fi
+
 ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 DEV=${OPENCODE_REPO:-$ROOT/.worktree/opencode}
 PLATFORM=""
