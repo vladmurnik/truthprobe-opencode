@@ -189,47 +189,47 @@ worst token, the share of low probabilities) stays a **feature** for fitted weig
 the default score: the measurement showed that first-token entropy flips the result
 (`docs/VALIDATION.md` §14).
 
-$$
-s_{\text{sentence}} \;=\; \exp\!\left(\overline{\ell}\right),
-\qquad
-\overline{\ell} \;=\; \frac{1}{n}\sum_{k=1}^{n} \ell_k,
-\qquad
-\text{risk} \;=\; 1 - s
-$$
+```
+sᵢ   = exp( ℓ̄ᵢ )            — confidence of sentence i
+ℓ̄ᵢ   = (ℓᵢ,₁ + … + ℓᵢ,n) / nᵢ   — mean logprob over its content tokens
+rᵢ   = 1 − sᵢ              — risk of sentence i
 
-$$
-s_{\text{answer}} \;=\; 0.6 \cdot s_{\text{global}} \;+\; 0.4 \cdot \frac{1}{m}\sum_{i=1}^{m} s_i
-$$
+S    = 0.6·S_all + 0.4·(s₁ + … + s_m)/m   — confidence of the whole answer
+r    = 1 − S
+```
 
 | Symbol | Meaning |
 | --- | --- |
-| $\ell_k$ | `logprob` of the k-th content token; punctuation and whitespace are skipped |
-| $n$ | number of content tokens in the sentence |
-| $m$ | number of sentences in the answer |
-| $s_{\text{global}}$ | the same formula over all content tokens of the answer |
-| $0.6 / 0.4$ | `globalWeight`: whole answer versus the mean over sentences |
+| sᵢ | confidence of sentence i, 0 to 1 |
+| rᵢ | risk of sentence i, 1 − sᵢ |
+| ℓᵢ,k | `logprob` of the k-th content token of sentence i |
+| ℓ̄ᵢ | mean of ℓᵢ,k over the content tokens of the sentence |
+| nᵢ | number of content tokens in sentence i |
+| m | number of sentences in the answer |
+| S_all | the same formula over all content tokens of the answer |
+| S, r | answer-level score and its risk; 0.6 / 0.4 is `globalWeight` |
 
 In other words, **confidence is the average token probability**, not "the weakest token". The flag
-fires at $\text{risk} \ge 0.45$; levels are `safe ≥0.90`, `likely ≥0.75`, `uncertain ≥0.55`,
+fires at r ≥ 0.45; levels are `safe ≥0.90`, `likely ≥0.75`, `uncertain ≥0.55`,
 `risky ≥0.35`, below that `unreliable`.
 
 Features that are always computed and feed the fitted weights when those are enabled:
 
-$$
-\varphi = 1 - \frac{H_{\text{top-}K}}{\ln K},
-\qquad
-H_{\text{top-}K} = -\sum_{i=1}^{K} q_i \ln q_i,
-\qquad
-q_i = \frac{e^{\ell_i}}{\sum_{j=1}^{K} e^{\ell_j}},
-\qquad
-K = 20
-$$
+```
+φ      = 1 − H_K / ln K     — entropy of the first token
+H_K    = −Σᵢ₌₁ᴷ qᵢ·ln qᵢ
+qᵢ     = e^ℓᵢ / Σⱼ₌₁ᴷ e^ℓⱼ  — probability of alternative i among top-K
+K      = 20
 
-$$
-\text{fracLow} \;=\; \frac{\#\{\,k : \ell_k < \ln 0.5 \,\}}{n},
-\qquad
-\text{minLp} \;=\; \min_k \ell_k
-$$
+f_low  = #{k : ℓk < ln 0.5} / n   — share of tokens below 0.5 probability
+ℓ_min  = min ℓk                     — the worst logprob
+d      = #{digits} / #{chars}       — share of digit characters in the answer
+```
+
+Here d is the share of digit characters in the visible answer (`digitDensity`): the only textual
+feature with a measurable contribution (+0.046 AUROC on top of plain `meanLp`,
+`docs/VALIDATION.md` §15). Hedging ("probably", "I think") was measured too — zero variance on the
+current set, so its contribution is unknown.
 
 Segmentation is by `. ! ? …` with decimals, abbreviations and CJK terminators taken into account;
 code blocks are dropped entirely. States: `ok` — tokens matched the text; `partial` — offsets

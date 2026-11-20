@@ -108,38 +108,40 @@ def ece(pairs: list[tuple[float, bool]], bins: int = 10) -> float:
 
 
 def fit(rows: list[dict], epochs: int = 4000, lr: float = 0.6, l2: float = 1e-3) -> dict:
-    """Логистическая регрессия на признаках скорера (bias, meanLp, minLp, phi, fracLow)."""
+    """Логистическая регрессия на признаках скорера (bias, meanLp, minLp, phi, fracLow, digitDensity)."""
     xs = [
-        [1.0, float(row["meanLp"]), float(row["minLp"]), float(row["phi"]), float(row.get("fracLow") or 0.0)]
+        [1.0, float(row["meanLp"]), float(row["minLp"]), float(row["phi"]), float(row.get("fracLow") or 0.0),
+         float(row.get("digitDensity") or 0.0)]
         for row in rows
     ]
     ys = [1.0 if row["label"] else 0.0 for row in rows]
-    w = [0.0] * 5
+    w = [0.0] * 6
     # Баланс классов: иначе редкая ложь тонет в общей точности.
     pos = sum(ys) or 1.0
     neg = (len(ys) - sum(ys)) or 1.0
     weights_per_row = [0.5 * len(ys) / pos if y else 0.5 * len(ys) / neg for y in ys]
     for _ in range(epochs):
-        grad = [0.0] * 5
+        grad = [0.0] * 6
         for x, y, wgt in zip(xs, ys, weights_per_row):
             z = sum(wi * xi for wi, xi in zip(w, x))
             p = 1 / (1 + math.exp(-z)) if z >= 0 else math.exp(z) / (1 + math.exp(z))
             err = (p - y) * wgt
-            for j in range(5):
+            for j in range(6):
                 grad[j] += err * x[j]
         norm = len(xs)
-        for j in range(5):
+        for j in range(6):
             penalty = l2 * w[j] if j else 0.0
             w[j] -= lr * (grad[j] / norm + penalty)
     return {
         "version": 1,
-        "features": ["bias", "meanLp", "minLp", "meanPhi", "fracLow"],
+        "features": ["bias", "meanLp", "minLp", "meanPhi", "fracLow", "digitDensity"],
         "weights": {
             "bias": round(w[0], 4),
             "meanLp": round(w[1], 4),
             "minLp": round(w[2], 4),
             "meanPhi": round(w[3], 4),
             "fracLow": round(w[4], 4),
+            "digitDensity": round(w[5], 4),
         },
     }
 
@@ -152,6 +154,7 @@ def predict(weights: dict, row: dict) -> float:
         + w["minLp"] * float(row["minLp"])
         + w["meanPhi"] * float(row["phi"])
         + w["fracLow"] * float(row.get("fracLow") or 0.0)
+        + w.get("digitDensity", 0.0) * float(row.get("digitDensity") or 0.0)
     )
     return 1 / (1 + math.exp(-z)) if z >= 0 else math.exp(z) / (1 + math.exp(z))
 
@@ -188,7 +191,7 @@ def fit_by_model(rows: list[dict], min_rows: int = 20) -> dict:
 
     bundle: dict = {
         "version": 1,
-        "features": ["bias", "meanLp", "minLp", "meanPhi", "fracLow"],
+        "features": ["bias", "meanLp", "minLp", "meanPhi", "fracLow", "digitDensity"],
         "global": fit(rows)["weights"],
         "models": {},
     }

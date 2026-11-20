@@ -134,6 +134,9 @@ def features(tokens: list[dict], answer: str = "", top_k: int = 20) -> dict | No
         "minLp": round(min(lps), 6),
         "phi": round(phi(scored[0], top_k), 6),
         "fracLow": round(sum(1 for lp in lps if lp < FRAC_LOW_CUTOFF) / len(lps), 6),
+        # Тот же признак, что считает рантайм (`digitDensity` в score.ts): доля цифр
+        # среди символов видимого ответа. Считается по `answer`, а не по токенам.
+        "digitDensity": round(sum(1 for ch in answer if ch.isdigit()) / len(answer), 6) if answer else 0.0,
         "tokens": len(lps),
     }
 

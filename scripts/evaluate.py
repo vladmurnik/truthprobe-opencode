@@ -17,7 +17,7 @@
 
 Формулы:
 
-    geometric = clamp01(0.4*exp(meanLp) + 0.3*exp(minLp) + 0.3*phi)
+    geometric = clamp01(exp(meanLp))
     linear    = clamp01(sigmoid(bias + w1*meanLp + w2*minLp + w3*phi + w4*fracLow))
 
 Границы уровней — те же, что в `src/truthprobe/levels.ts`:
@@ -155,6 +155,7 @@ def load_rows(path: str) -> tuple[list[dict], dict[str, int], int]:
                 skipped[key] = skipped.get(key, 0) + 1
                 continue
             frac_low = number(raw.get("fracLow"))
+            digits = number(raw.get("digitDensity"))
             rows.append(
                 {
                     "model": raw.get("model") if isinstance(raw.get("model"), str) else None,
@@ -162,6 +163,7 @@ def load_rows(path: str) -> tuple[list[dict], dict[str, int], int]:
                     "minLp": min_lp,
                     "meanPhi": phi,
                     "fracLow": 0.0 if frac_low is None else frac_low,
+                    "digitDensity": 0.0 if digits is None else digits,
                     "label": label,
                 }
             )
@@ -169,20 +171,24 @@ def load_rows(path: str) -> tuple[list[dict], dict[str, int], int]:
 
 
 def geometric_score(row: dict) -> float:
-    """Ровно формула geometricScorer() из src/truthprobe/scorer.ts."""
-    return clamp01(
-        0.4 * math.exp(row["meanLp"]) + 0.3 * math.exp(row["minLp"]) + 0.3 * row["meanPhi"]
-    )
+    """Ровно формула geometricScorer() из src/truthprobe/scorer.ts: exp(meanLp).
+
+    phi и minLp в оценку по умолчанию НЕ входят: замер показал, что энтропия первого
+    токена разворачивает результат (`docs/VALIDATION.md` §14). Они остаются признаками
+    обученных весов (см. linear_score).
+    """
+    return clamp01(math.exp(row["meanLp"]))
 
 
 def linear_score(weights: dict, row: dict) -> float:
-    """Ровно linearScorer(): x = [1, meanLp, minLp, meanPhi, fracLow]."""
+    """Ровно linearScorer(): x = [1, meanLp, minLp, meanPhi, fracLow, digitDensity]."""
     z = (
         weights["bias"]
         + weights["meanLp"] * row["meanLp"]
         + weights["minLp"] * row["minLp"]
         + weights["meanPhi"] * row["meanPhi"]
         + weights["fracLow"] * row["fracLow"]
+        + weights.get("digitDensity", 0.0) * row.get("digitDensity", 0.0)
     )
     if not math.isfinite(z):
         return geometric_score(row)
@@ -206,6 +212,9 @@ def parse_weights(node) -> tuple[dict | None, str | None]:
         if value is None:
             return None, f"вес {key!r} отсутствует или не число"
         out[key] = value
+    # digitDensity появился позже: в старых файлах весов его нет — читаем как 0.
+    optional = number(source.get("digitDensity"))
+    out["digitDensity"] = 0.0 if optional is None else optional
     return out, None
 
 

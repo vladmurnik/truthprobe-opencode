@@ -137,6 +137,18 @@ function sentenceAt(sentences: Sentence[], start: number, end: number): Sentence
   return null;
 }
 
+/**
+ * Доля символов, являющихся цифрами. Тот же признак считается в `scripts/collect.py`
+ * по тексту ответа; в развилке «текст vs logprobs» это единственный текстовый сигнал,
+ * который дал измеримый прирост (§15 VALIDATION).
+ */
+export function digitDensity(text: string): number {
+  if (!text) return 0;
+  let digits = 0;
+  for (const ch of text) if (ch >= "0" && ch <= "9") digits++;
+  return clamp01(digits / text.length);
+}
+
 function geometricMean(lps: number[]): number {
   if (lps.length === 0) return 0;
   return clamp01(Math.exp(lps.reduce((a, b) => a + b, 0) / lps.length));
@@ -230,6 +242,7 @@ export function scoreAnswer(
       minLp: Math.min(...lps),
       meanPhi: startPhi,
       lowFraction: lps.filter((lp) => Math.exp(lp) < 0.5).length / lps.length,
+      digitDensity: digitDensity(s.text),
       tokens: arr.length,
     });
     const score = clamp01(
@@ -259,6 +272,7 @@ export function scoreAnswer(
     minLp: Math.min(...allLps),
     meanPhi: phi(content[0], opt.topK),
     lowFraction: allLps.filter((lp) => Math.exp(lp) < 0.5).length / allLps.length,
+    digitDensity: digitDensity(text),
     tokens: content.length,
   });
   const globalScore = scorer

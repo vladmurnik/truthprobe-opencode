@@ -90,6 +90,13 @@ export interface ScorerFeatures {
   meanPhi: number;
   /** Доля токенов с вероятностью ниже 0.5. */
   fracLow: number;
+  /**
+   * Доля символов текста, которые являются цифрами (0..1).
+   * Единственный текстовый признак, который измерен на реальных данных: в наборе
+   * заказанной лжи ответы короче и почти без цифр, поэтому признак добавляет AUROC
+   * (0.774 → 0.808 в обученной модели), но в оценку по умолчанию он не входит.
+   */
+  digitDensity: number;
   /** Сколько токенов участвовало. */
   tokens: number;
 }
@@ -116,6 +123,8 @@ export interface LinearWeights {
   minLp: number;
   meanPhi: number;
   fracLow: number;
+  /** Необязательный текстовый вес: старые файлы весов читаются как 0. */
+  digitDensity?: number;
 }
 
 export const DEFAULT_SCORE_OPTIONS: Required<Omit<ScoreOptions, "scorer">> = {

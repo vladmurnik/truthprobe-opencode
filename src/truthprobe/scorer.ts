@@ -24,7 +24,7 @@ import { readFileSync } from "node:fs"
 
 import type { LinearWeights, Scorer, ScorerFeatures } from "./types.js"
 
-export const FEATURE_NAMES = ["bias", "meanLp", "minLp", "meanPhi", "fracLow"] as const
+export const FEATURE_NAMES = ["bias", "meanLp", "minLp", "meanPhi", "fracLow", "digitDensity"] as const
 
 function clamp01(x: number): number {
   if (!Number.isFinite(x)) return 0
@@ -53,13 +53,14 @@ export function linearScorer(weights: LinearWeights, name = "linear"): Scorer {
     name,
     score(input) {
       const { features } = input
-      const x = [1, features.meanLp, features.minLp, features.meanPhi, features.fracLow]
+      const x = [1, features.meanLp, features.minLp, features.meanPhi, features.fracLow, features.digitDensity]
       const w = [
         weights.bias,
         weights.meanLp,
         weights.minLp,
         weights.meanPhi,
         weights.fracLow,
+        weights.digitDensity ?? 0,
       ]
       let z = 0
       for (let i = 0; i < x.length; i++) {
@@ -80,6 +81,7 @@ export function featuresOf(args: {
   minLp: number
   meanPhi: number
   lowFraction: number
+  digitDensity?: number
   tokens?: number
 }): ScorerFeatures {
   return {
@@ -87,6 +89,7 @@ export function featuresOf(args: {
     minLp: args.minLp,
     meanPhi: args.meanPhi,
     fracLow: args.lowFraction,
+    digitDensity: args.digitDensity ?? 0,
     tokens: args.tokens ?? 0,
   }
 }
@@ -101,6 +104,7 @@ export function parseLinearWeights(raw: unknown): LinearWeights {
     minLp: Number(src.minLp),
     meanPhi: Number(src.meanPhi),
     fracLow: Number(src.fracLow),
+    digitDensity: Number(src.digitDensity ?? 0),
   }
   for (const [key, value] of Object.entries(out)) {
     if (!Number.isFinite(value)) throw new Error(`weight "${key}" is not a number`)

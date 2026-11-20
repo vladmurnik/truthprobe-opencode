@@ -3,14 +3,14 @@ import { describe, expect, test } from "bun:test"
 import { bundleScorer, parseWeightsBundle, scorerFromEnv, weightsFor } from "../src/truthprobe/scorer.js"
 import type { LinearWeights } from "../src/truthprobe/types.js"
 
-const strong: LinearWeights = { bias: 6, meanLp: 0, minLp: 0, meanPhi: 6, fracLow: 0 }
-const weak: LinearWeights = { bias: -6, meanLp: 0, minLp: 0, meanPhi: -6, fracLow: 0 }
-const features = { meanLp: -1, minLp: -2, meanPhi: 0.5, fracLow: 0.25, tokens: 12 }
+const strong: LinearWeights = { bias: 6, meanLp: 0, minLp: 0, meanPhi: 6, fracLow: 0, digitDensity: 0 }
+const weak: LinearWeights = { bias: -6, meanLp: 0, minLp: 0, meanPhi: -6, fracLow: 0, digitDensity: 0 }
+const features = { meanLp: -1, minLp: -2, meanPhi: 0.5, fracLow: 0.25, digitDensity: 0.1, tokens: 12 }
 
 describe("parseWeightsBundle", () => {
   test("плоские веса становятся global", () => {
     const bundle = parseWeightsBundle({ bias: 1, meanLp: 2, minLp: 3, meanPhi: 4, fracLow: 5 })
-    expect(bundle.global).toEqual({ bias: 1, meanLp: 2, minLp: 3, meanPhi: 4, fracLow: 5 })
+    expect(bundle.global).toEqual({ bias: 1, meanLp: 2, minLp: 3, meanPhi: 4, fracLow: 5, digitDensity: 0 })
     expect(Object.keys(bundle.models)).toEqual([])
   })
 
