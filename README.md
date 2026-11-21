@@ -1,6 +1,6 @@
 # TruthProbe for opencode
 
-[![unit tests](https://img.shields.io/badge/unit%20tests-109%20pass-brightgreen)](docs/VALIDATION.md)
+[![unit tests](https://img.shields.io/badge/unit%20tests-119%20pass-brightgreen)](docs/VALIDATION.md)
 [![CI](https://github.com/vladmurnik/truthprobe-opencode/actions/workflows/verify.yml/badge.svg)](https://github.com/vladmurnik/truthprobe-opencode/actions/workflows/verify.yml)
 [![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![opencode base](https://img.shields.io/badge/opencode-007afb1-informational)](patches/truthprobe-0001.patch)
@@ -106,9 +106,12 @@ irm https://raw.githubusercontent.com/vladmurnik/truthprobe-opencode/master/inst
 
 ### Сменный скорер
 
-Проценты по умолчанию считает встроенная эвристика `geometric`
-(`0.4·геом.среднее + 0.3·худший токен + 0.3·уверенность первого токена`). Её можно заменить
-своей моделью, не пересобирая патч:
+По умолчанию оценку считает встроенная формула `geometric` — `exp(meanLp)`, геометрическое среднее
+вероятностей содержательных токенов. Прежняя эвристика `0.4·гео + 0.3·худший токен + 0.3·уверенность
+первого токена` давала AUROC 0.388 (хуже случайного) на наборе из 626 строк, поэтому из формулы она
+убрана и осталась только в признаках (`docs/VALIDATION.md` §14).
+
+Заменить формулу можно, не пересобирая патч:
 
 ```bash
 # 1. обучить линейную модель на размеченных предложениях
@@ -118,14 +121,18 @@ python3 scripts/calibrate.py labeled.jsonl --fit --out truthprobe-weights.json
 export TRUTHPROBE_SCORER=linear:/path/to/truthprobe-weights.json
 ```
 
+Веса могут зависеть от модели: обучение с `--by-model` пишет бандл (`make weights` делает это на
+`data/rows-lie-vs-truth.jsonl`), а рантайм выбирает набор по `providerID/modelID` и падает обратно
+на формулу по умолчанию, если для этой модели весов нет.
+
 Формат набора и метрики — [`docs/CALIBRATION.md`](docs/CALIBRATION.md). Веса проверяются при
 загрузке: нет файла, битый JSON или нечисловой коэффициент — печатается одно предупреждение и
 включается встроенная формула, оценка не ломается. Признаки, которые видит модель:
 `meanLp` (ln геом. среднего), `minLp` (ln худшего токена), `meanPhi` (уверенность первого токена
-по top-K), `fracLow` (доля токенов с вероятностью ниже 0.5).
+по top-K), `fracLow` (доля токенов с вероятностью ниже 0.5), `digitDensity` (доля цифр в тексте).
 
-Свой скорер на другом языке — через `scripts/calibrate.py --fit` получить веса либо подставить
-свою формулу в `packages/core/src/truthprobe/scorer.ts` (там один интерфейс `Scorer`).
+Свой скорер на другом языке — либо `scripts/calibrate.py --fit` для весов, либо своя реализация
+интерфейса `Scorer` в `packages/core/src/truthprobe/scorer.ts`.
 
 ### Патч вручную
 
@@ -310,7 +317,7 @@ python3 scripts/tui-probe.py && python3 scripts/screen-dump.py /tmp/tui-probe.lo
 | Ответ `freepi/particle` | живой запрос через боевой бинарь | `score 0.7595 · likely`, предложение `#0 0.603 · uncertain` |
 | Ответ `freepi/deepseek-v4.1-flash` | живой запрос | `score 0.6893`, первый флаг `0.4849` |
 | Сменный скорер | `TRUTHPROBE_SCORER=linear:weights.json` | score сместился с `0.7595` до `0.9992` — подмена реально работает |
-| Установщик Windows | `install.ps1 -Dir <пусто> -DryRun` | клон, `git apply --check`, 17 коммитов применились, ошибок нет |
+| Установщик Windows | `install.ps1 -Dir <пусто> -DryRun` | клон, `git apply --check`, все коммиты патча применились, ошибок нет; CI повторяет это на каждом пуше |
 | Сборка desktop | electron-builder | приложение 246 МБ, вложенный CLI 279 МБ |
 | CI на чужих машинах | GitHub Actions, прогоны [`44593481931`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44593481931), [`44678633546`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44678633546) , [`44736706708`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44736706708) , [`44761971781`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44761971781) и [`44784920180`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44784920180), [`44787911144`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44787911144) и [`44918215420`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44918215420) | **все 7 job'ов success** в каждом, на hosted-раннерах ubuntu-latest и windows-latest |
 | Веса на модель в рантайме | два прогона на моке с разными бандлами, один и тот же ответ | `0.9997 · safe`, когда веса есть для `mock/mock-1`, и `0.0003 · unreliable`, когда они только у `other/model` — выбор по `providerID/modelID` реально работает |
@@ -409,8 +416,11 @@ MIT — см. [LICENSE](LICENSE). `opencode` остаётся под своей 
 
 Эти пункты из ревью закрыты **не** были, и мы не делаем вид, что они закрыты:
 
-- **Калибровка.** AUROC, ECE и precision/recall не измерены: размеченного набора нет. Протокол и
-  скрипт лежат в [`docs/CALIBRATION.md`](docs/CALIBRATION.md) и `scripts/calibrate.py`.
+- **Калибровка на настоящих галлюцинациях.** AUROC и ECE измерены, но на наборе «заказанной лжи»:
+  626 строк, из них 82 негатива получены просьбой «соври». Самопроизвольных ошибок модели в наборе
+  нет — 1440 запросов на четырёх моделях шлюза дали ноль негативов. Второго независимого набора
+  тоже нет, поэтому CI-гейта по AUROC не будет, пока он не появится. Протокол и скрипт —
+  [`docs/CALIBRATION.md`](docs/CALIBRATION.md) и `scripts/calibrate.py`.
 - **Поддержка logprobs наследуется по провайдеру.** Если автопроверка подтвердила одну модель шлюза,
   остальные модели того же провайдера тоже получают `logprobs`. Это сделано осознанно: у free-pi
   кэш содержит только `freepi/particle`, и без наследования `deepseek-*` остались бы без цифр.

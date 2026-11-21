@@ -50,6 +50,7 @@ signature вердикта (`AnswerScore`): `status`, `score`, `risk`, `level`, 
 | `minLp` | худший logprob | `score.ts` |
 | `phi` | 1 − норм. энтропия по `top_logprobs` **первого** токена | `score.ts` `phi()` |
 | `fracLow` | доля токенов с `logprob < ln 0.5` | `score.ts` |
+| `digitDensity` | доля цифр среди символов видимого ответа | `score.ts` `digitDensity()` |
 
 Эти же формулы обязаны быть в `scripts/collect.py` и `scripts/calibrate.py`, иначе обученные
 веса применяются к другим числам и калибровка разваливается. Признаки повторены там
@@ -128,7 +129,7 @@ TRUTHPROBE_SCORER=linear:data/weights.json bun run --cwd .worktree/opencode/pack
 ```bash
 make verify                        # тесты репо + патч на чистой базе
 cd .worktree/opencode
-bun test test/truthprobe           # юнит-тесты патча (109 на сейчас)
+bun test test/truthprobe           # юнит-тесты патча (119 на сейчас)
 bash scripts/../truthprobe 2>/dev/null
 ```
 (реальный прогон — `make preview`; вердикт смотрите в `scripts/inspect-db.py` или

@@ -357,7 +357,7 @@ SchemaError: Expected Truthprobe.Level | undefined
 
 | Job | Раннер | Что доказывает |
 | --- | --- | --- |
-| `patched tree` | `ubuntu-latest`, `windows-latest` | клон opencode на `007afb1`, `git am` патча, `bun install`, typecheck 4 пакетов, 109 truthprobe-тестов |
+| `patched tree` | `ubuntu-latest`, `windows-latest` | клон opencode на `007afb1`, `git am` патча, `bun install`, typecheck 4 пакетов, 119 truthprobe-тестов |
 | `installer dry-run` | `ubuntu-latest`, `windows-latest` | `install.sh` / `install.ps1 -DryRun`: клон, `git apply --check`, 17 коммитов, без установки в систему |
 | `repo tests` | `ubuntu-latest` | юнит-тесты репозитория TruthProbe |
 | `end-to-end verdict` | `ubuntu-latest` | мок-провайдер с logprobs → вердикт в SQLite |

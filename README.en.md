@@ -1,6 +1,6 @@
 # TruthProbe for opencode
 
-[![unit tests](https://img.shields.io/badge/unit%20tests-109%20pass-brightgreen)](docs/VALIDATION.md)
+[![unit tests](https://img.shields.io/badge/unit%20tests-119%20pass-brightgreen)](docs/VALIDATION.md)
 [![CI](https://github.com/vladmurnik/truthprobe-opencode/actions/workflows/verify.yml/badge.svg)](https://github.com/vladmurnik/truthprobe-opencode/actions/workflows/verify.yml)
 [![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![opencode base](https://img.shields.io/badge/opencode-007afb1-informational)](patches/truthprobe-0001.patch)
@@ -94,6 +94,36 @@ Both installers fetch `sst/opencode` pinned at `007afb1`, apply
 `git` and [`bun`](https://bun.sh). Nothing outside the target directory is touched; the git identity,
 if missing, is set locally in that directory only. Pass a directory name to choose where it lands
 (`bash install.sh my-opencode` / `.\install.ps1 -Dir my-opencode`).
+
+### Swappable scorer
+
+By default the score is the built-in `geometric` formula — `exp(meanLp)`, the geometric mean of the
+content-token probabilities. The older heuristic `0.4·geo + 0.3·worst token + 0.3·first-token
+confidence` scored AUROC 0.388 (worse than chance) on a 626-row set, so it was dropped from the
+formula and survives only as a feature (`docs/VALIDATION.md` §14).
+
+The formula can be replaced without rebuilding the patch:
+
+```bash
+# 1. fit a linear model on labelled sentences
+python3 scripts/calibrate.py labeled.jsonl --fit --out truthprobe-weights.json
+
+# 2. turn it on
+export TRUTHPROBE_SCORER=linear:/path/to/truthprobe-weights.json
+```
+
+Weights can be per model: `--by-model` writes a bundle (`make weights` does that on
+`data/rows-lie-vs-truth.jsonl`), and the runtime picks the set by `providerID/modelID`, falling back
+to the default formula when the model has no weights of its own.
+
+Set format and metrics — [`docs/CALIBRATION.md`](docs/CALIBRATION.md). Weights are validated on load:
+a missing file, broken JSON or a non-numeric coefficient prints one warning and switches to the
+built-in formula; scoring never breaks. Features the model sees: `meanLp` (ln of the geometric mean),
+`minLp` (ln of the worst token), `meanPhi` (first-token confidence over top-K), `fracLow` (share of
+tokens below 0.5 probability), `digitDensity` (share of digits in the text).
+
+A scorer in another language is either `scripts/calibrate.py --fit` for the weights, or your own
+implementation of the `Scorer` interface in `packages/core/src/truthprobe/scorer.ts`.
 
 ### Manual patch
 
@@ -372,7 +402,10 @@ patch.
 
 These review points are **not** fixed, and the docs do not pretend otherwise:
 
-- **Calibration.** AUROC, ECE and precision/recall are unmeasured: there is no labelled set. The
+- **Calibration on spontaneous hallucinations.** AUROC and ECE are measured, but on a set of
+  *commissioned* lies: 626 rows, 82 of them negatives obtained by asking the model to lie. There are no
+  spontaneous model errors in it — 1440 requests across four gateway models produced zero negatives.
+  There is no second independent set either, so no AUROC gate can go into CI until there is one. The
   protocol and the script live in [`docs/CALIBRATION.md`](docs/CALIBRATION.md) and `scripts/calibrate.py`.
 - **Logprobs support is inherited per provider.** One confirmed model turns the feature on for every
   model of that gateway. This is deliberate: the free-pi cache only holds `freepi/particle`, so without
