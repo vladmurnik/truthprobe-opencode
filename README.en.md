@@ -184,52 +184,55 @@ Inspect the verdicts: `cat <data>/truthprobe/capabilities.json`.
 
 ## How it is computed
 
-One formula applied twice — to each sentence and to the whole answer. Everything else (entropy, the
-worst token, the share of low probabilities) stays a **feature** for fitted weights but is not part of
-the default score: the measurement showed that first-token entropy flips the result
+One formula, applied twice — to every sentence and to the whole answer. Entropy, the worst token and
+the share of low probabilities stay **features** for fitted weights, but they are not part of the
+default score: measurement showed that first-token entropy flips the result
 (`docs/VALIDATION.md` §14).
 
-```
-sᵢ   = exp( ℓ̄ᵢ )            — confidence of sentence i
-ℓ̄ᵢ   = (ℓᵢ,₁ + … + ℓᵢ,n) / nᵢ   — mean logprob over its content tokens
-rᵢ   = 1 − sᵢ              — risk of sentence i
+<p align="center">
+<b><i>s</i><sub>i</sub> = exp(<i>ℓ̄</i><sub>i</sub>)</b>
+&nbsp;&nbsp;&nbsp;where&nbsp;&nbsp;&nbsp;
+<i>ℓ̄</i><sub>i</sub> = (ℓ<sub>i,1</sub> + ℓ<sub>i,2</sub> + … + ℓ<sub>i,n</sub>) / <i>n</i><sub>i</sub>
+</p>
 
-S    = 0.6·S_all + 0.4·(s₁ + … + s_m)/m   — confidence of the whole answer
-r    = 1 − S
-```
+<p align="center">
+<b><i>S</i> = 0.6 · <i>S</i><sub>all</sub> + 0.4 · (<i>s</i><sub>1</sub> + <i>s</i><sub>2</sub> + … + <i>s</i><sub>m</sub>) / <i>m</i></b>
+&nbsp;&nbsp;&nbsp;&nbsp;
+<i>r</i><sub>i</sub> = 1 − <i>s</i><sub>i</sub>
+&nbsp;&nbsp;&nbsp;&nbsp;
+<i>r</i> = 1 − <i>S</i>
+</p>
 
 | Symbol | Meaning |
-| --- | --- |
-| sᵢ | confidence of sentence i, 0 to 1 |
-| rᵢ | risk of sentence i, 1 − sᵢ |
-| ℓᵢ,k | `logprob` of the k-th content token of sentence i |
-| ℓ̄ᵢ | mean of ℓᵢ,k over the content tokens of the sentence |
-| nᵢ | number of content tokens in sentence i |
-| m | number of sentences in the answer |
-| S_all | the same formula over all content tokens of the answer |
-| S, r | answer-level score and its risk; 0.6 / 0.4 is `globalWeight` |
+| :--- | --- |
+| <i>s</i><sub>i</sub> | confidence of sentence i, 0 to 1 |
+| <i>r</i><sub>i</sub> | risk of sentence i, 1 − <i>s</i><sub>i</sub> |
+| ℓ<sub>i,k</sub> | `logprob` of the k-th content token of sentence i |
+| <i>ℓ̄</i><sub>i</sub> | mean of ℓ<sub>i,k</sub> over the content tokens of the sentence |
+| <i>n</i><sub>i</sub> | number of content tokens in sentence i |
+| <i>m</i> | number of sentences in the answer |
+| <i>S</i><sub>all</sub> | the same formula over all content tokens of the answer |
+| <i>S</i>, <i>r</i> | answer-level score and its risk; 0.6 / 0.4 is `globalWeight` |
 
 In other words, **confidence is the average token probability**, not "the weakest token". The flag
-fires at r ≥ 0.45; levels are `safe ≥0.90`, `likely ≥0.75`, `uncertain ≥0.55`,
+fires at <i>r</i> ≥ 0.45; levels are `safe ≥0.90`, `likely ≥0.75`, `uncertain ≥0.55`,
 `risky ≥0.35`, below that `unreliable`.
 
 Features that are always computed and feed the fitted weights when those are enabled:
 
-```
-φ      = 1 − H_K / ln K     — entropy of the first token
-H_K    = −Σᵢ₌₁ᴷ qᵢ·ln qᵢ
-qᵢ     = e^ℓᵢ / Σⱼ₌₁ᴷ e^ℓⱼ  — probability of alternative i among top-K
-K      = 20
+| Feature | Formula | Meaning |
+| :--- | :--- | --- |
+| φ | 1 − <i>H</i><sub>K</sub> / ln <i>K</i> | confidence of the first token, 0…1 |
+| <i>H</i><sub>K</sub> | −Σ<sub>i=1</sub><sup>K</sup> <i>q</i><sub>i</sub> · ln <i>q</i><sub>i</sub> | entropy of the top-K distribution |
+| <i>q</i><sub>i</sub> | <i>e</i><sup>ℓᵢ</sup> / Σ<sub>j=1</sub><sup>K</sup> <i>e</i><sup>ℓⱼ</sup> | normalised probability of alternative i |
+| <i>K</i> | 20 | how many alternatives we ask the provider for |
+| <i>f</i><sub>low</sub> | #{<i>k</i> : ℓ<sub>k</sub> < ln 0.5} / <i>n</i> | share of tokens below 0.5 probability |
+| ℓ<sub>min</sub> | min<sub>k</sub> ℓ<sub>k</sub> | the worst `logprob` |
+| <i>d</i> | #{digits} / #{chars} | share of digits in the visible answer (`digitDensity`) |
 
-f_low  = #{k : ℓk < ln 0.5} / n   — share of tokens below 0.5 probability
-ℓ_min  = min ℓk                     — the worst logprob
-d      = #{digits} / #{chars}       — share of digit characters in the answer
-```
-
-Here d is the share of digit characters in the visible answer (`digitDensity`): the only textual
-feature with a measurable contribution (+0.046 AUROC on top of plain `meanLp`,
-`docs/VALIDATION.md` §15). Hedging ("probably", "I think") was measured too — zero variance on the
-current set, so its contribution is unknown.
+Here <i>d</i> is the only textual feature with a measurable contribution (+0.046 AUROC on top of plain
+`meanLp`, `docs/VALIDATION.md` §15). Hedging ("probably", "I think") was measured too — zero variance
+on the current set, so its contribution is unknown.
 
 Segmentation is by `. ! ? …` with decimals, abbreviations and CJK terminators taken into account;
 code blocks are dropped entirely. States: `ok` — tokens matched the text; `partial` — offsets
