@@ -35,7 +35,7 @@
 
 **CI**: прогон [`44787911144`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44787911144) на `92f1c65` — **7 job'ов из 7**: патч из 19
 коммитов применяется на ubuntu и windows, 119 truthprobe-тестов зелёные, установщики
-применяют 19 коммитов, e2e кладёт вердикт в базу, CLI собирается.
+применяют 19 коммитов, e2e кладёт вердикт в базу, CLI собирается. После пересоздания репозитория (21.11.2026) первый прогон [`44918215420`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44918215420) на `69b0b4e` тоже дал **7/7**, а Contributors API показывает только `vladmurnik`.
 
 **Исправлено в DX**
 

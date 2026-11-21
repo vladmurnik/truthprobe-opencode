@@ -380,6 +380,8 @@ e2e-прогон через мок-провайдера кладёт верди�
 `make weights`, staging CLI в `build-desktop.sh`) — снова **7 из 7**: 119 truthprobe-тестов на
 обеих ОС, установщики применяют 19 коммитов, e2e кладёт вердикт в базу, CLI собирается.
 
+21.11.2026 репозиторий пересоздан (старый переименован в `truthprobe-opencode-old` и заархивирован), чтобы в панели Contributors не оставалось посторонних аккаунтов. Первый прогон на новом репозитории — [`44918215420`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44918215420) на `69b0b4e`: **7 job'ов из 7 success**, Contributors API отдаёт только `vladmurnik`.
+
 Чего по-прежнему нет: запуска `install.sh` на macOS, замеров на облачных провайдерах с ключами
 (OpenAI/Anthropic/Gemini) и AUROC/ECE на наборе, где есть обе метки — см. §12.
 
