@@ -2,7 +2,7 @@
   "name": "opencode-truthprobe",
   "version": "0.3.2",
   "private": true,
-  "description": "Token-logprob confidence for opencode: a one-line first-sentence confidence badge, an answer confidence block and doubtful-sentence highlighting",
+  "description": "Token-logprob confidence for opencode: a first-token confidence badge, an answer confidence line with a level and a meter, and doubtful-sentence highlighting",
   "keywords": [
     "opencode",
     "hallucination",

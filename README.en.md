@@ -21,10 +21,10 @@ schema field, one badge in the TUI and one chip in the desktop/Electron session 
 ```
    What is the capital of France and how many people live there?
 
-   first-sentence confidence 71%
+   first-token confidence 71%
    The capital of France is Paris. It is home to about 2 million people.
-   answer confidence 40% · 1 doubtful sentence
-     ! #2 8%: It is home to about 2 million people.
+   answer confidence 44% ▰▰░░░ · risky · 1 doubtful sentence
+     ▌ #2 ▰░░░░ 16% · unreliable: It is home to about 2 million people.
      Build · Mock 1 · 59ms · 1333.3 tok/s
 ```
 

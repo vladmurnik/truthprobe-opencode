@@ -43,13 +43,13 @@ The capital of France is Paris. It is home to about 2 million people.
 
 ```json
 {"type":"text","text":"The capital of France is Paris. It is home to about 2 million people.",
- "truthprobe":{"status":"ok","score":0.399,"risk":0.601,
-   "first":{"score":0.708,"entropy":0.292,"token":"The"},
+ "truthprobe":{"status":"ok","score":0.4442,"risk":0.5558,"level":"risky",
+   "first":{"score":0.7076,"entropy":0.2924,"token":"The"},
    "sentences":[
-     {"i":0,"start":0,"end":31,"text":"The capital of France is Paris.","score":0.876,"risk":0.124,
-      "meanLp":0.967,"minLp":-0.08,"phi":0.708,"tokens":6,"flag":false},
-     {"i":1,"start":32,"end":69,"text":"It is home to about 2 million people.","score":0.079,"risk":0.921,
-      "meanLp":0.125,"minLp":-2.9,"phi":0.044,"tokens":6,"flag":true}],
+     {"i":0,"start":0,"end":31,"text":"The capital of France is Paris.","score":0.9672,"risk":0.0328,
+      "meanLp":0.9672,"minLp":-0.08,"phi":0.7076,"tokens":6,"flag":false},
+     {"i":1,"start":32,"end":69,"text":"It is home to about 2 million people.","score":0.1584,"risk":0.8416,
+      "meanLp":0.1584,"minLp":-2.9,"phi":0.1068,"tokens":7,"flag":true}],
    "flagged":1}}
 ```
 
@@ -58,7 +58,7 @@ The capital of France is Paris. It is home to about 2 million people.
 1. `logprobs: true, top_logprobs: 20` реально уходит в тело запроса — без переменных окружения,
    только за счёт вердикта автопроверки.
 2. Стрим-чанки с `choices[].logprobs.content[]` разбираются, токены накапливаются по блоку текста.
-3. Скоринг считает первое предложение уверенным (0.876, риск 0.124), второе — спорным (0.079, риск 0.921), φ первого токена 0.708.
+3. Скоринг считает первое предложение уверенным (0.967, риск 0.033), второе — спорным (0.158, риск 0.842), φ первого токена 0.708. Оценка по умолчанию — вероятность геометрического среднего `exp(meanLp)`, без φ и без веса худшего токена (см. `docs/VALIDATION.md` §14).
 4. Скоринг доезжает до хранилища через `session.text.ended`, без отдельного события `session.text.scored`
    (первоначальный вариант с отдельным durable-событием блокировался на шине и был заменён — см. `docs/VALIDATION.md`).
 
@@ -72,10 +72,10 @@ python3 scripts/screen-dump.py /tmp/tui-probe.log
 Результат (см. `docs/VALIDATION.md`, §4.1):
 
 ```
-   first-sentence confidence 71%
+   first-token confidence 71%
    The capital of France is Paris. It is home to about 2 million people.
-   answer confidence 40% · 1 doubtful sentence
-     ! #2 8%: It is home to about 2 million people.
+   answer confidence 44% ▰▰░░░ · risky · 1 doubtful sentence
+     ▌ #2 ▰░░░░ 16% · unreliable: It is home to about 2 million people.
 ```
 
 ## Что это НЕ проверяет

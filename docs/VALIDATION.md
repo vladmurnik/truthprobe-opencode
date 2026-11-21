@@ -146,12 +146,13 @@
 ```json
 {
   "status": "ok",
-  "score": 0.4166,
-  "risk": 0.5834,
+  "score": 0.4442,
+  "risk": 0.5558,
+  "level": "risky",
   "first": { "score": 0.7076, "entropy": 0.2924, "token": "The" },
   "sentences": [
-    { "i": 0, "text": "The capital of France is Paris.", "score": 0.8761, "minLp": -0.08, "tokens": 6, "flag": false },
-    { "i": 1, "text": "It is home to about 2 million people.", "score": 0.1119, "minLp": -2.9, "tokens": 7, "flag": true }
+    { "i": 0, "text": "The capital of France is Paris.", "score": 0.9672, "minLp": -0.08, "tokens": 6, "flag": false },
+    { "i": 1, "text": "It is home to about 2 million people.", "score": 0.1584, "minLp": -2.9, "tokens": 7, "flag": true }
   ],
   "flagged": 1
 }
@@ -187,14 +188,15 @@ RUN2 (кэш прогрет)
 
 ```
   ┃  What is the capital of France and how many people live there?
-     first-sentence confidence 71%
+     first-token confidence 71%
      The capital of France is Paris. It is home to about 2 million people.
-     answer confidence 40% · 1 doubtful sentence
-       ! #2 8%: It is home to about 2 million people.
+     answer confidence 44% ▰▰░░░ · risky · 1 doubtful sentence
+       ▌ #2 ▰░░░░ 16% · unreliable: It is home to about 2 million people.
      Build · Mock 1 · 59ms · 1333.3 tok/s
 ```
 
-Числа совпадают с данными парта (0.708 → 71%, 0.399 → 40%, 0.079 → 8%).
+Числа совпадают с данными парта (0.708 → 71%, 0.4442 → 44%, 0.1584 → 16%).
+Проценты сняты на текущей формуле `exp(meanLp)`; до §14 на тех же токенах выходило 40% и 8%.
 
 **Баг, найденный здесь:** бейдж не появлялся, пока сессия не перезагружена. Виноват не компонент,
 а стор `packages/client/src/solid/data.ts`: обработчик `session.text.ended` копировал только

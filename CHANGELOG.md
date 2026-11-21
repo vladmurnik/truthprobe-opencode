@@ -1,3 +1,22 @@
+# 0.13.1 — 2026-11-21
+
+Демонстрационный пример в доках пересчитан на текущей формуле и переписан в том виде, в каком
+его реально печатает TUI. Старые числа были сняты до §14, и подписи не совпадали с интерфейсом.
+
+**Исправлено**
+
+- `README.md`, `README.en.md`, `docs/SMOKE-E2E.md`, `docs/VALIDATION.md` §6: транскрипт
+  «`first-sentence confidence 71%` / `answer confidence 40% · 1 doubtful sentence` / `! #2 8%`»
+  заменён на измеренный вывод текущей сборки: `first-token confidence 71%`,
+  `answer confidence 44% ▰▰░░░ · risky · 1 doubtful sentence`,
+  `▌ #2 ▰░░░░ 16% · unreliable: …`. Проценты сняты прогоном мока через `scoreAnswer`:
+  ответ `0.4442 · risky`, предложения `0.9672` и `0.1584`, первый токен `0.7076`.
+- `docs/SMOKE-E2E.md`, `docs/VALIDATION.md`: JSON парта в этих разделах пересчитан на тех же
+  токенах (`score 0.4442`, `risk 0.5558`, `level risky`), а не оставлен от старой формулы.
+  В §6 добавлена строка, что до §14 на тех же токенах выходило 40% и 8%.
+- `package.json`: описание больше не обещает «first-sentence confidence badge» — теперь
+  «first-token confidence badge, answer confidence line with a level and a meter, doubtful sentences».
+
 # 0.13.0 — 2026-11-20
 
 Надёжность на нелатинском тексте: проверено, что выравнивание токенов не ломается, и это
