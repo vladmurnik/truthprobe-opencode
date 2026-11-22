@@ -136,6 +136,10 @@ def features(tokens: list[dict], answer: str = "", top_k: int = 20) -> dict | No
         "meanLp": round(sum(lps) / len(lps), 6),
         "minLp": round(min(lps), 6),
         "phi": round(phi(scored[0], top_k), 6),
+        # Маркер полярности: `phi` здесь — уверенность (1 − энтропия), как в рантайме.
+        # В наборах до 22.11.2026 поля не было и `phi` была энтропией; `calibrate.py`
+        # инвертирует такие строки при загрузке. Без маркера он инвертировал бы и новые.
+        "phiDef": "confidence",
         "fracLow": round(sum(1 for lp in lps if lp < FRAC_LOW_CUTOFF) / len(lps), 6),
         # Тот же признак, что считает рантайм (`digitDensity` в score.ts): только ASCII-цифры
         # и длина в UTF-16 code units (как `String.prototype.length`), иначе train и serve
