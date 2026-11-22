@@ -189,3 +189,22 @@ describe("describe/summary", () => {
     expect(Capability.keyOf("opencode", "glm-5-free")).toBe("opencode/glm-5-free")
   })
 })
+
+describe("classify — токены в любом канале", () => {
+  const response = (payload: unknown) => ({ status: 200, body: JSON.stringify(payload) })
+
+  test("reasoning-токены при пустом content — это ok", () => {
+    const body = { choices: [{ logprobs: { content: [], reasoning_content: [{ token: "a", logprob: -0.1 }] } }] }
+    expect(Capability.classify(response(body))).toBe("ok")
+  })
+
+  test("отдельный reasoning_logprobs — тоже ok", () => {
+    const body = { choices: [{ reasoning_logprobs: { content: [{ token: "a", logprob: -0.2 }] } }] }
+    expect(Capability.classify(response(body))).toBe("ok")
+  })
+
+  test("пустые каналы остаются ignored", () => {
+    const body = { choices: [{ logprobs: { content: [] } }] }
+    expect(Capability.classify(response(body))).toBe("ignored")
+  })
+})

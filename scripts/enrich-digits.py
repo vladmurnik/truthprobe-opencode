@@ -23,9 +23,11 @@ import sys
 
 
 def digit_density(answer: str) -> float:
+    """Ровно как `digitDensity` в score.ts: ASCII-цифры на UTF-16 code unit."""
     if not answer:
         return 0.0
-    return round(sum(1 for ch in answer if ch.isdigit()) / len(answer), 6)
+    units = len(answer.encode("utf-16-le")) // 2
+    return round(sum(1 for ch in answer if "0" <= ch <= "9") / units, 6)
 
 
 def process(path: str, check: bool) -> tuple[int, int]:

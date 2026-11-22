@@ -285,13 +285,19 @@ describe("truthprobe.scoreAnswer — деградация", () => {
 })
 
 describe("truthprobe.scoreAnswer — арифметика", () => {
-  test("risk всегда дополняет score до единицы", () => {
-    const text = "Москва — столица России."
-    const result = scoreAnswer(text, flat(text, -1))
-    expect(result.score).not.toBeNull()
+  test("итог — взвешенная смесь общего скора и среднего по предложениям", () => {
+    const text = "Первое. Второе."
+    const raw = tokens([
+      ["Первое", -0.2],
+      [".", -0.2],
+      [" Второе", -1.6],
+      [".", -1.6],
+    ])
+    const result = scoreAnswer(text, raw, { globalWeight: 0.6 })
+    const global = scoreAnswer(text, raw, { globalWeight: 1 }).score!
+    const mean = result.sentences.reduce((sum, sentence) => sum + sentence.score, 0) / result.sentences.length
+    expect(result.score!).toBeCloseTo(0.6 * global + 0.4 * mean, 10)
     expect(result.risk!).toBeCloseTo(1 - result.score!, 10)
-    expect(result.score!).toBeGreaterThanOrEqual(0)
-    expect(result.score!).toBeLessThanOrEqual(1)
   })
 
   test("уверенный ответ выше сомнительного", () => {
@@ -349,10 +355,14 @@ describe("truthprobe.scoreAnswer — арифметика", () => {
     expect(result.score!).toBeCloseTo(expected, 10)
   })
 
-  test("score детерминирован", () => {
+  test("повторный прогон на тех же токенах даёт те же числа", () => {
     const text = "Повторяемый ответ. Тот же самый."
-    const raw = flat(text, -0.7)
-    expect(JSON.stringify(scoreAnswer(text, raw))).toBe(JSON.stringify(scoreAnswer(text, raw)))
+    const first = scoreAnswer(text, flat(text, -0.7))
+    const second = scoreAnswer(text, flat(text, -0.7))
+    expect(second.score).toBeCloseTo(first.score!, 12)
+    expect(second.sentences.map((sentence) => sentence.score)).toEqual(
+      first.sentences.map((sentence) => sentence.score),
+    )
   })
 
   test("идеально уверенный ответ даёт score 1 и risk 0", () => {

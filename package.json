@@ -13,7 +13,7 @@
   ],
   "license": "MIT",
   "scripts": {
-    "test": "bun test test/score.test.ts",
+    "test": "bun test test",
     "test:opencode": "bash scripts/run-opencode-tests.sh",
     "sync:opencode": "bash scripts/vm-sync-sources.sh",
     "build:windows": "bash scripts/build-windows.sh",

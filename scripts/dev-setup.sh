@@ -55,12 +55,14 @@ fi
 
 if [ -d "$DIR/.git" ]; then
   echo "== дерево уже есть: $DIR"
-  if git -C "$DIR" log --oneline -1 | grep -q "per-model calibration\|TruthProbe"; then
-    echo "== патч уже применён, пропускаю клонирование и git am"
+  if git -C "$DIR" apply --reverse --check "$PATCH" >/dev/null 2>&1; then
+    echo "== патч уже применён (обратный apply проходит), пропускаю git am"
   else
     echo "== применяю патч к существующему дереву"
-    git -C "$DIR" -c user.name=TruthProbe -c user.email=dev@localhost am "$PATCH" ||
+    git -C "$DIR" -c user.name=TruthProbe -c user.email=dev@localhost am "$PATCH" || {
+      git -C "$DIR" am --abort 2>/dev/null || true
       git -C "$DIR" apply "$PATCH"
+    }
   fi
 else
   echo "== клонирую $UPSTREAM → $DIR"
@@ -68,8 +70,10 @@ else
   git clone --filter=blob:none --no-checkout "$UPSTREAM" "$DIR"
   git -C "$DIR" checkout -q "$BASE"
   echo "== применяю $(basename "$PATCH")"
-  git -C "$DIR" -c user.name=TruthProbe -c user.email=dev@localhost am "$PATCH" ||
+  git -C "$DIR" -c user.name=TruthProbe -c user.email=dev@localhost am "$PATCH" || {
+    git -C "$DIR" am --abort 2>/dev/null || true
     git -C "$DIR" apply "$PATCH"
+  }
 fi
 
 if [ "$SKIP_INSTALL" = "0" ]; then

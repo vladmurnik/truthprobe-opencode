@@ -98,13 +98,22 @@ export function parseLinearWeights(raw: unknown): LinearWeights {
   const obj = raw as Record<string, unknown> | null
   const src = (obj?.weights ?? obj) as Record<string, unknown> | null
   if (!src) throw new Error("weights object is missing")
+  // `Number(null) === 0`, поэтому JSON-`null` надо отсекать до преобразования:
+  // иначе молчаливо обнулённый коэффициент даёт «валидные» веса с другим смыслом.
+  const num = (key: string, value: unknown) => {
+    if (value === null) throw new Error(`weight "${key}" is null`)
+    if (value === undefined) throw new Error(`weight "${key}" is missing`)
+    const parsed = Number(value)
+    if (!Number.isFinite(parsed)) throw new Error(`weight "${key}" is not a number`)
+    return parsed
+  }
   const out: LinearWeights = {
-    bias: Number(src.bias),
-    meanLp: Number(src.meanLp),
-    minLp: Number(src.minLp),
-    meanPhi: Number(src.meanPhi),
-    fracLow: Number(src.fracLow),
-    digitDensity: Number(src.digitDensity ?? 0),
+    bias: num("bias", src.bias),
+    meanLp: num("meanLp", src.meanLp),
+    minLp: num("minLp", src.minLp),
+    meanPhi: num("meanPhi", src.meanPhi),
+    fracLow: num("fracLow", src.fracLow),
+    digitDensity: src.digitDensity === undefined ? 0 : num("digitDensity", src.digitDensity),
   }
   for (const [key, value] of Object.entries(out)) {
     if (!Number.isFinite(value)) throw new Error(`weight "${key}" is not a number`)
@@ -156,10 +165,18 @@ export function bundleScorer(bundle: WeightsBundle, name = "linear"): Scorer {
   const fallback = linearScorer(bundle.global, name)
   const perModel = new Map<string, Scorer>()
   for (const [key, weights] of Object.entries(bundle.models)) perModel.set(key, linearScorer(weights, `${name}:${key}`))
+  const warned = new Set<string>()
   return {
     name,
     score(input) {
       const scorer = input.model ? perModel.get(input.model) : undefined
+      // Ключи калибровки — routed-имя модели; у алиасов и `auto` оно не совпадает с
+      // запрошенным id. Молчаливая подмена на global — это неправда о точности, поэтому
+      // про каждую такую модель говорим один раз.
+      if (!scorer && input.model && perModel.size > 0 && !warned.has(input.model)) {
+        warned.add(input.model)
+        process.stderr.write(`truthprobe: no per-model weights for "${input.model}"; using global\n`)
+      }
       return (scorer ?? fallback).score(input)
     },
   }

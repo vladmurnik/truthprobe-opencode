@@ -1,6 +1,6 @@
 # TruthProbe for opencode
 
-[![unit tests](https://img.shields.io/badge/unit%20tests-119%20pass-brightgreen)](docs/VALIDATION.md)
+[![unit tests](https://img.shields.io/badge/unit%20tests-127%20pass-brightgreen)](docs/VALIDATION.md)
 [![CI](https://github.com/vladmurnik/truthprobe-opencode/actions/workflows/verify.yml/badge.svg)](https://github.com/vladmurnik/truthprobe-opencode/actions/workflows/verify.yml)
 [![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![opencode base](https://img.shields.io/badge/opencode-007afb1-informational)](patches/truthprobe-0001.patch)
@@ -263,8 +263,8 @@ Windows: `%APPDATA%\opencode\truthprobe\`) и живёт: `ok`/`ignored`/`reject
 | ℓ<sub>min</sub> | min<sub>k</sub> ℓ<sub>k</sub> | худший `logprob` |
 | <i>d</i> | #{цифры} / #{символы} | доля цифр в видимом ответе (`digitDensity`) |
 
-Здесь <i>d</i> — единственный текстовый признак с измеримым вкладом (+0.046 AUROC поверх чистого
-`meanLp`, `docs/VALIDATION.md` §15). Хеджирование («probably», «I think») меряли — на текущем наборе
+Здесь <i>d</i> — единственный текстовый признак с измеримым вкладом (+0.014 AUROC поверх полного
+набора признаков, `docs/VALIDATION.md` §17). Хеджирование («probably», «I think») меряли — на текущем наборе
 разброс нулевой, вклад не измерен.
 
 Сегментация — по `. ! ? …` с учётом десятичных дробей, сокращений и CJK-терминаторов; блоки кода
@@ -282,7 +282,7 @@ Windows: `%APPDATA%\opencode\truthprobe\`) и живёт: `ok`/`ignored`/`reject
 | Автовключение без переменных окружения | мок + два прогона подряд | RUN1: проба → `{"status":"ok"}`; RUN2: **2 из 2** запросов с `logprobs: true, top_logprobs: 20` |
 | Регрессия вокруг событий текста | `test/session*.test.ts test/projector*.test.ts test/message*.test.ts` | **811 pass / 0 fail** |
 | Полный прогон core | `bun test` в `packages/core` (7 713 тестов, 331 файл) | 7 300 pass / 351 skip / 62 fail — ни одного в truthprobe: `tool-search` качает ripgrep с github.com, `provider-gitlab-oauth` ходит на gitlab.com, `cross-spawn`/MCP зависят от spawn; в окружении зарезана исходящая сеть |
-| Тесты TruthProbe, текущая сборка | `bun test` шести truthprobe-файлов | **119 pass / 0 fail** |
+| Тесты TruthProbe, текущая сборка | `bun test` шести truthprobe-файлов | **127 pass / 0 fail** |
 | Патч на чистом дереве | `git am` в worktree `007afb1` | применяется без конфликтов, тесты 45 + 8 зелёные |
 | Типизация | schema / ai / core / client / tui | зелёная (132 / 357+322 / 2 030 / 181 / 1 942 файла) |
 | Типизация UI-пакетов | session-ui / app / desktop | зелёная (382 / 2 445 / 3 569 файлов, desktop — 2 проекта) |
@@ -312,7 +312,7 @@ python3 scripts/tui-probe.py && python3 scripts/screen-dump.py /tmp/tui-probe.lo
 
 | Что | Как проверяли | Результат |
 | --- | --- | --- |
-| Тесты truthprobe | `bun test` шести файлов в `packages/core/test` | **119 pass, 0 fail** |
+| Тесты truthprobe | `bun test` шести файлов в `packages/core/test` | **127 pass, 0 fail** |
 | Тесты всего монорепо | `bun test` в `packages/core` — 7713 тестов, 331 файл | **7300 pass, 351 skip, 62 fail** |
 | Ответ `freepi/particle` | живой запрос через боевой бинарь | `score 0.7595 · likely`, предложение `#0 0.603 · uncertain` |
 | Ответ `freepi/deepseek-v4.1-flash` | живой запрос | `score 0.6893`, первый флаг `0.4849` |
@@ -324,7 +324,7 @@ python3 scripts/tui-probe.py && python3 scripts/screen-dump.py /tmp/tui-probe.lo
 | `collect.py` на живом шлюзе | 2 промпта, `freepi/particle` | строки с `meanLp -0.063 / -0.125`, `minLp -0.409 / -0.945`, `fracLow 0.00 / 0.06` — признаки считаются той же формулой, что в рантайме |
 | Аудит банка вопросов | `python3 scripts/audit-bank.py data/qa-hard-bank.jsonl data/rows-hard.jsonl` | нашёл **4** пункта, где ошибается не модель, а эталон; после чистки набора — `AUROC n/a (one class)`, 739 верных / **0 неверных** |
 | Сбор негативов | 47 вопросов × 4 модели × 4 сэмпла при `T=0.8` и `T=1.0`, затем ещё три банка (34 вопроса, классические провалы LLM, счёт по списку) | 1504 + 688 строки; настоящих негативов **0** — модели либо отвечают верно, либо молчат |
-| Заказанная ложь: видит ли скорер | `scripts/measure-lies.py` на 626 строках (544 правды / 82 лжи) | прежняя формула — AUROC **0.388** (хуже случайного), ECE 0.368; обученные веса — 0.774 out-of-fold |
+| Заказанная ложь: видит ли скорер | `scripts/measure-lies.py` на 626 строках (544 правды / 82 лжи) | прежняя формула — AUROC **0.388** (хуже случайного), ECE 0.368; обученные веса — 0.800 out-of-fold (групповая CV) |
 | Встроенная формула переписана | те же 626 строк + 739 верных строк как контроль | `exp(meanLp)` вместо `0.4·geo + 0.3·worst + 0.3·φ`: AUROC **0.388 → 0.597**, ECE **0.368 → 0.098**, а на верных ответах ECE **0.493 → 0.160** |
 
 **Про 62 падения в монорепо:** ни одно не относится к truthprobe. Причины видны в логе и не связаны
@@ -414,18 +414,17 @@ MIT — см. [LICENSE](LICENSE). `opencode` остаётся под своей 
 План работ на 0.5 — [`docs/ROADMAP.md`](docs/ROADMAP.md): шкала уровней, заметная подсветка,
 матрица поддерживаемых моделей, установка одним скриптом, сменный ML-скоринг.
 
-Эти пункты из ревью закрыты **не** были, и мы не делаем вид, что они закрыты:
+Эти пункты из ревью закрыты **не** были (кроме отмеченных), и мы не делаем вид, что они закрыты:
 
 - **Калибровка на настоящих галлюцинациях.** AUROC и ECE измерены, но на наборе «заказанной лжи»:
   626 строк, из них 82 негатива получены просьбой «соври». Самопроизвольных ошибок модели в наборе
   нет — 1440 запросов на четырёх моделях шлюза дали ноль негативов. Второго независимого набора
   тоже нет, поэтому CI-гейта по AUROC не будет, пока он не появится. Протокол и скрипт —
   [`docs/CALIBRATION.md`](docs/CALIBRATION.md) и `scripts/calibrate.py`.
-- **Поддержка logprobs наследуется по провайдеру.** Если автопроверка подтвердила одну модель шлюза,
-  остальные модели того же провайдера тоже получают `logprobs`. Это сделано осознанно: у free-pi
-  кэш содержит только `freepi/particle`, и без наследования `deepseek-*` остались бы без цифр.
-  Обратная сторона — провайдер, у которого часть моделей поле не знает, получит 400; лечится
-  `OPENCODE_TRUTHPROBE=off` или записью в `capabilities.json`.
+- **Исправлено 22.11.2026. Поддержка logprobs проверяется по модели, а не по провайдеру.** Кэш
+  автопроверки адресуется парой `provider/model`: подтверждённая `particle` больше не включает
+  `logprobs` для `deepseek-*`, и провайдер, у которого часть моделей поле не знает, не получает 400
+  на весь запрос. Плата — один пробный запрос на каждую новую модель, дальше вердикт кэшируется.
 - **`temperature > 0`.** `top_logprobs` при ненулевой температуре — сглаженное распределение, а не
   уверенность модели. Мы это не блокируем и не помечаем `partial`; числа остаются числами, но
   трактовать их как «уверенность» при `temperature > 0` нельзя.

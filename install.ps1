@@ -73,6 +73,22 @@ if (-not (Test-Path (Join-Path $Dir ".git"))) {
 } else {
   Push-Location $Dir
   Note "reusing existing checkout"
+  $head = (git rev-parse HEAD 2>$null | Select-Object -First 1)
+  $known = (git log --oneline -n 40 2>$null) -join "`n"
+  if ($head -ne $Base -and $known -notmatch "truthprobe") {
+    # Дерево на чужом коммите: без приведения к $Base патч не ляжет, а reset --hard
+    # молча стирает незакоммиченные правки — поэтому сначала проверяем чистоту.
+    $dirty = (git status --porcelain 2>$null) -join ""
+    if ($dirty -ne "" -and $env:TRUTHPROBE_ALLOW_DIRTY -ne "1") {
+      Pop-Location
+      Fail "$Dir has uncommitted changes; commit them or set TRUTHPROBE_ALLOW_DIRTY=1"
+    }
+    Note "moving the checkout to $BaseShort"
+    git fetch -q --depth 1 origin $Base
+    if ($LASTEXITCODE -ne 0) { Pop-Location; Fail "git fetch of $Base failed" }
+    git reset -q --hard FETCH_HEAD
+    git checkout -q -B truthprobe
+  }
 }
 
 $log = (git log --oneline -n 40 2>$null) -join "`n"
@@ -80,14 +96,31 @@ if ($log -match "truthprobe") {
   Step "patch already applied, skipping"
 } else {
   Step "downloading $PatchName"
-  $patch = Join-Path ([System.IO.Path]::GetTempPath()) "truthprobe-0001.patch"
+  # Уникальное имя: фиксированный путь в %TEMP% можно подменить между записью и чтением,
+  # а сам патч затем исполняется (bun install + сборка).
+  $patch = Join-Path ([System.IO.Path]::GetTempPath()) ("truthprobe-" + [guid]::NewGuid().ToString("N") + ".patch")
   Invoke-WebRequest -UseBasicParsing -Uri "$Repo/$PatchName" -OutFile $patch
   if (-not (Test-Path $patch) -or (Get-Item $patch).Length -eq 0) { Pop-Location; Fail "patch download failed" }
+  $hash = (Get-FileHash -Algorithm SHA256 -Path $patch).Hash.ToLower()
+  if ($hash -ne "1ecd3350b7b937b256a421c0a732bb4de4eed9f01fd5630bb36f259bee611ec7") {
+    Remove-Item $patch -Force -ErrorAction SilentlyContinue
+    Pop-Location
+    Fail "patch checksum mismatch: pinned 1ecd3350b7b937b256a421c0a732bb4de4eed9f01fd5630bb36f259bee611ec7, got $hash"
+  }
 
   Step "checking patch"
   git apply --check --whitespace=nowarn $patch
   if ($LASTEXITCODE -ne 0) { Pop-Location; Fail "patch does not apply to $BaseShort; tree untouched" }
   Note "the patch applies cleanly"
+
+  if ($DryRun) {
+    Remove-Item $patch -Force -ErrorAction SilentlyContinue
+    Pop-Location
+    Step "dry run: patch applies, tree left untouched"
+    Write-Host ""
+    Write-Host "Next:  .\install.ps1 -Dir $Dir"
+    exit 0
+  }
 
   Step "applying patch"
   # git am needs committer identity; keep it local so the global config is untouched.

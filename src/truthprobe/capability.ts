@@ -157,7 +157,9 @@ export interface ProbeResponse {
 /**
  * Классификация ответа проверки.
  *
- * `ok` — в ответе реально есть `logprobs.content`;
+ * `ok` — в ответе реально есть токены logprobs в любом канале (`content` или
+ *        `reasoning_content`/`reasoning_logprobs`): у reasoning-моделей при
+ *        `max_tokens: 1` видимого текста ещё нет, а рассуждения уже посчитаны;
  * `ignored` — 200, но поля нет (шлюз молча вырезал);
  * `rejected` — провайдер ругается именно на logprobs;
  * `auth` — ключ не принят;
@@ -169,10 +171,15 @@ export const classify = (response: ProbeResponse): Status => {
   if (status >= 200 && status < 300) {
     try {
       const data = JSON.parse(body) as {
-        choices?: Array<{ logprobs?: { content?: unknown } | null }>
+        choices?: Array<{
+          logprobs?: Record<string, unknown> | null
+          reasoning_logprobs?: Record<string, unknown> | null
+        }>
       }
-      const content = data.choices?.[0]?.logprobs?.content
-      return Array.isArray(content) && content.length > 0 ? "ok" : "ignored"
+      const choice = data.choices?.[0]
+      const hasTokens = (logprobs: Record<string, unknown> | null | undefined) =>
+        !!logprobs && Object.values(logprobs).some((value) => Array.isArray(value) && value.length > 0)
+      return hasTokens(choice?.logprobs) || hasTokens(choice?.reasoning_logprobs) ? "ok" : "ignored"
     } catch {
       return "ignored"
     }

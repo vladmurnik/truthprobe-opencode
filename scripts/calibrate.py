@@ -53,6 +53,13 @@ def load(path: str) -> tuple[list[dict], int]:
                 skipped += 1
                 continue
             row["label"] = label
+            # φ в рантайме (`score.ts.phi`) — уверенность: 1 − H/ln K. Наборы, собранные
+            # до исправления `collect.py`, хранят энтропию H/ln K; приводим к определению
+            # рантайма, иначе обученный вес `meanPhi` получает обратный знак и на живых
+            # ответах работает против уверенности.
+            if row.get("phiDef") != "confidence" and "phi" in row:
+                row["phi"] = 1.0 - float(row["phi"] or 0.0)
+                row["phiDef"] = "confidence"
             rows.append(row)
     return rows, skipped
 
@@ -159,17 +166,46 @@ def predict(weights: dict, row: dict) -> float:
     return 1 / (1 + math.exp(-z)) if z >= 0 else math.exp(z) / (1 + math.exp(z))
 
 
+def group_key(row: dict) -> tuple[str, str]:
+    """Группа переноса: модель + вопрос. Ответы внутри группы — повторы одного факта."""
+    return (str(row.get("model") or ""), str(row.get("prompt") or row.get("source") or ""))
+
+
+def fold_assignment(rows: list[dict], folds: int = 5, seed: int = 11) -> list[int]:
+    """Номер фолда на каждую строку, одинаковый внутри группы `group_key`.
+
+    Резать по строкам нельзя: один и тот же ответ встречается в наборе несколько раз,
+    а вопрос переиспользуется всеми моделями. При построчном делении 88% теста
+    оказывается в обучении побайтово, и OOF измеряет запоминание, а не перенос.
+    """
+    groups: dict[tuple[str, str], list[int]] = {}
+    for index, row in enumerate(rows):
+        groups.setdefault(group_key(row), []).append(index)
+    keys = sorted(groups)
+    random.Random(seed).shuffle(keys)
+    assignment = [0] * len(rows)
+    for position, key in enumerate(keys):
+        for index in groups[key]:
+            assignment[index] = position % folds
+    return assignment
+
+
 def cross_validate(rows: list[dict], folds: int = 5) -> tuple[float, float]:
-    """AUROC и ECE по out-of-fold предсказаниям: иначе цифры льстят сами себе."""
+    """AUROC и ECE по out-of-fold предсказаниям с групповым делением.
+
+    Фолды режутся по `(model, prompt)`: повторный ответ на тот же вопрос не попадает
+    в обучение, иначе метрика льстит себе.
+    """
     size = len(rows)
     if size < folds * 2:
         return float("nan"), float("nan")
-    order = list(range(size))
-    random.Random(11).shuffle(order)
+    assignment = fold_assignment(rows, folds)
     oof: list[float] = [0.0] * size
     for fold in range(folds):
-        test = set(order[fold::folds])
-        train = [rows[i] for i in range(size) if i not in test]
+        test = [i for i in range(size) if assignment[i] == fold]
+        train = [rows[i] for i in range(size) if assignment[i] != fold]
+        if not test or not train:
+            continue
         weights = fit(train)
         for i in test:
             oof[i] = predict(weights, rows[i])
@@ -177,12 +213,13 @@ def cross_validate(rows: list[dict], folds: int = 5) -> tuple[float, float]:
     return auroc(pairs), ece(pairs)
 
 
-def fit_by_model(rows: list[dict], min_rows: int = 20) -> dict:
+def fit_by_model(rows: list[dict], min_rows: int = 20, min_negatives: int = 30) -> dict:
     """Обучает отдельные веса на каждую модель (поле "model" в JSONL).
 
     Смысл: у моделей разная форма распределения логвероятностей, поэтому один
-    общий sigmoid систематически смещён для части моделей. Группам с числом
-    строк меньше min_rows веса не выдаются — для них остаётся глобальная модель.
+    общий sigmoid систематически смещён для части моделей. Группам, где мало строк
+    или меньше `min_negatives` примеров любого класса, веса не выдаются — на таком
+    объёме коэффициенты уходят в случайный знак, и уверенность инвертируется.
     """
     groups: dict[str, list[dict]] = {}
     for row in rows:
@@ -211,6 +248,16 @@ def fit_by_model(rows: list[dict], min_rows: int = 20) -> dict:
                 "positives": positives,
                 "weights": None,
                 "note": "в группе один класс — веса не обучаются, используется global",
+            }
+            continue
+        negatives = len(group) - positives
+        if negatives < min_negatives or positives < min_negatives:
+            bundle["models"][name] = {
+                "rows": len(group),
+                "positives": positives,
+                "negatives": negatives,
+                "weights": None,
+                "note": f"меньше {min_negatives} примеров класса — используется global",
             }
             continue
         cv_auroc, cv_ece = cross_validate(group)

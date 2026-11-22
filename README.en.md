@@ -1,6 +1,6 @@
 # TruthProbe for opencode
 
-[![unit tests](https://img.shields.io/badge/unit%20tests-119%20pass-brightgreen)](docs/VALIDATION.md)
+[![unit tests](https://img.shields.io/badge/unit%20tests-127%20pass-brightgreen)](docs/VALIDATION.md)
 [![CI](https://github.com/vladmurnik/truthprobe-opencode/actions/workflows/verify.yml/badge.svg)](https://github.com/vladmurnik/truthprobe-opencode/actions/workflows/verify.yml)
 [![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![opencode base](https://img.shields.io/badge/opencode-007afb1-informational)](patches/truthprobe-0001.patch)
@@ -260,8 +260,8 @@ Features that are always computed and feed the fitted weights when those are ena
 | ℓ<sub>min</sub> | min<sub>k</sub> ℓ<sub>k</sub> | the worst `logprob` |
 | <i>d</i> | #{digits} / #{chars} | share of digits in the visible answer (`digitDensity`) |
 
-Here <i>d</i> is the only textual feature with a measurable contribution (+0.046 AUROC on top of plain
-`meanLp`, `docs/VALIDATION.md` §15). Hedging ("probably", "I think") was measured too — zero variance
+Here <i>d</i> is the only textual feature with a measurable contribution (+0.014 AUROC on top of the
+full feature set, `docs/VALIDATION.md` §17). Hedging ("probably", "I think") was measured too — zero variance
 on the current set, so its contribution is unknown.
 
 Segmentation is by `. ! ? …` with decimals, abbreviations and CJK terminators taken into account;
@@ -279,7 +279,7 @@ drifted; `unavailable` — no tokens.
 | Auto-enable without environment variables | mock + two consecutive runs | RUN1: probe → `{"status":"ok"}`; RUN2: **2 of 2** requests with `logprobs: true, top_logprobs: 20` |
 | Regression around text events | `test/session*.test.ts test/projector*.test.ts test/message*.test.ts` | **811 pass / 0 fail** |
 | Full core run | `bun test` in `packages/core` (7 713 tests, 331 files) | 7 300 pass / 351 skip / 62 fail — none in truthprobe: `tool-search` downloads ripgrep from github.com, `provider-gitlab-oauth` calls gitlab.com, `cross-spawn`/MCP depend on spawn; the harness blocks outbound network |
-| TruthProbe tests, current build | `bun test` of the six truthprobe files | **119 pass / 0 fail** |
+| TruthProbe tests, current build | `bun test` of the six truthprobe files | **127 pass / 0 fail** |
 | Patch on a clean tree | `git am` in a `007afb1` worktree | applies without conflicts, tests 45 + 8 green |
 | Typecheck | schema / ai / core / client / tui | green (132 / 357+322 / 2 030 / 181 / 1 942 files) |
 | Typecheck of the UI packages | session-ui / app / desktop | green (382 / 2 445 / 3 569 files, desktop 2 projects) |
@@ -317,7 +317,7 @@ reproduction — [`docs/SMOKE-E2E.md`](docs/SMOKE-E2E.md).
 | `collect.py` at scale | 24 models × 24 questions = 576 requests on `127.0.0.1:8790` | **120 rows with features** on 7 models (4 models answered 24/24), 108 `HTTP 403 premium credits`, 348 without logprobs, **0 negatives** — every answer was correct, so calibration needs weaker models |
 | Question-bank audit | `python3 scripts/audit-bank.py data/qa-hard-bank.jsonl data/rows-hard.jsonl` | found **4** items where the reference answer, not the model, was wrong; after cleaning the set — `AUROC n/a (one class)`, 739 correct / **0 wrong** |
 | Negative harvesting | 47 hard questions × 4 models × 4 samples at `T=0.8` and `T=1.0`, then three more banks (34 questions, classic LLM failures, list counting) | 1504 + 688 rows; **0** genuine negatives — the models either answer correctly or stay silent |
-| Instructed lies: can the scorer see them | `scripts/measure-lies.py` on 626 rows (544 truthful / 82 lies) | previous formula gave AUROC **0.388** (worse than chance), ECE 0.368; fitted weights give 0.774 out-of-fold |
+| Instructed lies: can the scorer see them | `scripts/measure-lies.py` on 626 rows (544 truthful / 82 lies) | previous formula gave AUROC **0.388** (worse than chance), ECE 0.368; fitted weights give 0.800 out-of-fold (grouped CV) |
 | Built-in formula rewritten | same 626 rows + 739 correct rows as a control | `exp(meanLp)` instead of `0.4·geo + 0.3·worst + 0.3·φ`: AUROC **0.388 → 0.597**, ECE **0.368 → 0.098**, and on correct answers ECE **0.493 → 0.160** |
 
 **Not tested, and we will not pretend otherwise:**
@@ -407,10 +407,10 @@ These review points are **not** fixed, and the docs do not pretend otherwise:
   spontaneous model errors in it — 1440 requests across four gateway models produced zero negatives.
   There is no second independent set either, so no AUROC gate can go into CI until there is one. The
   protocol and the script live in [`docs/CALIBRATION.md`](docs/CALIBRATION.md) and `scripts/calibrate.py`.
-- **Logprobs support is inherited per provider.** One confirmed model turns the feature on for every
-  model of that gateway. This is deliberate: the free-pi cache only holds `freepi/particle`, so without
-  inheritance `deepseek-*` would stay silent. The cost is a gateway whose other models reject the field
-  answering 400; `OPENCODE_TRUTHPROBE=off` or a cache entry is the escape hatch.
+- **Fixed 22.11.2026. Logprobs support is checked per model, not per provider.** The capability cache
+  is keyed by `provider/model`: confirming `particle` no longer turns logprobs on for `deepseek-*`, and
+  a gateway whose other models reject the field can no longer 400 the whole request. The cost is one
+  probe per new model, cached after the first answer.
 - **`temperature > 0`.** `top_logprobs` at non-zero temperature is a smoothed distribution, not the
   model's confidence. We neither block nor mark it `partial`.
 - **`top_logprobs` is not configurable.** `TRUTHPROBE_TOP_K = 20` is a constant.

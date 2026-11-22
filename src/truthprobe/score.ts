@@ -42,7 +42,10 @@ export function normalizedEntropy(t: TokenLogprob, topK = 20): number {
   const top = (t.top ?? []).filter((x) => Number.isFinite(x.logprob));
   if (top.length < 2) return clamp01(1 - Math.exp(t.logprob));
 
-  const probs = top.map((x) => Math.exp(x.logprob));
+  // Энтропия и нормировка считаются по одному набору: если взять все альтернативы,
+  // а делить на ln(topK), H выходит за 1 и φ насыщается нулём на длинных top-K.
+  const k = Math.max(2, Math.min(topK, top.length));
+  const probs = top.slice(0, k).map((x) => Math.exp(x.logprob));
   const sum = probs.reduce((a, b) => a + b, 0);
   if (!(sum > 0)) return 1;
 
@@ -51,7 +54,6 @@ export function normalizedEntropy(t: TokenLogprob, topK = 20): number {
     const q = p / sum;
     if (q > 0) h -= q * Math.log(q);
   }
-  const k = Math.max(2, Math.min(topK, top.length));
   return clamp01(h / Math.log(k));
 }
 

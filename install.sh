@@ -25,6 +25,9 @@ BASE_SHORT=007afb1
 UPSTREAM=https://github.com/sst/opencode.git
 REPO=https://raw.githubusercontent.com/vladmurnik/truthprobe-opencode/master
 PATCH_NAME=patches/truthprobe-0001.patch
+# Патч тянется с ветки, а потом его код исполняется (bun install + сборка),
+# поэтому сверяем байты с закреплённой суммой, а не доверяем URL.
+PATCH_SHA256="1ecd3350b7b937b256a421c0a732bb4de4eed9f01fd5630bb36f259bee611ec7"
 
 DIR="${TRUTHPROBE_DIR:-opencode-truthprobe}"
 DRY_RUN=0
@@ -89,6 +92,9 @@ if [ -d "$DIR/.git" ] && git -C "$DIR" rev-parse --git-dir >/dev/null 2>&1; then
     note "переиспользую дерево $DIR (${head:0:7})"
   else
     note "дерево на ${head:0:7}, переключаю на $BASE_SHORT"
+    if [ -n "$(git status --porcelain)" ] && [ "${TRUTHPROBE_ALLOW_DIRTY:-0}" != "1" ]; then
+      die "в $DIR есть незакоммиченные изменения; закоммитьте их или задайте TRUTHPROBE_ALLOW_DIRTY=1"
+    fi
     git fetch -q --depth 1 origin "$BASE"
     git reset -q --hard FETCH_HEAD
     git checkout -q -B truthprobe
@@ -111,12 +117,27 @@ else
   trap 'rm -f "$PATCH"' EXIT
   download "$REPO/$PATCH_NAME" "$PATCH"
   [ -s "$PATCH" ] || die "patch download failed: $REPO/$PATCH_NAME"
+  if command -v sha256sum >/dev/null 2>&1; then
+    printf '%s  %s\n' "$PATCH_SHA256" "$PATCH" | sha256sum -c - >/dev/null 2>&1 ||
+      die "контрольная сумма патча не совпала с закреплённой в скрипте"
+  elif command -v shasum >/dev/null 2>&1; then
+    [ "$(shasum -a 256 "$PATCH" | cut -d' ' -f1)" = "$PATCH_SHA256" ] ||
+      die "контрольная сумма патча не совпала с закреплённой в скрипте"
+  else
+    note "sha256sum/shasum не найден — проверка контрольной суммы пропущена"
+  fi
 
   step "checking patch"
   if ! git apply --check --whitespace=nowarn "$PATCH"; then
     die "патч не ложится на $BASE_SHORT; дерево не изменено"
   fi
   note "патч ложится на это дерево"
+
+  if [ "$DRY_RUN" -eq 1 ]; then
+    step "dry run: patch applies, tree left untouched"
+    printf '\nНичего не изменено. Реальная установка:\n\n  bash install.sh --dir %s\n\n' "$DIR"
+    exit 0
+  fi
 
   step "applying patch"
   git config user.name >/dev/null 2>&1 || git config user.name "TruthProbe"

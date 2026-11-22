@@ -93,17 +93,22 @@ def variants(row: dict) -> dict[str, float]:
 
 
 def out_of_fold(rows: list[dict]) -> tuple[list[tuple[float, bool]], float | None]:
+    """OOF с групповым делением по `(model, prompt)`.
+
+    Построчное деление давало утечку: один и тот же ответ лежит в наборе несколько
+    раз, а вопрос переиспользуется всеми моделями, поэтому тест почти целиком
+    повторял обучение. Фолды режутся группы целиком (`calibrate.fold_assignment`).
+    """
     data = rows[:]
-    random.seed(SEED)
-    random.shuffle(data)
-    folds = [data[i::FOLDS] for i in range(FOLDS)]
+    assignment = calibrate.fold_assignment(data, FOLDS)
     pairs: list[tuple[float, bool]] = []
-    for i in range(FOLDS):
-        train = [row for j, fold in enumerate(folds) if j != i for row in fold]
-        if not train:
+    for fold in range(FOLDS):
+        test = [row for row, index in zip(data, assignment) if index == fold]
+        train = [row for row, index in zip(data, assignment) if index != fold]
+        if not train or not test:
             continue
         weights = calibrate.fit(train)
-        for row in folds[i]:
+        for row in test:
             pairs.append((calibrate.predict(weights, row), row["label"]))
     return pairs, None
 
@@ -130,12 +135,27 @@ def main() -> int:
     parser.add_argument("rows", help="JSONL: строки с label 0/1 и признаками meanLp/minLp/phi/fracLow")
     parser.add_argument("--json", action="store_true", help="печать машинного отчёта")
     parser.add_argument("--variants", action="store_true", help="сравнить фиксированные формулы из §14 VALIDATION")
+    parser.add_argument("--dedupe", action="store_true", help="схлопнуть побайтовые повторы (model,prompt,answer,label)")
     args = parser.parse_args()
 
     rows = load(args.rows)
     if not rows:
         print("нет пригодных строк", file=sys.stderr)
         return 2
+
+    if args.dedupe:
+        seen: set[tuple] = set()
+        unique: list[dict] = []
+        for row in rows:
+            key = (row.get("model"), row.get("prompt"), row.get("answer"), row["label"])
+            if key in seen:
+                continue
+            seen.add(key)
+            unique.append(row)
+        rows = unique
+
+    unique_rows = len({(row.get("model"), row.get("prompt"), row.get("answer"), row["label"]) for row in rows})
+    print(f"== {args.rows}: строк {len(rows)}, уникальных {unique_rows} (групповая CV по model+prompt)", file=sys.stderr)
 
     if args.variants:
         names = list(variants(rows[0]))
@@ -156,7 +176,7 @@ def main() -> int:
         sub = [row for row in rows if (row.get("model") or "?") == model]
         pos = sum(1 for row in sub if row["label"])
         neg = len(sub) - pos
-        if pos < 10 or neg < 5:
+        if pos < 10 or neg < 30:
             per_model.append({"model": model, "rows": len(sub), "positives": pos, "negatives": neg, "auroc": None})
             continue
         sub_pairs, _ = out_of_fold(sub)

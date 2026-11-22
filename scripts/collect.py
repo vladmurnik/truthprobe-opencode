@@ -85,7 +85,8 @@ def phi(token: dict, top_k: int = 20) -> float:
     ]
     if len(top) < 2:
         return clamp01(1 - math.exp(float(token["logprob"])))
-    probs = [math.exp(float(item["logprob"])) for item in top]
+    k = max(2, min(top_k, len(top)))
+    probs = [math.exp(float(item["logprob"])) for item in top[:k]]
     total = sum(probs)
     if not total > 0:
         return 1.0
@@ -94,8 +95,10 @@ def phi(token: dict, top_k: int = 20) -> float:
         q = p / total
         if q > 0:
             h -= q * math.log(q)
-    k = max(2, min(top_k, len(top)))
-    return clamp01(h / math.log(k) if k > 1 else 0.0)
+    # φ — уверенность, как в рантайме (`packages/core/src/truthprobe/score.ts`): 1 − H/ln K.
+    # Энтропия здесь давала бы обратный знак относительно живого скорера, и обученный
+    # вес `meanPhi` работал бы против ответа.
+    return clamp01(1.0 - h / math.log(k) if k > 1 else 1.0)
 
 
 def answer_tokens(tokens: list[dict], answer: str) -> list[dict]:
@@ -134,9 +137,12 @@ def features(tokens: list[dict], answer: str = "", top_k: int = 20) -> dict | No
         "minLp": round(min(lps), 6),
         "phi": round(phi(scored[0], top_k), 6),
         "fracLow": round(sum(1 for lp in lps if lp < FRAC_LOW_CUTOFF) / len(lps), 6),
-        # Тот же признак, что считает рантайм (`digitDensity` в score.ts): доля цифр
-        # среди символов видимого ответа. Считается по `answer`, а не по токенам.
-        "digitDensity": round(sum(1 for ch in answer if ch.isdigit()) / len(answer), 6) if answer else 0.0,
+        # Тот же признак, что считает рантайм (`digitDensity` в score.ts): только ASCII-цифры
+        # и длина в UTF-16 code units (как `String.prototype.length`), иначе train и serve
+        # расходятся на арабских цифрах и эмодзи.
+        "digitDensity": round(
+            sum(1 for ch in answer if "0" <= ch <= "9") / (len(answer.encode("utf-16-le")) // 2), 6
+        ) if answer else 0.0,
         "tokens": len(lps),
     }
 

@@ -89,6 +89,9 @@ jobs:
           bun run --cwd packages/ai typecheck
           bun run --cwd packages/core typecheck
           bun run --cwd packages/client typecheck
+          bun run --cwd packages/session-ui typecheck
+          bun run --cwd packages/tui typecheck
+          bun run --cwd packages/desktop typecheck
 
       - name: truthprobe tests
         shell: bash
@@ -96,6 +99,17 @@ jobs:
           cd upstream/packages/core
           bun test test/truthprobe.test.ts
           bun test test/truthprobe-levels.test.ts test/truthprobe-scorer.test.ts
+
+      # Эти тесты раньше молча уходили в describe.skip: файл лежал в репозитории,
+      # где ../src не существует. Копируем его в дерево и требуем запуск.
+      - name: truthprobe protocol tests (ai layer)
+        shell: bash
+        env:
+          TRUTHPROBE_REQUIRE_PROTOCOL_TESTS: "1"
+        run: |
+          cp test/opencode-tree/protocol.test.ts upstream/packages/ai/test/truthprobe-protocol.test.ts
+          cd upstream/packages/ai
+          bun test test/truthprobe-protocol.test.ts
 
   # 4. End-to-end on Linux: mock provider that emits logprobs → CLI → SQLite part
   #    must contain truthprobe with status ok and a numeric score.

@@ -1,9 +1,21 @@
 import { afterEach, describe, expect, test } from "bun:test"
 
-// Этот файл рассчитан на запуск внутри дерева opencode, куда он копируется
-// вместе с патчем: там исходники лежат в `../src/protocols`. В самом репозитории
-// их нет, поэтому честнее пропустить набор, чем падать с «module not found».
-const protocol = await import("../src/protocols/openai-chat.js").catch(() => undefined)
+// Файл живёт и в репозитории (`test/opencode-tree/`), и в дереве opencode
+// (`packages/ai/test/`), поэтому путь к исходникам пробуем по очереди.
+// Молчаливый `describe.skip` скрывал эти тесты от CI, поэтому при
+// TRUTHPROBE_REQUIRE_PROTOCOL_TESTS=1 отсутствие исходников — ошибка.
+const candidates = [
+  "../src/protocols/openai-chat.js",
+  "../../src/protocols/openai-chat.js",
+  "../../packages/ai/src/protocols/openai-chat.js",
+]
+let protocol: Record<string, unknown> | undefined
+for (const candidate of candidates) {
+  protocol = await import(candidate).catch(() => undefined)
+  if (protocol) break
+}
+if (!protocol && process.env.TRUTHPROBE_REQUIRE_PROTOCOL_TESTS === "1")
+  throw new Error("protocol sources not found; run inside the opencode tree or unset TRUTHPROBE_REQUIRE_PROTOCOL_TESTS")
 const TRUTHPROBE_TOP_K = protocol?.TRUTHPROBE_TOP_K as number
 const truthprobeBody = protocol?.truthprobeBody as (...args: any[]) => Record<string, unknown>
 const truthprobeEnabled = protocol?.truthprobeEnabled as (...args: any[]) => boolean
