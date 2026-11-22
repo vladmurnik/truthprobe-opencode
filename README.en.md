@@ -125,6 +125,15 @@ tokens below 0.5 probability), `digitDensity` (share of digits in the text).
 A scorer in another language is either `scripts/calibrate.py --fit` for the weights, or your own
 implementation of the `Scorer` interface in `packages/core/src/truthprobe/scorer.ts`.
 
+### Weights that were fitted against fabrications
+
+`data/weights-detector.json` is a linear model over the same five features, fitted to tell a fabricated
+answer from a correct one on 265 labelled answers (102 false, 4 models). Out-of-fold AUROC **0.881**;
+at a risk threshold of 0.55 it catches 75.5% of the fabrications and flags 12.9% of the correct
+answers, at 0.35 — 95.1% and 33.7%. It is a hint about what to re-read, not a verdict: an unfamiliar
+model may behave differently (on one of the four models the fitted weights collapse to chance). How to
+turn it on, what is inside and what it does not prove — [`docs/LEARNED-WEIGHTS.md`](docs/LEARNED-WEIGHTS.md).
+
 ### Manual patch
 
 ```bash

@@ -1,0 +1,23 @@
+{
+ "version": 2,
+ "note": "P(answer is correct). Fitted on 265 rows (102 lies) of the hallucination set; features are the five the scorer already computes; no length features.",
+ "auroc_risk": 0.8809,
+ "rows": 265,
+ "positives": 102,
+ "features": [
+  "meanLp",
+  "minLp",
+  "meanPhi",
+  "fracLow",
+  "digitDensity"
+ ],
+ "global": {
+  "bias": -8.735417,
+  "meanLp": 7.379935,
+  "minLp": 1.698286,
+  "meanPhi": 12.870772,
+  "fracLow": -2.500423,
+  "digitDensity": 4.800224
+ },
+ "models": {}
+}
