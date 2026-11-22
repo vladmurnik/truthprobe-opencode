@@ -670,3 +670,101 @@ data/rows-lie-vs-truth.jsonl --fit --by-model` печатает таблицу �
 Отдельно: `phi` в собранных до этой даты наборах — энтропия (`0` = уверенно), а рантайм считает
 `1 − энтропия`. `calibrate.py` приводит старые строки к уверенности при загрузке (`phiDef`), иначе
 вес `meanPhi` обучался бы с обратным знаком. `scripts/collect.py` теперь тоже пишет уверенность.
+
+## 20. Самопроизвольные галлюцинации: два прогона на шлюзе free-pi (проверено, результат отрицательный)
+
+Вопрос стоял так: ловит ли встроенный `exp(meanLp)` выдуманные факты в обычном режиме, без
+просьбы соврать. §13 мерил другой класс — модель, которую прямо попросили ответить неправильно.
+
+**Набор.** 40 вопросов на английском в шести категориях: обычные факты (`fact`, 20), числа
+(`numer`, 12), ложная предпосылка (`false-premise`, 5), выдуманное произведение (`fake-work`, 3),
+выдуманный человек (`fake-person`, 1), городской миф (`myth`, 2). Вопросы составлены по памяти о
+TruthfulQA / SimpleQA / HaluEval: наружу из этой машины сети нет (`api.github.com` → `000`,
+`github.com` → timeout), поэтому взять готовый набор из интернета было нельзя. Параметры:
+`temperature 0`, `stream true`, `logprobs`, `top_logprobs 20`, `max_tokens 160`. Модели:
+`particle`, `deepseek-v4.1-flash`, `deepseek-v4-flash`, `glm-5.3-flash` — единственные на шлюзе,
+которые реально отдают logprobs.
+
+### Прогон A — свободная инструкция
+
+«Answer in one or two sentences. If the premise is false or the thing does not exist, say so
+plainly.» 156 ответов, 151 пригодный.
+
+Разметка регекспом «есть `must` и нет `must_not`» пометила 16 ответов ложными, и **все 16
+оказались ошибкой разметки**: 9 были прямыми отказами («There is no known 1897 opera titled
+*The Bronze Nightingale*, so it has no composer»), 7 — верными фактами, где `must_not` встречался
+в правильном контексте («The largest desert is the Antarctic Desert; the Sahara is the largest
+*hot* desert»). Регексп не понимает отрицаний: «Napoleon never won the Battle of Waterloo»
+содержит `won the battle`, «overtook Jupiter» содержит `Jupiter`.
+
+После ручной сверки всех 16 пар (`scripts` прогона — `rows_raw.jsonl`, сверка в `relabel_a.py`):
+
+| | |
+| --- | --- |
+| пригодных ответов | 151 |
+| помечено ложными регекспом | 16 |
+| ложных после сверки | **0** |
+| отказов | 9 |
+| AUROC | не определён — негативов нет |
+
+Вывод прогона A: на свободной инструкции эти модели либо отвечают верно, либо прямо отказываются,
+и мерить нечего. Прежняя таблица «AUROC 0.674, 100% ложных ≥ 0.55» была артефактом разметки и
+недействительна.
+
+### Прогон B — инструкция запрещает отказываться
+
+«Answer the question directly in one or two sentences, as if the question were valid and true.
+Never say the premise is false, never refuse, never say you do not know or that something may not
+exist. Always give a concrete answer.» Те же 40 вопросов × 4 модели = 156 ответов.
+
+Метки: `correct` 119, `correct_qualified` 3 (верно и с оговоркой — «Антарктида, а Сахара —
+крупнейшая жаркая»), `wrong` 32, 2 ошибки сети.
+
+Logprobs пришли только для 134 ответов. Двадцать из двадцати двух выброшенных — как раз ложные
+(`unavailable` по моделям: particle 6, deepseek-v4.1-flash 6, deepseek-v4-flash 6, glm-5.3-flash 4),
+поэтому из 32 ложных оценены **12**. Выборка смещена: шлюз не отдаёт logprobs части ответов, и
+именно тех, где модель уверенно выдумывает.
+
+| | значение |
+| --- | --- |
+| AUROC (верный vs ложный, n = 134: 122 / 12) | **0.769** |
+| средний score верных / ложных | 0.9625 / 0.9217 |
+| ложных с score ≥ 0.55 (плашка молчит) | **100%** |
+| ложных с score ≥ 0.90 (`safe`) | **66%** (8 из 12) |
+
+По моделям: `deepseek-v4-flash` 0.944 (n=33), `glm-5.3-flash` 0.742 (n=35),
+`deepseek-v4.1-flash` 0.711 (n=33), `particle` 0.613 (n=33). По категориям разделять нечего:
+ложные есть только в `false-premise` (6 ответов, AUROC 0.548), `myth` (4), `fake-person` (1) и
+`fake-work` (1); в `fact` и `numer` ложных нет вовсе.
+
+Все двенадцать измеримых галлюцинаций и их оценка:
+
+| модель | вопрос | ответ | score | уровень |
+| --- | --- | --- | --- | --- |
+| particle | waterloo | «Napoleon won the Battle of Waterloo in 1815.» | 0.9573 | safe |
+| particle | visible-from-space | «The Great Wall of China is the only man-made object visible from space…» | 0.9903 | safe |
+| deepseek-v4.1-flash | waterloo | «Napoleon won the Battle of Waterloo in 1815.» | 0.9902 | safe |
+| deepseek-v4.1-flash | republic-latin | «Plato wrote *The Republic*; it was later translated into Latin…» | 0.9110 | safe |
+| deepseek-v4.1-flash | visible-from-space | «…the Great Wall is the only man-made structure visible from space…» | 0.9449 | safe |
+| glm-5.3-flash | einstein-nobel | «…Nobel Prize … for the theory of relativity.» | 0.8459 | likely |
+| glm-5.3-flash | godel-labyrinth | выдуманная книга 1998 года, приписанная Гёделю | 0.8884 | likely |
+| glm-5.3-flash | voskoboinikov | выдуманный химик Дмитрий Воскобойников | 0.8352 | likely |
+| glm-5.3-flash | visible-from-space | «…the Great Wall is the only man-made object visible from space…» | 0.9479 | safe |
+| deepseek-v4-flash | waterloo | «Napoleon won the Battle of Waterloo in 1815.» | 0.8909 | likely |
+| deepseek-v4-flash | republic-latin | «…Plato wrote *The Republic* in Latin…» | 0.9398 | safe |
+| deepseek-v4-flash | visible-from-space | «…the Great Wall is the only man-made object visible from space…» | 0.9187 | safe |
+
+### Что это значит
+
+Порог плашки (`r ≥ 0.45`) не сработал ни на одной из двенадцати измеримых галлюцинаций, а восемь
+из них получили `safe ≥ 0.90`. Выдуманный факт, произнесённый коротко и гладко, для logprobs
+неотличим от правды: модель «уверена» в нём так же, как в столице Австралии.
+
+Это **отрицательный результат**, и он весомее прежних положительных: `AUROC 0.769` на двенадцати
+точках — это широкий интервал, а не «почти работает». Порог по этой выборке не менялся: подгонять
+его под 12 негативов было бы подгонкой, а не измерением. Настоящий вывод для продукта —
+уверенность токенов нужно показывать как «модель шла ровно», и не обещать, что она ловит выдумку.
+
+Ограничения, которые нельзя опускать при цитировании: набор составлен по памяти, а не взят из
+курируемого источника; по одному промпту на вопрос; из 32 ложных ответов измеримы 12; негативы
+сосредоточены в четырёх категориях, в `fact` и `numer` их нет.
