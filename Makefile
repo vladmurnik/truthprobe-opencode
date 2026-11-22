@@ -16,17 +16,18 @@
 #
 # Переменные:
 #   TP_DIR   куда клонировать opencode (по умолчанию .worktree/opencode)
-#   BASE     коммит sst/opencode, на который нарезан патч
+#   BASE     коммит sst/opencode, на который нарезан патч (= TRUTHPROBE_BASE)
 #   WEIGHTS  JSON с весами для linear-скорера (make eval WEIGHTS=weights.json)
 
 SHELL := bash
-BASE := 007afb1b0c8a36dff93d7945909d4e976545ba95
+BASE ?= $(or $(TRUTHPROBE_BASE),007afb1b0c8a36dff93d7945909d4e976545ba95)
+export TRUTHPROBE_BASE := $(BASE)
 TP_DIR ?= .worktree/opencode
 
 .PHONY: help setup test verify patch preview desktop clean eval weights data
 
 help:
-	@sed -n '2,18p' Makefile
+	@sed -n '2,20p' Makefile
 
 setup:
 	bash scripts/dev-setup.sh --dir "$(TP_DIR)"

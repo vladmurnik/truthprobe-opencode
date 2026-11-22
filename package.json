@@ -1,6 +1,6 @@
 {
   "name": "opencode-truthprobe",
-  "version": "0.3.2",
+  "version": "0.13.7",
   "private": true,
   "description": "Token-logprob confidence for opencode: a first-token confidence badge, an answer confidence line with a level and a meter, and doubtful-sentence highlighting",
   "keywords": [

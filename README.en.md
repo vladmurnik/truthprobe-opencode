@@ -1,6 +1,6 @@
 # TruthProbe for opencode
 
-[![unit tests](https://img.shields.io/badge/unit%20tests-127%20pass-brightgreen)](docs/VALIDATION.md)
+[![unit tests](https://img.shields.io/badge/unit%20tests-92%20pass-brightgreen)](docs/VALIDATION.md)
 [![CI](https://github.com/vladmurnik/truthprobe-opencode/actions/workflows/verify.yml/badge.svg)](https://github.com/vladmurnik/truthprobe-opencode/actions/workflows/verify.yml)
 [![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![opencode base](https://img.shields.io/badge/opencode-007afb1-informational)](patches/truthprobe-0001.patch)
@@ -65,8 +65,9 @@ The number next to the answer carries a level, not just a percentage:
 | `unreliable` | < 35% | the model was mostly guessing |
 
 `risky` and `unreliable` get a tinted card: amber left border and background for `risky`, red for
-`unreliable`. A sentence counts as doubtful at 45% risk by default; move the thresholds with
-`TRUTHPROBE_RISKY_THRESHOLD` and `TRUTHPROBE_SHAKY_THRESHOLD` (0..1, invalid values are ignored).
+`unreliable`. A sentence counts as doubtful at 45% risk by default; move that threshold with
+`TRUTHPROBE_RISKY_THRESHOLD` (0..1, invalid values are ignored). `TRUTHPROBE_SHAKY_THRESHOLD` is
+parsed into the options but has no effect: the spare "shaky" threshold is not used by the scorer.
 
 **Important:** these percentages are the model's confidence in its own tokens, not the probability
 that the answer is true. A deterministic gateway (logprob ≈ −0.001) yields `safe` on any text,
@@ -125,14 +126,17 @@ tokens below 0.5 probability), `digitDensity` (share of digits in the text).
 A scorer in another language is either `scripts/calibrate.py --fit` for the weights, or your own
 implementation of the `Scorer` interface in `packages/core/src/truthprobe/scorer.ts`.
 
-### Weights that were fitted against fabrications
+### The fitted detector: a negative result
 
-`data/weights-detector.json` is a linear model over the same five features, fitted to tell a fabricated
-answer from a correct one on 265 labelled answers (102 false, 4 models). Out-of-fold AUROC **0.881**;
-at a risk threshold of 0.55 it catches 75.5% of the fabrications and flags 12.9% of the correct
-answers, at 0.35 — 95.1% and 33.7%. It is a hint about what to re-read, not a verdict: an unfamiliar
-model may behave differently (on one of the four models the fitted weights collapse to chance). How to
-turn it on, what is inside and what it does not prove — [`docs/LEARNED-WEIGHTS.md`](docs/LEARNED-WEIGHTS.md).
+We collected 265 labelled answers (76 fabrications, 189 correct, 4 models, 68 questions) and tried to
+fit a detector on the features the scorer already computes. The result is negative: out-of-fold AUROC
+of the fitted logistic model is **0.783** (the five product features) and **0.815** (26 features
+without length) against **0.799** for the built-in `1 − exp(meanLp)`; the confidence intervals on the
+difference cover zero (`−0.057…+0.020` and `−0.036…+0.069`). Removing the linear contribution of
+answer length drops it to chance — **0.541**. Within individual question categories AUROC is 0.33–0.47,
+i.e. at or below chance. The previously published `data/weights-detector.json` is withdrawn: its 0.881
+was measured on a corrupted set. All numbers and the post-mortem —
+[`docs/LEARNED-WEIGHTS.md`](docs/LEARNED-WEIGHTS.md).
 
 ### Manual patch
 
@@ -146,12 +150,14 @@ bun run --cwd packages/cli src/index.ts
 
 Keys and providers are checked automatically: on the first chat-completions request the core sends a
 single one-token probe with the text `ping`, and if the provider returns `logprobs` it turns them on
-for that provider. No environment variables are needed.
+for that `provider/model` pair. No environment variables are needed.
 
 ### Prebuilt binaries
 
-There are **no published builds**: no binary is hosted and no checksum is published. Build from the
-tree that `install.sh` produced:
+There are **no published builds**: no binary is hosted, so there is nothing to download. A checksum
+exists only for the build the numbers in this repository were taken on: the full `sha256`
+`396be271b40c96da602d208df35d27ec947b4716aa4b29de7a5afc9a15b1eb8d` is recorded in
+[`docs/BUILD.md`](docs/BUILD.md). Build from the tree that `install.sh` produced:
 
 ```bash
 cd opencode-truthprobe
@@ -184,7 +190,8 @@ bun x electron-builder --win --x64 --publish never --dir --config electron-build
 ```
 
 `--config` is required: without it electron-builder falls back to its defaults and names the executable
-after the npm package. The result is `dist/win-unpacked` (a portable folder, ~830 MB) that can live
+after the npm package. The result is `dist/win-unpacked` (a portable folder, ≈877 MB: 246 MB app,
+279 MB bundled CLI and the rest) that can live
 anywhere and run `TruthProbe.exe`. The window title, the AppUserModelID, the
 `%APPDATA%\ai.truthprobe.desktop` directory and the installer name all come from those two variables;
 unset, the build stays plain opencode.
@@ -210,8 +217,10 @@ network failures and 5xx are not cached at all.
 | `auth` | 401/403 | stays off, re-checked in an hour |
 | `unsupported` | 404/405/501 or another 400 | stays off, retried in 7 days |
 
-Support is a provider property, not a model property: a fresh `ok` for any model of a provider turns
-the badge on for that provider, so aliases and variants do not switch it off.
+Support is checked per `provider/model`, not per provider: a fresh `ok` for one model does not turn
+the badge on for its siblings, so a gateway where some models reject the field cannot 400 the whole
+request, and confirming `particle` does not switch logprobs on for `deepseek-*`. The cost is one probe
+per new model, cached after the first answer.
 
 Manual switches remain and take precedence over the automation:
 
@@ -281,15 +290,16 @@ drifted; `unavailable` — no tokens.
 
 | What | How | Result |
 | --- | --- | --- |
-| Scoring and segmentation | `bun test test/score.test.ts` | **45 pass / 0 fail**, 104 expect |
-| Probe logic (TTL, response classification, cache) | `bun test test/capability.test.ts` | **32 pass / 0 fail**, 70 expect |
+| Scoring and segmentation | `bun test test/score.test.ts` | **44 pass / 0 fail**, 99 expect |
+| Probe logic (TTL, response classification, cache) | `bun test test/capability.test.ts` | **35 pass / 0 fail**, 73 expect |
 | Doubtful sentences in desktop | `bun test src/message/doubtful.test.ts` from `packages/session-ui` | **9 pass / 0 fail**, 23 expect |
-| OpenAI protocol (gate, request body, `choices[i].logprobs` parsing) | `packages/ai/test/truthprobe.test.ts` | **8 pass / 0 fail**, 26 expect |
+| OpenAI protocol (gate, request body, `choices[i].logprobs` parsing) | `test/opencode-tree/protocol.test.ts`: in this repository **8 skip** — the file only really runs inside a patched opencode tree (`packages/ai/test/`, CI sets `TRUTHPROBE_REQUIRE_PROTOCOL_TESTS=1`) | **8 pass / 0 fail** in the tree; all 8 skipped here |
 | Auto-enable without environment variables | mock + two consecutive runs | RUN1: probe → `{"status":"ok"}`; RUN2: **2 of 2** requests with `logprobs: true, top_logprobs: 20` |
 | Regression around text events | `test/session*.test.ts test/projector*.test.ts test/message*.test.ts` | **811 pass / 0 fail** |
 | Full core run | `bun test` in `packages/core` (7 713 tests, 331 files) | 7 300 pass / 351 skip / 62 fail — none in truthprobe: `tool-search` downloads ripgrep from github.com, `provider-gitlab-oauth` calls gitlab.com, `cross-spawn`/MCP depend on spawn; the harness blocks outbound network |
-| TruthProbe tests, current build | `bun test` of the six truthprobe files | **127 pass / 0 fail** |
-| Patch on a clean tree | `git am` in a `007afb1` worktree | applies without conflicts, tests 45 + 8 green |
+| TruthProbe tests, this repository | `bun test test` | **92 pass / 8 skip / 0 fail**, 210 expect, 5 files, 100 tests |
+| TruthProbe tests, patched tree | `bun test truthprobe` in `packages/core/test` | **127 pass / 0 fail**, 6 files |
+| Patch on a clean tree | `git am` in a `007afb1` worktree | applies without conflicts, all truthprobe tests green |
 | Typecheck | schema / ai / core / client / tui | green (132 / 357+322 / 2 030 / 181 / 1 942 files) |
 | Typecheck of the UI packages | session-ui / app / desktop | green (382 / 2 445 / 3 569 files, desktop 2 projects) |
 | End-to-end run | mock provider with real `logprobs` | `logprobs: true, top_logprobs: 20` in the request, `truthprobe` in the database |
@@ -299,6 +309,10 @@ drifted; `unavailable` — no tokens.
 | Windows binary | `.exe` against the mock | `status: "ok", score: 0.417, first: 0.708, flagged: 1` |
 
 Reproduce without keys:
+
+The block below runs **inside the patched opencode tree** (`.worktree/opencode` after `make setup`, or
+the tree `install.sh` produced), not in this repository: there is no `packages/` here, so
+`bun run --cwd packages/cli` from the repo root finds no package.
 
 ```bash
 python3 scripts/mock-openai-logprobs.py 8899 &
@@ -325,7 +339,7 @@ reproduction — [`docs/SMOKE-E2E.md`](docs/SMOKE-E2E.md).
 | `collect.py` against a live gateway | 2 prompts, `freepi/particle` | rows with `meanLp -0.063 / -0.125`, `minLp -0.409 / -0.945`, `fracLow 0.00 / 0.06` — features computed by the same formula as in the runtime |
 | `collect.py` at scale | 24 models × 24 questions = 576 requests on `127.0.0.1:8790` | **120 rows with features** on 7 models (4 models answered 24/24), 108 `HTTP 403 premium credits`, 348 without logprobs, **0 negatives** — every answer was correct, so calibration needs weaker models |
 | Question-bank audit | `python3 scripts/audit-bank.py data/qa-hard-bank.jsonl data/rows-hard.jsonl` | found **4** items where the reference answer, not the model, was wrong; after cleaning the set — `AUROC n/a (one class)`, 739 correct / **0 wrong** |
-| Negative harvesting | 47 hard questions × 4 models × 4 samples at `T=0.8` and `T=1.0`, then three more banks (34 questions, classic LLM failures, list counting) | 1504 + 688 rows; **0** genuine negatives — the models either answer correctly or stay silent |
+| Negative harvesting | 47 hard questions × 4 models × 4 samples at `T=0.8` and `T=1.0`, then three more banks (34 questions, classic LLM failures, list counting) | 1504 rows (47 × 4 × 4 × 2 temperatures) + 688 rows from the three extra banks; **0** genuine negatives — the models either answer correctly or stay silent |
 | Instructed lies: can the scorer see them | `scripts/measure-lies.py` on 626 rows (544 truthful / 82 lies) | previous formula gave AUROC **0.388** (worse than chance), ECE 0.368; fitted weights give 0.800 out-of-fold (grouped CV) |
 | Built-in formula rewritten | same 626 rows + 739 correct rows as a control | `exp(meanLp)` instead of `0.4·geo + 0.3·worst + 0.3·φ`: AUROC **0.388 → 0.597**, ECE **0.368 → 0.098**, and on correct answers ECE **0.493 → 0.160** |
 
@@ -380,8 +394,8 @@ across upgrades": 6 places that will need rebasing, 15–30 minutes per upstream
 ```
 src/truthprobe/           reference math (types, segmentation, scoring) and the probe logic
 src/opencode-tree/        reference copies of the files that live in the opencode tree
-test/score.test.ts        45 tests without network and without dependencies
-test/capability.test.ts   32 tests for statuses, TTL and the probe cache
+test/score.test.ts        44 tests without network and without dependencies
+test/capability.test.ts   35 tests for statuses, TTL and the probe cache
 test/opencode-tree/       tests that live in the opencode tree
 patches/                  the ready-to-apply git-am patch and python patchers for spot edits
 scripts/                  mock provider, probe, TUI pty probe, screen emulator, builds
@@ -397,8 +411,9 @@ docs/                     prior art, built-in model plan, validation, build
 - The real `opencode.ai/inference` gateway has not been verified: no key. The probe handles it on its
   own — `scripts/probe-logprobs.py` is only there to look at the verdict by hand.
 - The `0.90 / 0.75 / 0.55 / 0.35` level bounds were chosen by common sense, not from labelled data;
-  they need re-checking on real long answers. Override with `TRUTHPROBE_RISKY_THRESHOLD` and
-  `TRUTHPROBE_SHAKY_THRESHOLD`.
+  they need re-checking on real long answers. Override with `TRUTHPROBE_RISKY_THRESHOLD`;
+  `TRUTHPROBE_SHAKY_THRESHOLD` is parsed into the options but has no effect — the spare "shaky"
+  threshold is not used by the scorer.
 - A known weakness of the approach: confident lies. It is cured not by a threshold but by a second
   independent signal.
 
@@ -413,8 +428,9 @@ These review points are **not** fixed, and the docs do not pretend otherwise:
 
 - **Calibration on spontaneous hallucinations.** AUROC and ECE are measured, but on a set of
   *commissioned* lies: 626 rows, 82 of them negatives obtained by asking the model to lie. There are no
-  spontaneous model errors in it — 1440 requests across four gateway models produced zero negatives.
-  There is no second independent set either, so no AUROC gate can go into CI until there is one. The
+  spontaneous model errors in it — 1504 requests across four gateway models (47 questions × 4 models ×
+  4 samples × 2 temperatures) produced zero negatives. There is no second independent set either, so no
+  AUROC gate can go into CI until there is one. The
   protocol and the script live in [`docs/CALIBRATION.md`](docs/CALIBRATION.md) and `scripts/calibrate.py`.
 - **Fixed 22.11.2026. Logprobs support is checked per model, not per provider.** The capability cache
   is keyed by `provider/model`: confirming `particle` no longer turns logprobs on for `deepseek-*`, and
@@ -422,6 +438,7 @@ These review points are **not** fixed, and the docs do not pretend otherwise:
   probe per new model, cached after the first answer.
 - **`temperature > 0`.** `top_logprobs` at non-zero temperature is a smoothed distribution, not the
   model's confidence. We neither block nor mark it `partial`.
-- **`top_logprobs` is not configurable.** `TRUTHPROBE_TOP_K = 20` is a constant.
+- **`top_logprobs` is not configurable.** `PROBE_TOP_K = 20` in `plugin-truthprobe.ts` is a constant;
+  the same size in the scorer is `DEFAULT_SCORE_OPTIONS.topK`.
 - **Two TTL implementations.** `core/src/truthprobe/capability.ts` and
   `ai/src/protocols/truthprobe-capability.ts` duplicate freshness logic without a drift test.

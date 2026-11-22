@@ -27,7 +27,9 @@ OPENCODE_REPO=~/src/opencode bash scripts/build-windows.sh
 # → dist/opencode-truthprobe-windows-x64.exe
 ```
 
-Проверено: **233 MB** (`sha256 396be271…`), `opencode.exe --version` → `v0.0.0-feat-truthprobe-…`,
+Проверено: **233 MB**, `sha256 396be271b40c96da602d208df35d27ec947b4716aa4b29de7a5afc9a15b1eb8d`
+(полная сумма той сборки, на которой сняты числа; сам бинарь не публикуется),
+`opencode.exe --version` → `v0.0.0-feat-truthprobe-…`,
 ответ на мок-провайдере с `status: "ok", score: 0.417, first.score: 0.708, flagged: 1`.
 
 ### Если собираешь Windows-бинарь из Linux/WSL

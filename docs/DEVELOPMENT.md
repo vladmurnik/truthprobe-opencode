@@ -104,7 +104,8 @@ TRUTHPROBE_SCORER=linear:data/weights.json bun run --cwd .worktree/opencode/pack
   `levelOfSentence(item)`, `doubtfulSentences(probe)`, `percentOf`.
 - `packages/tui/src/routes/session/message-parts.tsx` — тот же вердикт в TUI.
 
-Проверка типизации пакета: `bun check --no-script -b` в корне пакета.
+Проверка типизации пакета — из корня дерева opencode: `bun run --cwd packages/session-ui typecheck`
+(тот же вызов, что в CI; для TUI — `bun run --cwd packages/tui typecheck`).
 
 ### Prompt / промпты сбора
 Файл промптов: txt (по строке) или JSONL `{"prompt": "...", "label": 0/1}`. Пары
@@ -129,8 +130,7 @@ TRUTHPROBE_SCORER=linear:data/weights.json bun run --cwd .worktree/opencode/pack
 ```bash
 make verify                        # тесты репо + патч на чистой базе
 cd .worktree/opencode
-bun test test/truthprobe           # юнит-тесты патча (127 на сейчас)
-bash scripts/../truthprobe 2>/dev/null
+bun test truthprobe                # юнит-тесты патча (127 на сейчас)
 ```
 (реальный прогон — `make preview`; вердикт смотрите в `scripts/inspect-db.py` или
 `make preview` выведет сам.)

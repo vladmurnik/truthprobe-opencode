@@ -21,7 +21,7 @@ cat ~/.local/share/opencode/truthprobe/capabilities.json
 
 Первый прогон на чистом кэше: сам запрос идёт без `logprobs`, параллельно уходит проверочная
 посылка `{"model":"mock-1","messages":[{"role":"user","content":"ping"}],"max_tokens":1,
-"logprobs":true,"top_logprobs":3,"stream":false}`, и вердикт `ok` ложится в кэш. Со второго
+"logprobs":true,"top_logprobs":20,"stream":false}`, и вердикт `ok` ложится в кэш. Со второго
 прогона все запросы к этому провайдеру идут уже с `logprobs: true, top_logprobs: 20` —
 измерено: 2 из 2 streaming-запросов, 0 новых проб.
 
@@ -69,7 +69,7 @@ python3 scripts/tui-probe.py          # поднимает TUI в pty, печа�
 python3 scripts/screen-dump.py /tmp/tui-probe.log
 ```
 
-Результат (см. `docs/VALIDATION.md`, §4.1):
+Результат (см. `docs/VALIDATION.md`, §6 «Живой рендер TUI (pty)»):
 
 ```
    first-token confidence 71%
