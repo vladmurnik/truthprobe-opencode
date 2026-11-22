@@ -1,11 +1,15 @@
 #!/usr/bin/env python3
 """Собирает один датасет из прогонов B и C: признаки из logprobs и текста ответа.
 
-Вход:  rows_raw2.jsonl + rows_scored2.jsonl, rows_raw3.jsonl + rows_scored3.jsonl
+Вход:  rows_raw2f.jsonl + rows_scored2.jsonl, rows_raw3f.jsonl + rows_scored3.jsonl
 Выход: dataset.jsonl  — одна строка на ответ, поле `y` = 1 для ложного.
 
-Строки без logprobs выбрасываются: без токенов признаков нет. Это надо помнить —
-в прогоне B так выпало 20 из 32 ложных ответов, выборка смещена.
+Читаются уже восстановленные прогоны (`*f.jsonl`): `repair.py` возвращает текст ответов,
+который коллектор потерял, и переразмечает их. Запускать по порядку:
+`repair.py` → `score_all.ts` → `dataset.py` → `eval.py`.
+
+Строки без токенов выбрасываются: без logprobs признаков нет. В прогоне B таких нет (0),
+в C — шесть (`error` от провайдера). Отказы модели выбрасываются отдельно: это другое поведение.
 """
 from __future__ import annotations
 
@@ -16,7 +20,7 @@ import pathlib
 import re
 
 HERE = pathlib.Path(os.environ.get("HALLUC_DIR") or pathlib.Path(__file__).resolve().parent)
-OUT = HERE / "dataset.jsonl"
+OUT = pathlib.Path(os.environ.get("DATASET_OUT") or HERE / "dataset.jsonl")
 HEDGES = re.compile(r"\b(probably|perhaps|likely|may|might|usually|generally|i think|it seems|appears)\b", re.I)
 NEGATIONS = re.compile(r"\b(no|not|never|none|cannot|can't|doesn't|does not|isn't|wasn't|won't|without)\b", re.I)
 
@@ -125,8 +129,13 @@ def feats(answer: str, tokens: list[dict], scored: dict | None) -> dict | None:
 
 
 def main() -> None:
-    pairs = [(HERE / "rows_raw2.jsonl", HERE / "rows_scored2.jsonl", "B"),
-             (HERE / "rows_raw3.jsonl", HERE / "rows_scored3.jsonl", "C")]
+    def pick(key: str, default: str) -> pathlib.Path:
+        # относительный путь из окружения считается от HALLUC_DIR, иначе он уедет в текущий каталог
+        value = pathlib.Path(os.environ.get(key) or default)
+        return value if value.is_absolute() else HERE / value
+
+    pairs = [(pick("RAW2", "rows_raw2f.jsonl"), pick("SCORED2", "rows_scored2.jsonl"), "B"),
+             (pick("RAW3", "rows_raw3f.jsonl"), pick("SCORED3", "rows_scored3.jsonl"), "C")]
     out = []
     for raw_path, scored_path, run in pairs:
         raw = load_jsonl(raw_path)

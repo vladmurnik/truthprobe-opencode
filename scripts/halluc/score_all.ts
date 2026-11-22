@@ -1,9 +1,18 @@
 import { appendFileSync, readFileSync, writeFileSync } from "node:fs"
-import { scoreAnswer } from "/home/adik/src/opencode/packages/core/src/truthprobe/score.ts"
+import path from "node:path"
+
+// Пути задаются окружением, чтобы прогон на исправленных файлах ничего не перезаписывал.
+// По умолчанию читаются восстановленные прогоны (`*f.jsonl`, см. repair.py): в исходных
+// у части строк пустой `answer` при живых токенах — текст терялся при сохранении.
+const HALLUC = process.env.HALLUC_DIR ?? path.dirname(new URL(import.meta.url).pathname)
+const OPENCODE = process.env.OPENCODE_DIR ?? "/home/adik/src/opencode"
+const scorerModule = process.env.SCORE_MODULE ?? path.join(OPENCODE, "packages/core/src/truthprobe/score.ts")
+
+const { scoreAnswer } = await import(scorerModule)
 
 const runs: Array<[string, string]> = [
-  ["/home/adik/halluc/rows_raw2.jsonl", "/home/adik/halluc/rows_scored2.jsonl"],
-  ["/home/adik/halluc/rows_raw3.jsonl", "/home/adik/halluc/rows_scored3.jsonl"],
+  [path.join(HALLUC, process.env.RAW2 ?? "rows_raw2f.jsonl"), path.join(HALLUC, process.env.SCORED2 ?? "rows_scored2.jsonl")],
+  [path.join(HALLUC, process.env.RAW3 ?? "rows_raw3f.jsonl"), path.join(HALLUC, process.env.SCORED3 ?? "rows_scored3.jsonl")],
 ]
 
 for (const [input, output] of runs) {
@@ -49,5 +58,5 @@ for (const [input, output] of runs) {
   }
   writeFileSync(output, out.join("\n") + "\n", "utf8")
   console.log(`${output}: ${out.length} строк`)
-  appendFileSync("/home/adik/halluc/score.log", `${output}: ${out.length}\n`)
+  appendFileSync(path.join(HALLUC, "score.log"), `${output}: ${out.length}\n`)
 }

@@ -46,7 +46,9 @@ git -C "$DEV" format-patch "$BASE..HEAD" --stdout >"$OUT"
 
 COMMITS=$(git -C "$DEV" rev-list --count "$BASE..HEAD")
 BYTES=$(wc -c <"$OUT" | tr -d ' ')
-FILES=$(grep -c '^diff --git' "$OUT" || true)
+# `grep -c '^diff --git'` считает заголовки, а не файлы: файл, тронутый в двух
+# коммитах, даёт два `diff --git`. Считаем уникальные пути (b/<path>).
+FILES=$(grep '^diff --git ' "$OUT" | sed -e 's#^diff --git .* b/##' -e 's#^"##' -e 's#"$##' | sort -u | wc -l | tr -d ' ')
 echo "готово: $OUT"
 echo "  коммитов: $COMMITS, файлов: $FILES, байт: $BYTES"
 echo "  база: $BASE"
