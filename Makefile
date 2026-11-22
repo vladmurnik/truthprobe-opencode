@@ -9,6 +9,8 @@
 #   make patch     перегенерировать patches/truthprobe-0001.patch из dev-дерева
 #   make preview   поднять мок-провайдер и прогнать один запрос через CLI
 #   make desktop   собрать desktop-приложение (нужен установленный bun)
+#   make desktop-install  поставить собранное приложение и сбросить кеш CLI
+#                  (FROM=<win-unpacked> TO=<каталог> bash scripts/install-desktop.sh)
 #   make clean     удалить рабочее дерево, собранное setup
 #   make eval      AUROC/ECE/Brier по размеченным строкам (data/eval-fixture.jsonl)
 #   make weights   обучить веса на data/rows-lie-vs-truth.jsonl (нужен python3)
@@ -24,7 +26,7 @@ BASE ?= $(or $(TRUTHPROBE_BASE),007afb1b0c8a36dff93d7945909d4e976545ba95)
 export TRUTHPROBE_BASE := $(BASE)
 TP_DIR ?= .worktree/opencode
 
-.PHONY: help setup test verify patch preview desktop clean eval weights data
+.PHONY: help setup test verify patch preview desktop desktop-install clean eval weights data
 
 help:
 	@sed -n '2,20p' Makefile
@@ -46,6 +48,9 @@ preview:
 
 desktop:
 	bash scripts/build-desktop.sh
+
+desktop-install:
+	bash scripts/install-desktop.sh $(if $(FROM),--from $(FROM),) $(if $(TO),--to $(TO),)
 
 clean:
 	rm -rf "$(TP_DIR)" scripts/.mock.log

@@ -64,7 +64,7 @@ signature вердикта (`AnswerScore`): `status`, `score`, `risk`, `level`, 
 | `scripts/calibrate.py` | `--fit` (linear-веса), `--fit --by-model` (бандл `{global, models}`), AUROC/ECE, отказ при одноклассовых данных |
 | `scripts/probe-freellmapi.py` | проверка, что эндпоинт отдаёт `logprobs` |
 | `scripts/mock-openai-logprobs.py` | мок-провайдер с настоящими logprobs (для e2e и `make preview`) |
-| `scripts/preview.sh` / `dev-setup.sh` / `dev-setup.ps1` / `make-patch.sh` / `build-desktop.sh` | DX-обвязка |
+| `scripts/preview.sh` / `dev-setup.sh` / `dev-setup.ps1` / `make-patch.sh` / `build-desktop.sh` / `install-desktop.sh` | DX-обвязка |
 | `data/qa-bank.jsonl` | канонические ответы для авто-разметки (`expect`) |
 
 ## Как поменять конкретную вещь
@@ -142,7 +142,12 @@ bun test truthprobe                # юнит-тесты патча (127 на с
 3. Синхронизировать reference-копии `src/truthprobe/*` (иначе `make test` проверит старьё).
 4. `make verify`.
 5. Desktop: `bash scripts/build-desktop.sh --win` (результат в `packages/desktop/dist/win-unpacked`),
-   установка поверх `AppData/Local/Programs/TruthProbe` при необходимости.
+   затем `make desktop-install` (`scripts/install-desktop.sh`) — копирует сборку поверх
+   `AppData/Local/Programs/TruthProbe` и **чистит кеш CLI**.
    Скрипт сам копирует собранный CLI в `packages/desktop/resources/opencode-cli[.exe]` — именно
    оттуда electron-builder берёт бинарь (`extraResources`). Если этот шаг пропустить, приложение
    соберётся со **старым** CLI и будет молча вести себя как предыдущая версия.
+   Штамп `resources/opencode-cli.version` собирается как `<версия сборки>+<sha256[:12]>`:
+   приложение кеширует CLI по этой строке (`%APPDATA%\ai.truthprobe.desktop\cli\<штамп>-x64`)
+   и переиспользует его, пока строка не изменилась. Без отпечатка содержимого новая сборка
+   не доезжает до пользователя — так и вышло 22.11.2026, когда кеш продолжал отдавать CLI от 19-го.

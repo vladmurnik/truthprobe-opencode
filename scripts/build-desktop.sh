@@ -72,10 +72,22 @@ esac
 [ -f "$SRC" ] || { echo "error: нет $SRC — сборка CLI не дала бинарь" >&2; exit 1; }
 mkdir -p "$STAGE"
 cp -f "$SRC" "$DST"
+# Штамп версии — это то, по чему приложение кеширует CLI
+# (%APPDATA%\ai.truthprobe.desktop\cli\<version>-<arch>). Если штамп не меняется,
+# свежесобранный бинарь не доезжает до пользователя: приложение переиспользует
+# старый из кеша. Поэтому к версии из сборки добавляется отпечаток содержимого,
+# и любая пересборка CLI меняет ключ кеша.
+UPSTREAM=""
 if [ -f "$CLI_DIR/opencode-cli.version" ]; then
-  cp -f "$CLI_DIR/opencode-cli.version" "$STAGE/opencode-cli.version"
+  UPSTREAM=$(tr -d '\r\n' <"$CLI_DIR/opencode-cli.version")
 fi
-echo "   $(basename "$DST"): $(wc -c < "$DST") bytes"
+if command -v sha256sum >/dev/null 2>&1; then
+  STAMP=$(sha256sum "$DST" | cut -c1-12)
+else
+  STAMP=$(shasum -a 256 "$DST" | cut -c1-12)
+fi
+printf '%s\n' "${UPSTREAM:-0.0.0-dev}+${STAMP}" >"$STAGE/opencode-cli.version"
+echo "   $(basename "$DST"): $(wc -c <"$DST") bytes, штамп $(cat "$STAGE/opencode-cli.version")"
 
 echo "== 3/4 electron-vite"
 (cd "$DEV/packages/desktop" && bun x electron-vite build)
