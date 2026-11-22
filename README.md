@@ -277,7 +277,7 @@ Windows: `%APPDATA%\opencode\truthprobe\`) и живёт: `ok`/`ignored`/`reject
 | --- | --- | --- |
 | Скоринг и сегментация | `bun test test/score.test.ts` | **45 pass / 0 fail**, 104 expect |
 | Логика автопроверки (TTL, классификация ответов, кэш) | `bun test test/capability.test.ts` | **32 pass / 0 fail**, 70 expect |
-| Список спорных предложений в desktop | `bun test src/message/doubtful.test.ts` из `packages/session-ui` | **6 pass / 0 fail**, 14 expect |
+| Список спорных предложений в desktop | `bun test src/message/doubtful.test.ts` из `packages/session-ui` | **9 pass / 0 fail**, 23 expect |
 | Протокол OpenAI (гейт, тело запроса, разбор `choices[i].logprobs`) | `packages/ai/test/truthprobe.test.ts` | **8 pass / 0 fail** |
 | Автовключение без переменных окружения | мок + два прогона подряд | RUN1: проба → `{"status":"ok"}`; RUN2: **2 из 2** запросов с `logprobs: true, top_logprobs: 20` |
 | Регрессия вокруг событий текста | `test/session*.test.ts test/projector*.test.ts test/message*.test.ts` | **811 pass / 0 fail** |
@@ -355,7 +355,7 @@ python3 scripts/tui-probe.py && python3 scripts/screen-dump.py /tmp/tui-probe.lo
 
 ## Устройство патча
 
-46 файлов, +7023/−40, девятнадцать коммитов поверх `007afb1`. Шов тонкий и аддитивный:
+46 файлов, +7162/−40, двадцать пять коммитов поверх `007afb1`. Шов тонкий и аддитивный:
 
 | Слой | Файл | Что делает |
 | --- | --- | --- |

@@ -274,8 +274,8 @@ drifted; `unavailable` — no tokens.
 | --- | --- | --- |
 | Scoring and segmentation | `bun test test/score.test.ts` | **45 pass / 0 fail**, 104 expect |
 | Probe logic (TTL, response classification, cache) | `bun test test/capability.test.ts` | **32 pass / 0 fail**, 70 expect |
-| Doubtful sentences in desktop | `bun test src/message/doubtful.test.ts` from `packages/session-ui` | **6 pass / 0 fail**, 14 expect |
-| OpenAI protocol (gate, request body, `choices[i].logprobs` parsing) | `packages/ai/test/truthprobe.test.ts` | **8 pass / 0 fail**, 23 expect |
+| Doubtful sentences in desktop | `bun test src/message/doubtful.test.ts` from `packages/session-ui` | **9 pass / 0 fail**, 23 expect |
+| OpenAI protocol (gate, request body, `choices[i].logprobs` parsing) | `packages/ai/test/truthprobe.test.ts` | **8 pass / 0 fail**, 26 expect |
 | Auto-enable without environment variables | mock + two consecutive runs | RUN1: probe → `{"status":"ok"}`; RUN2: **2 of 2** requests with `logprobs: true, top_logprobs: 20` |
 | Regression around text events | `test/session*.test.ts test/projector*.test.ts test/message*.test.ts` | **811 pass / 0 fail** |
 | Full core run | `bun test` in `packages/core` (7 713 tests, 331 files) | 7 300 pass / 351 skip / 62 fail — none in truthprobe: `tool-search` downloads ripgrep from github.com, `provider-gitlab-oauth` calls gitlab.com, `cross-spawn`/MCP depend on spawn; the harness blocks outbound network |

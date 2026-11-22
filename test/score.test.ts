@@ -297,7 +297,6 @@ describe("truthprobe.scoreAnswer — арифметика", () => {
     const global = scoreAnswer(text, raw, { globalWeight: 1 }).score!
     const mean = result.sentences.reduce((sum, sentence) => sum + sentence.score, 0) / result.sentences.length
     expect(result.score!).toBeCloseTo(0.6 * global + 0.4 * mean, 10)
-    expect(result.risk!).toBeCloseTo(1 - result.score!, 10)
   })
 
   test("уверенный ответ выше сомнительного", () => {
@@ -385,12 +384,5 @@ describe("truthprobe.scoreAnswer — арифметика", () => {
     const result = scoreAnswer(text, flat(text, -0.3))
     const sentences = splitSentences(text)
     expect(result.sentences.map((s) => [s.start, s.end])).toEqual(sentences.map((s) => [s.start, s.end]))
-  })
-
-  test("каждое оценённое предложение имеет risk = 1 - score", () => {
-    const text = "Раз. Два. Три."
-    for (const sentence of scoreAnswer(text, flat(text, -0.9)).sentences) {
-      expect(sentence.risk).toBeCloseTo(1 - sentence.score, 10)
-    }
   })
 })

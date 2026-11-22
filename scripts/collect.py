@@ -77,14 +77,16 @@ def clamp01(x: float) -> float:
 
 
 def phi(token: dict, top_k: int = 20) -> float:
-    """1 - нормированная энтропия по top_logprobs; копия normalizedEntropy из score.ts."""
+    """Уверенность по top_logprobs: 1 − нормированная энтропия, как `phi` в рантайме."""
     top = [
         item
         for item in (token.get("top_logprobs") or [])
         if isinstance(item.get("logprob"), (int, float)) and math.isfinite(item["logprob"])
     ]
     if len(top) < 2:
-        return clamp01(1 - math.exp(float(token["logprob"])))
+        # Вырожденная ветка рантайма — это exp(logprob), а не 1 − exp(logprob):
+        # иначе тот же токен получает обратный знак, и вес `meanPhi` работает против ответа.
+        return clamp01(math.exp(float(token["logprob"])))
     k = max(2, min(top_k, len(top)))
     probs = [math.exp(float(item["logprob"])) for item in top[:k]]
     total = sum(probs)

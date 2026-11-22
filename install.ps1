@@ -49,6 +49,16 @@ if ($Uninstall) {
     Pop-Location
     exit 0
   }
+  if ($DryRun) {
+    Pop-Location
+    Step "dry run: would reset --hard $BaseShort, tree left untouched"
+    exit 0
+  }
+  $dirty = (git status --porcelain 2>$null) -join ""
+  if ($dirty -ne "" -and $env:TRUTHPROBE_ALLOW_DIRTY -ne "1") {
+    Pop-Location
+    Fail "$Dir has uncommitted changes; commit them or set TRUTHPROBE_ALLOW_DIRTY=1"
+  }
   Note "resetting the tree to $BaseShort (uncommitted edits to tracked files are lost)"
   git reset --hard $Base
   if ($LASTEXITCODE -ne 0) { Pop-Location; Fail "git reset failed" }
@@ -59,7 +69,21 @@ if ($Uninstall) {
 }
 
 Step "fetching sst/opencode @ $BaseShort"
-if (-not (Test-Path (Join-Path $Dir ".git"))) {
+# `-DryRun` не трогает $Dir: reset --hard + checkout -B передвигают ветку и теряют
+# локальные коммиты, поэтому проверка идёт в одноразовом клоне.
+$tempClone = $null
+if ($DryRun) {
+  $tempClone = Join-Path ([System.IO.Path]::GetTempPath()) ("truthprobe-check-" + [guid]::NewGuid().ToString("N"))
+  New-Item -ItemType Directory -Force -Path $tempClone | Out-Null
+  Push-Location $tempClone
+  git init -q
+  git remote add origin $Upstream
+  git fetch -q --depth 1 origin $Base
+  if ($LASTEXITCODE -ne 0) { Pop-Location; Fail "git fetch of $Base failed" }
+  git checkout -q -B truthprobe FETCH_HEAD
+  if ($LASTEXITCODE -ne 0) { Pop-Location; Fail "git checkout failed" }
+  Note "checking in a temporary clone: $tempClone"
+} elseif (-not (Test-Path (Join-Path $Dir ".git"))) {
   New-Item -ItemType Directory -Force -Path $Dir | Out-Null
   Push-Location $Dir
   git init -q
@@ -102,10 +126,10 @@ if ($log -match "truthprobe") {
   Invoke-WebRequest -UseBasicParsing -Uri "$Repo/$PatchName" -OutFile $patch
   if (-not (Test-Path $patch) -or (Get-Item $patch).Length -eq 0) { Pop-Location; Fail "patch download failed" }
   $hash = (Get-FileHash -Algorithm SHA256 -Path $patch).Hash.ToLower()
-  if ($hash -ne "1ecd3350b7b937b256a421c0a732bb4de4eed9f01fd5630bb36f259bee611ec7") {
+  if ($hash -ne "dd7b5f35677468ff0ee3d43e119b79d53d50e2584a566c62a65f06a116dda5a0") {
     Remove-Item $patch -Force -ErrorAction SilentlyContinue
     Pop-Location
-    Fail "patch checksum mismatch: pinned 1ecd3350b7b937b256a421c0a732bb4de4eed9f01fd5630bb36f259bee611ec7, got $hash"
+    Fail "patch checksum mismatch: pinned dd7b5f35677468ff0ee3d43e119b79d53d50e2584a566c62a65f06a116dda5a0, got $hash"
   }
 
   Step "checking patch"
@@ -116,7 +140,8 @@ if ($log -match "truthprobe") {
   if ($DryRun) {
     Remove-Item $patch -Force -ErrorAction SilentlyContinue
     Pop-Location
-    Step "dry run: patch applies, tree left untouched"
+    if ($tempClone) { Remove-Item -Recurse -Force $tempClone -ErrorAction SilentlyContinue }
+    Step "dry run: patch applies, $Dir untouched"
     Write-Host ""
     Write-Host "Next:  .\install.ps1 -Dir $Dir"
     exit 0

@@ -3,7 +3,7 @@
 
 Набор — JSONL, по одному предложению на строку:
 
-    {"score": 0.71, "phi": 0.96, "meanLp": -0.87, "minLp": -1.43, "label": true}
+    {"score": 0.71, "phi": 0.96, "phiDef": "confidence", "meanLp": -0.87, "minLp": -1.43, "label": true}
 
 `label` — правда ли утверждение (ставит человек по источникам). Строки с меткой
 `null`/`"unverifiable"` пропускаются, но их количество печатается: молча их
@@ -38,6 +38,7 @@ def truthy_label(value):
 def load(path: str) -> tuple[list[dict], int]:
     rows: list[dict] = []
     skipped = 0
+    legacy = 0
     with open(path, encoding="utf-8") as handle:
         for line in handle:
             line = line.strip()
@@ -60,7 +61,15 @@ def load(path: str) -> tuple[list[dict], int]:
             if row.get("phiDef") != "confidence" and "phi" in row:
                 row["phi"] = 1.0 - float(row["phi"] or 0.0)
                 row["phiDef"] = "confidence"
+                legacy += 1
             rows.append(row)
+    # Немаркированная строка трактуется как энтропия. Это верно только для наборов,
+    # собранных до исправления `collect.py`; для нового формата нужен `phiDef`.
+    if legacy:
+        print(
+            f"warning: {legacy} row(s) have no phiDef; treated phi as entropy and converted it to confidence",
+            file=sys.stderr,
+        )
     return rows, skipped
 
 
@@ -75,6 +84,7 @@ def demo(n: int = 400, seed: int = 7) -> list[dict]:
             {
                 "score": round(base, 4),
                 "phi": round(min(max(rng.gauss(0.9 if truth else 0.7, 0.1), 0.01), 0.99), 4),
+                "phiDef": "confidence",
                 "meanLp": round(rng.gauss(-0.7 if truth else -1.4, 0.3), 4),
                 "minLp": round(rng.gauss(-1.2 if truth else -2.6, 0.5), 4),
                 "label": truth,

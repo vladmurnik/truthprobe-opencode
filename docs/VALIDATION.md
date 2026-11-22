@@ -21,7 +21,7 @@
 | `d153658` | fix(truthprobe): make the patched tree typecheck clean |
 | `3b720f0` | feat(truthprobe): per-model calibration weights |
 
-Итог: **46 файлов, +7023 / −40**, девятнадцать коммитов. Патч — `patches/truthprobe-0001.patch` (431 079 Б, `git am`).
+Итог: **46 файлов, +7162 / −40**, двадцать пять коммитов. Патч — `patches/truthprobe-0001.patch` (473 067 Б, `git am`).
 
 ## 1. Слои патча
 
@@ -55,10 +55,10 @@
 ## 2. Тесты
 
 ```
-127 pass / 0 fail   345 expect   6 файлов truthprobe в packages/core/test
-  8 pass / 0 fail    23 expect   packages/ai/test/truthprobe.test.ts
-  6 pass / 0 fail    14 expect   packages/session-ui/src/message/doubtful.test.ts
- 93 pass / 8 skip   214 expect   test/ самого репозитория (5 файлов, 101 тест)
+127 pass / 0 fail   349 expect   6 файлов truthprobe в packages/core/test
+  8 pass / 0 fail    26 expect   packages/ai/test/truthprobe.test.ts
+  9 pass / 0 fail    23 expect   packages/session-ui/src/message/doubtful.test.ts
+ 92 pass / 8 skip   210 expect   test/ самого репозитория (5 файлов, 100 тестов)
 ```
 
 Что покрыто:
@@ -72,10 +72,11 @@
   многоточие, CJK без пробелов, пустая строка, закрытый/незакрытый fence, пустой ввод,
   совпадение `start`/`end` с исходной строкой, последовательность индексов.
 - `scoreAnswer`: обе деградации (`no logprobs`, `no content tokens`), `partial` при дрейфе,
-  `risk = 1 − score`, порядок «уверенный > сомнительный», выбор первого содержательного токена,
+  порядок «уверенный > сомнительный», выбор первого содержательного токена,
   изоляция предложений, `minLp`/`meanLp`, настройка порога, `globalWeight = 1`, детерминизм,
   края (score 1 и risk ≈ 1), совпадение границ с сегментатором.
-- Протокол: приоритет `capabilities.logprobs` над env, значения env (`1/on/true` vs остальные),
+- Протокол: явный env-флаг перекрывает `capabilities.logprobs` (автопроверка сама пишет туда
+  `true`, поэтому `off` должен побеждать), значения env без учёта регистра и пробелов,
   состав полей `truthprobeBody`, разбор `content[] → {token, logprob, top}`, сохранение `logprob: 0`,
   отсутствие `top` при пустом `top_logprobs`.
 
@@ -268,7 +269,7 @@ bun x electron-builder --win --x64 --publish never --dir --config electron-build
 `OPENCODE_DESKTOP_APP(_ID)`) и в `electron-builder.config.ts` (`brand()`: appId, productName,
 `publish: null`).
 
-## 9. Живой шлюз free-pi: цифры на particle и deepseek (измерено)
+## 18. Живой шлюз free-pi: цифры на particle и deepseek (измерено)
 
 Шлюз `http://127.0.0.1:8790/v1`, провайдер `@ai-sdk/openai-compatible`, кэш автопроверки
 `{"freepi/particle":{"status":"ok"}}`. Сборка `0.0.0-dev-202611191618`, канал `dev`, проверка через
@@ -315,7 +316,7 @@ bun x electron-builder --win --x64 --publish never --dir --config electron-build
 (`logprob` лучшего токена порядка `-0.001`), поэтому `phi ≈ 1` и `answer confidence` уходит к
 `99.9997%`. Высокие проценты здесь означают «модель шла ровно», а не «ответ верный».
 
-## 10. Полный прогон монорепо: найденный баг схемы (19.11.2026)
+## 19. Полный прогон монорепо: найденный баг схемы (19.11.2026)
 
 До этого проверялись только truthprobe-файлы. Полный `bun test` в `packages/core` (7 713 тестов,
 331 файл) дал **218 падений** в сюитах `SessionRunnerLLM` и соседях с ошибкой:
@@ -468,7 +469,7 @@ AUROC 0.388 — **хуже случайного**: встроенная форм
 токен после странной инструкции менее предсказуем), а `phi` входит в формулу с весом 0.3.
 `meanLp` при этом почти не различается (−0.306 против −0.224).
 
-Обученные веса на тех же четырёх признаках дают 0.774 out-of-fold — то есть сигнал в logprobs
+Обученные веса на тех же четырёх признаках (`meanLp`, `minLp`, `meanPhi`, `fracLow`) дают 0.774 out-of-fold — то есть сигнал в logprobs
 есть, но встроенная эвристика его не использует, а частично разворачивает.
 
 По моделям (fitted, out-of-fold, групповая CV — §17): `glm-5.3-flash` **0.840** на 198 строках
@@ -563,7 +564,7 @@ out-of-fold, 5 фолдов, seed 7): хеджирование («probably», «
 | --- | --- | --- | --- |
 | рантайм `exp(meanLp)` | 0.597 | 0.098 | 0.127 |
 | fit: все признаки, кроме `digitDensity` | 0.786 | 0.277 | 0.183 |
-| fit: все пять + `digitDensity` | **0.800** | 0.275 | 0.182 |
+| fit: те же + `digitDensity` | **0.800** | 0.275 | 0.182 |
 | `phi` как уверенность, без обучения | **0.801** | 0.276 | 0.183 |
 
 - Хеджирование на этом наборе не измеримо: у правды и лжи его доля одинакова и равна 0.0000
@@ -591,7 +592,7 @@ data/rows-lie-vs-truth.jsonl --fit --by-model` печатает таблицу �
 `measure-lies.py`, потому что оба скрипта режут фолды по `(model, prompt)`).
 
 Чего это не доказывает: прирост измерен на одном наборе с одним классом негативов (заказанная
-ложь). На самопроизвольной галлюцинации наборов нет, поэтому переносить +0.034 на реальные
+ложь). На самопроизвольной галлюцинации наборов нет, поэтому переносить +0.014 на реальные
 разговоры нельзя. Формула по умолчанию не менялась — веса подключаются только через
 `TRUTHPROBE_SCORER=linear:<файл>`.
 

@@ -27,7 +27,7 @@ REPO=https://raw.githubusercontent.com/vladmurnik/truthprobe-opencode/master
 PATCH_NAME=patches/truthprobe-0001.patch
 # Патч тянется с ветки, а потом его код исполняется (bun install + сборка),
 # поэтому сверяем байты с закреплённой суммой, а не доверяем URL.
-PATCH_SHA256="1ecd3350b7b937b256a421c0a732bb4de4eed9f01fd5630bb36f259bee611ec7"
+PATCH_SHA256="dd7b5f35677468ff0ee3d43e119b79d53d50e2584a566c62a65f06a116dda5a0"
 
 DIR="${TRUTHPROBE_DIR:-opencode-truthprobe}"
 DRY_RUN=0
@@ -62,6 +62,20 @@ elif command -v wget >/dev/null 2>&1; then
 else
   die "curl or wget is required"
 fi
+
+# Патч не просто копируется: `git am` и следующая сборка его исполняют. Поэтому
+# отсутствие sha256sum/shasum — ошибка окружения, а не повод пропустить сверку.
+verify_patch() {
+  if command -v sha256sum >/dev/null 2>&1; then
+    printf '%s  %s\n' "$PATCH_SHA256" "$1" | sha256sum -c - >/dev/null 2>&1 ||
+      die "контрольная сумма патча не совпала с закреплённой в скрипте"
+  elif command -v shasum >/dev/null 2>&1; then
+    [ "$(shasum -a 256 "$1" | cut -d' ' -f1)" = "$PATCH_SHA256" ] ||
+      die "контрольная сумма патча не совпала с закреплённой в скрипте"
+  else
+    die "нужен sha256sum или shasum: без них патч нельзя проверить"
+  fi
+}
 note "git $(git --version | awk '{print $3}')"
 if [ "$UNINSTALL" -eq 0 ] && [ "$DRY_RUN" -eq 0 ]; then
   command -v bun >/dev/null 2>&1 || die "bun is required (https://bun.sh)"
@@ -76,11 +90,41 @@ if [ "$UNINSTALL" -eq 1 ]; then
     note "commitы truthprobe не найдены — похоже, патч уже снят"
     exit 0
   fi
+  if [ "$DRY_RUN" -eq 1 ]; then
+    step "dry run: would reset --hard $BASE_SHORT, tree left untouched"
+    exit 0
+  fi
+  if [ -n "$(git status --porcelain)" ] && [ "${TRUTHPROBE_ALLOW_DIRTY:-0}" != "1" ]; then
+    die "в $DIR есть незакоммиченные изменения; закоммитьте их или задайте TRUTHPROBE_ALLOW_DIRTY=1"
+  fi
   note "снимаю коммиты патча, дерево возвращается к $BASE_SHORT"
   note "несохранённые правки tracked-файлов будут потеряны; конфиг opencode и данные не трогаются"
   git reset --hard "$BASE"
   git log --oneline -1
   bold "==> патч снят"
+  exit 0
+fi
+
+# Проверка не имеет права трогать $DIR: fetch + reset --hard + checkout -B передвигают
+# ветку и стирают локальные коммиты, а «dry run» после них — уже не проверка.
+if [ "$DRY_RUN" -eq 1 ]; then
+  step "dry run: checking $PATCH_NAME against $BASE_SHORT in a temporary clone"
+  CHECK="$(mktemp -d)"
+  PATCH="$(mktemp)"
+  trap 'rm -rf "$CHECK"; rm -f "$PATCH"' EXIT
+  cd "$CHECK"
+  git init -q
+  git remote add origin "$UPSTREAM"
+  git fetch -q --depth 1 origin "$BASE"
+  git checkout -q -B truthprobe FETCH_HEAD
+  download "$REPO/$PATCH_NAME" "$PATCH"
+  [ -s "$PATCH" ] || die "patch download failed: $REPO/$PATCH_NAME"
+  verify_patch "$PATCH"
+  if ! git apply --check --whitespace=nowarn "$PATCH"; then
+    die "патч не ложится на $BASE_SHORT"
+  fi
+  step "dry run: patch applies, $DIR untouched"
+  printf '\nНичего не изменено. Реальная установка:\n\n  bash install.sh --dir %s\n\n' "$DIR"
   exit 0
 fi
 
@@ -117,27 +161,13 @@ else
   trap 'rm -f "$PATCH"' EXIT
   download "$REPO/$PATCH_NAME" "$PATCH"
   [ -s "$PATCH" ] || die "patch download failed: $REPO/$PATCH_NAME"
-  if command -v sha256sum >/dev/null 2>&1; then
-    printf '%s  %s\n' "$PATCH_SHA256" "$PATCH" | sha256sum -c - >/dev/null 2>&1 ||
-      die "контрольная сумма патча не совпала с закреплённой в скрипте"
-  elif command -v shasum >/dev/null 2>&1; then
-    [ "$(shasum -a 256 "$PATCH" | cut -d' ' -f1)" = "$PATCH_SHA256" ] ||
-      die "контрольная сумма патча не совпала с закреплённой в скрипте"
-  else
-    note "sha256sum/shasum не найден — проверка контрольной суммы пропущена"
-  fi
+  verify_patch "$PATCH"
 
   step "checking patch"
   if ! git apply --check --whitespace=nowarn "$PATCH"; then
     die "патч не ложится на $BASE_SHORT; дерево не изменено"
   fi
   note "патч ложится на это дерево"
-
-  if [ "$DRY_RUN" -eq 1 ]; then
-    step "dry run: patch applies, tree left untouched"
-    printf '\nНичего не изменено. Реальная установка:\n\n  bash install.sh --dir %s\n\n' "$DIR"
-    exit 0
-  fi
 
   step "applying patch"
   git config user.name >/dev/null 2>&1 || git config user.name "TruthProbe"
