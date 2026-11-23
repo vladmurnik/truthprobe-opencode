@@ -12,6 +12,8 @@
 #   make desktop   собрать desktop-приложение (нужен установленный bun)
 #   make desktop-install  поставить собранное приложение и сбросить кеш CLI
 #                  (FROM=<win-unpacked> TO=<каталог> bash scripts/install-desktop.sh)
+#   make release   опубликовать GitHub Release для последнего тега и вложить патч
+#                  (нужен GITHUB_TOKEN; без него: bash scripts/release.sh --dry-run)
 #   make clean     удалить рабочее дерево, собранное setup
 #   make eval      AUROC/ECE/Brier по размеченным строкам (data/eval-fixture.jsonl)
 #   make weights   обучить веса на data/rows-lie-vs-truth.jsonl (нужен python3)
@@ -27,7 +29,7 @@ BASE ?= $(or $(TRUTHPROBE_BASE),007afb1b0c8a36dff93d7945909d4e976545ba95)
 export TRUTHPROBE_BASE := $(BASE)
 TP_DIR ?= .worktree/opencode
 
-.PHONY: help setup test verify docs-check patch preview desktop desktop-install clean eval weights data
+.PHONY: help setup test verify docs-check patch preview desktop desktop-install release clean eval weights data
 
 help:
 	@sed -n '2,20p' Makefile
@@ -55,6 +57,9 @@ desktop:
 
 desktop-install:
 	bash scripts/install-desktop.sh $(if $(FROM),--from $(FROM),) $(if $(TO),--to $(TO),)
+
+release:
+	bash scripts/release.sh $(if $(TAG),$(TAG),) $(if $(DRY),--dry-run,)
 
 clean:
 	rm -rf "$(TP_DIR)" scripts/.mock.log
