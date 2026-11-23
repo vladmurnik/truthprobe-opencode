@@ -7,7 +7,7 @@
 Номера не переименованы, потому что на них ссылаются оба README, `docs/ROADMAP.md` и
 `docs/CALIBRATION.md`.
 
-База: `sst/opencode` @ `007afb1`. Ветка `feat/truthprobe`, двадцать семь коммитов; ниже — первые
+База: `sst/opencode` @ `007afb1`. Ветка `feat/truthprobe`, двадцать восемь коммитов; ниже — первые
 четырнадцать, остальные видны в `git log 007afb1..HEAD`:
 
 | Коммит | Что |
@@ -27,7 +27,7 @@
 | `d153658` | fix(truthprobe): make the patched tree typecheck clean |
 | `3b720f0` | feat(truthprobe): per-model calibration weights |
 
-Итог: **52 файла, +3555 / −55**, двадцать семь коммитов. Патч — `patches/truthprobe-0001.patch` (338 084 Б, `git am`).
+Итог: **52 файла, +3573 / −55**, двадцать восемь коммитов. Патч — `patches/truthprobe-0001.patch` (342 760 Б, `git am`).
 
 ## 1. Слои патча
 
@@ -1023,7 +1023,7 @@ $ bun run typecheck   # core / session-ui / tui
 
 ```
 $ bash scripts/make-patch.sh --from ~/src/opencode
-  коммитов: 27, файлов: 52, байт: 338084
+  коммитов: 28, файлов: 52, байт: 342760
 $ git apply --check -p1 patches/truthprobe-0001.patch   # на worktree 007afb1
 apply --check ok
 
@@ -1092,9 +1092,9 @@ patches/truthprobe-0001.patch' --prune-empty 007afb1..HEAD`; 27 коммитов
 `0c06a92` → `1ef1e55`. В `scripts/make-patch.sh` добавлен гейт: пути вне `packages/**` и
 `bun.lock` в диапазоне `$BASE..HEAD` останавливают сборку с перечислением виновников.
 
-**Измерено после фикса:** `git diff --shortstat 007afb1..HEAD` → `52 files changed, 3555
+**Измерено после фикса:** `git diff --shortstat 007afb1..HEAD` → `52 files changed, 3573
 insertions(+), 55 deletions(-)`; `git diff --name-only … | grep -v '^packages/'` → только
 `bun.lock`; `git log 007afb1..HEAD -- patches/truthprobe-0001.patch` пуст; патч —
-`patches/truthprobe-0001.patch`, 338 084 Б, 27 коммитов, 52 файла, база
+`patches/truthprobe-0001.patch`, 342 760 Б, 28 коммитов, 52 файла, база
 `007afb1b0c8a36dff93d7945909d4e976545ba95`.
 

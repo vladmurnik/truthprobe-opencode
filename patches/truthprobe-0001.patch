@@ -1,7 +1,7 @@
 From 3ccda6cdf3320c8fbcfbb2c8656c34a2827932af Mon Sep 17 00:00:00 2001
 From: truthprobe <truthprobe@local>
 Date: Thu, 19 Nov 2026 00:59:59 +0300
-Subject: [PATCH 01/27] feat(truthprobe): score answers from token logprobs
+Subject: [PATCH 01/28] feat(truthprobe): score answers from token logprobs
 
 - schema: Truthprobe.Info, capabilities.logprobs, AssistantText.truthprobe, optional truthprobe on session.text.ended
 - ai/openai-chat: request logprobs/top_logprobs when enabled, parse choice-level logprobs into providerMetadata
@@ -1192,7 +1192,7 @@ index 6a844d7..f21811e 100644
 From a9db0dab3c3392b40e8c9366e3455be1f37b7dcf Mon Sep 17 00:00:00 2001
 From: adik <adik@local>
 Date: Thu, 19 Nov 2026 01:12:00 +0300
-Subject: [PATCH 02/27] fix(tui): apply truthprobe metadata from
+Subject: [PATCH 02/28] fix(tui): apply truthprobe metadata from
  session.text.ended events
 
 The solid client store only copied event.data.text into the in-memory
@@ -1222,7 +1222,7 @@ index 8b6d247..7368d0c 100644
 From 2870f64a9bcb19d1e1701d85101c5074646cdcac Mon Sep 17 00:00:00 2001
 From: adik <adik@local>
 Date: Thu, 19 Nov 2026 03:08:36 +0300
-Subject: [PATCH 03/27] test(truthprobe): cover segmentation, scoring and
+Subject: [PATCH 03/28] test(truthprobe): cover segmentation, scoring and
  protocol parsing
 
 - send logprobs from every chat-completions model that declares the capability
@@ -1985,7 +1985,7 @@ index eed85f3..5bde799 100755
 From f04342565c0963f466c9bae21dc1b0d9158bab44 Mon Sep 17 00:00:00 2001
 From: TruthProbe <truthprobe@local>
 Date: Thu, 19 Nov 2026 09:40:19 +0300
-Subject: [PATCH 04/27] feat(truthprobe): probe providers and enable logprobs
+Subject: [PATCH 04/28] feat(truthprobe): probe providers and enable logprobs
  automatically
 
 Adding a provider key no longer needs an environment variable.
@@ -2800,7 +2800,7 @@ index 0000000..e23e561
 From 3126939707e7c7c305f8b3c2a89d196dc1b5acd9 Mon Sep 17 00:00:00 2001
 From: adik <adik@local>
 Date: Thu, 19 Nov 2026 13:34:58 +0300
-Subject: [PATCH 05/27] feat(truthprobe): show confidence in the desktop
+Subject: [PATCH 05/28] feat(truthprobe): show confidence in the desktop
  session UI
 
 ---
@@ -2897,7 +2897,7 @@ index be526b4..659538f 100644
 From 335305a2e846ae50c7d31cec6a750b74a4d385a6 Mon Sep 17 00:00:00 2001
 From: TruthProbe <truthprobe@localhost>
 Date: Thu, 19 Nov 2026 13:44:43 +0300
-Subject: [PATCH 06/27] feat(truthprobe): list doubtful sentences in the
+Subject: [PATCH 06/28] feat(truthprobe): list doubtful sentences in the
  desktop footer
 
 ---
@@ -3082,7 +3082,7 @@ index b44a4df..2a7ef9d 100644
 From 6017d751fc1a7a9bf1eac92e2b40b161e0c48b49 Mon Sep 17 00:00:00 2001
 From: TruthProbe <truthprobe@localhost>
 Date: Thu, 19 Nov 2026 14:33:06 +0300
-Subject: [PATCH 07/27] feat(desktop): let a fork brand the desktop app
+Subject: [PATCH 07/28] feat(desktop): let a fork brand the desktop app
 
 A fork that ships its own Electron application sets OPENCODE_DESKTOP_APP and
 OPENCODE_DESKTOP_APP_ID before building. The window title, the AppUserModelID,
@@ -3294,7 +3294,7 @@ index 9688672..de655d5 100644
 From a478531b342afc1a07626aafcd1e085543cbaef2 Mon Sep 17 00:00:00 2001
 From: truthprobe <truthprobe@local>
 Date: Thu, 19 Nov 2026 19:21:40 +0300
-Subject: [PATCH 08/27] fix(truthprobe): keep logprobs that arrive without
+Subject: [PATCH 08/28] fix(truthprobe): keep logprobs that arrive without
  text, align tokens, always publish a verdict
 
 - ai: buffer token logprobs in parser state; gateways send them in a separate
@@ -3705,7 +3705,7 @@ index f21811e..edac0e3 100644
 From 5a335e31658d33202b76ac0fb58f795cb1db4e03 Mon Sep 17 00:00:00 2001
 From: truthprobe <truthprobe@local>
 Date: Thu, 19 Nov 2026 19:36:25 +0300
-Subject: [PATCH 09/27] fix(truthprobe): say so when tokens do not match the
+Subject: [PATCH 09/28] fix(truthprobe): say so when tokens do not match the
  answer text
 
 Dropping every token that cannot be found in the text silently produced
@@ -3737,7 +3737,7 @@ index e024f93..7d46333 100644
 From f0554536b5ff45535fa4a9b936aad0aa6e81c405 Mon Sep 17 00:00:00 2001
 From: adik <adik@users.noreply.github.com>
 Date: Thu, 19 Nov 2026 21:10:26 +0300
-Subject: [PATCH 10/27] feat(truthprobe): confidence levels and sentence
+Subject: [PATCH 10/28] feat(truthprobe): confidence levels and sentence
  highlights
 
 ---
@@ -4362,7 +4362,7 @@ index edac0e3..b94c95c 100644
 From 9ec1201af1ea5836177461de2cc11b34436cb8c0 Mon Sep 17 00:00:00 2001
 From: adik <adik@users.noreply.github.com>
 Date: Thu, 19 Nov 2026 21:13:56 +0300
-Subject: [PATCH 11/27] feat(truthprobe): pluggable scorer (geometric | linear
+Subject: [PATCH 11/28] feat(truthprobe): pluggable scorer (geometric | linear
  weights)
 
 ---
@@ -4744,7 +4744,7 @@ index 0000000..998bf44
 From c15925055c110d21b05b552ef0a51dc839e85f03 Mon Sep 17 00:00:00 2001
 From: adik <adik@users.noreply.github.com>
 Date: Thu, 19 Nov 2026 21:28:48 +0300
-Subject: [PATCH 12/27] fix(schema): accept null level so unavailable verdicts
+Subject: [PATCH 12/28] fix(schema): accept null level so unavailable verdicts
  decode
 
 ---
@@ -4802,7 +4802,7 @@ index 5d05c07..d6f7831 100644
 From a1322cb02fee7ea1ea5a438027d2fa3dcd10189f Mon Sep 17 00:00:00 2001
 From: TruthProbe <truthprobe@localhost>
 Date: Thu, 19 Nov 2026 21:58:03 +0300
-Subject: [PATCH 13/27] fix(truthprobe): make the patched tree typecheck clean
+Subject: [PATCH 13/28] fix(truthprobe): make the patched tree typecheck clean
 
 - schema: Level is a type alias over the Literals union, not an interface
 - core: DEFAULT_SCORE_OPTIONS omits the optional scorer field
@@ -4938,7 +4938,7 @@ index d6f7831..99b4171 100644
 From b569d694e558f29b12d7c9cdc79abf9313154e5a Mon Sep 17 00:00:00 2001
 From: TruthProbe <truthprobe@localhost>
 Date: Fri, 20 Nov 2026 07:54:47 +0300
-Subject: [PATCH 14/27] feat(truthprobe): per-model calibration weights
+Subject: [PATCH 14/28] feat(truthprobe): per-model calibration weights
 
 - core: WeightsBundle/parseWeightsBundle/bundleScorer/weightsFor read the
   {global, models} bundle written by calibrate.py --fit --by-model
@@ -5229,7 +5229,7 @@ index 0000000..57691fb
 From 0654f88a5f5277f101a3a67d658d52a6b7c14d02 Mon Sep 17 00:00:00 2001
 From: TruthProbe <truthprobe@localhost>
 Date: Fri, 20 Nov 2026 15:31:41 +0300
-Subject: [PATCH 15/27] feat(session-ui): one readable confidence verdict and a
+Subject: [PATCH 15/28] feat(session-ui): one readable confidence verdict and a
  doubtful list
 
 - session-ui: new confidence.tsx with ConfidenceMeter, ConfidenceLine and
@@ -5505,7 +5505,7 @@ index 29f537b..6043672 100644
 From a142026a4e0e051f757bf3a25ed08fce7c28f61f Mon Sep 17 00:00:00 2001
 From: vladmurnik <vladmurnik@users.noreply.github.com>
 Date: Fri, 20 Nov 2026 16:28:49 +0300
-Subject: [PATCH 16/27] feat(tui): fixed-width confidence meter and level label
+Subject: [PATCH 16/28] feat(tui): fixed-width confidence meter and level label
 
 ---
  .../tui/src/routes/session/message-parts.tsx  | 36 +++++++++++++------
@@ -5589,7 +5589,7 @@ index b94c95c..8c17cd8 100644
 From f97ddc9359f1cc6277f6a1b1edb40449dfddac32 Mon Sep 17 00:00:00 2001
 From: vladmurnik <vladmurnik@users.noreply.github.com>
 Date: Fri, 20 Nov 2026 18:15:27 +0300
-Subject: [PATCH 17/27] fix(truthprobe): drop phi and the worst token from the
+Subject: [PATCH 17/28] fix(truthprobe): drop phi and the worst token from the
  default score
 
 Measured on 626 rows (544 truthful, 82 deliberate lies): the old
@@ -5707,7 +5707,7 @@ index 998bf44..3e7db3f 100644
 From 193caada63701bb10fa69065c6b94b8bf0c0a8a2 Mon Sep 17 00:00:00 2001
 From: vladmurnik <vladmurnik@users.noreply.github.com>
 Date: Fri, 20 Nov 2026 20:23:10 +0300
-Subject: [PATCH 18/27] feat(truthprobe): carry digit density as a feature
+Subject: [PATCH 18/28] feat(truthprobe): carry digit density as a feature
 
 - core: ScorerFeatures.digitDensity and an optional LinearWeights.digitDensity,
   so old weight files keep loading with a zero weight
@@ -5890,7 +5890,7 @@ index 3e7db3f..e231a93 100644
 From 127e30f79b7622fc064dba01426201ab516f7780 Mon Sep 17 00:00:00 2001
 From: vladmurnik <vladmurnik@users.noreply.github.com>
 Date: Fri, 20 Nov 2026 20:50:16 +0300
-Subject: [PATCH 19/27] test(truthprobe): pin cyrillic, CJK, emoji and arabic
+Subject: [PATCH 19/28] test(truthprobe): pin cyrillic, CJK, emoji and arabic
  answers
 
 - core: one test file covering five scripts, offsets, sentence spans and the
@@ -6002,7 +6002,7 @@ index 0000000..92b6302
 From 5195c5a9b55ec11cdb5b122e5378a3b947c2e9a4 Mon Sep 17 00:00:00 2001
 From: vladmurnik <vladmurnik@users.noreply.github.com>
 Date: Sun, 22 Nov 2026 15:30:44 +0300
-Subject: [PATCH 20/27] fix(truthprobe): honour an explicit off switch and key
+Subject: [PATCH 20/28] fix(truthprobe): honour an explicit off switch and key
  the cache by model
 
 - OPENCODE_TRUTHPROBE=0|off|false now returns false before the capability cache
@@ -6141,7 +6141,7 @@ index e23e561..0e611e4 100644
 From b38c640a5a2cbc510c9ab1b4b966a8c55488d9b7 Mon Sep 17 00:00:00 2001
 From: vladmurnik <vladmurnik@users.noreply.github.com>
 Date: Sun, 22 Nov 2026 15:30:44 +0300
-Subject: [PATCH 21/27] fix(truthprobe): reject null weights and say when a
+Subject: [PATCH 21/28] fix(truthprobe): reject null weights and say when a
  model falls back
 
 - JSON null no longer becomes weight 0 through Number(null); it throws like NaN
@@ -6230,7 +6230,7 @@ index e231a93..d21b25e 100644
 From 8b25919b15da9ce07d09f90fcc03f649d73d050a Mon Sep 17 00:00:00 2001
 From: vladmurnik <vladmurnik@users.noreply.github.com>
 Date: Sun, 22 Nov 2026 15:30:44 +0300
-Subject: [PATCH 22/27] fix(truthprobe): keep the confidence badge when a step
+Subject: [PATCH 22/28] fix(truthprobe): keep the confidence badge when a step
  aborts
 
 - score whatever text arrived before the failure instead of dropping it
@@ -6268,7 +6268,7 @@ index 46cbf4f..6bc2c57 100644
 From c965d3e5a264bd8863c72b295006206af013f0e7 Mon Sep 17 00:00:00 2001
 From: vladmurnik <vladmurnik@users.noreply.github.com>
 Date: Sun, 22 Nov 2026 15:30:44 +0300
-Subject: [PATCH 23/27] fix(ui): always show the answer verdict and restore
+Subject: [PATCH 23/28] fix(ui): always show the answer verdict and restore
  levels from scores
 
 - TUI printed the answer line only when something was flagged; desktop always did
@@ -6450,7 +6450,7 @@ index 8c17cd8..0363da0 100644
 From 3b4978468fd4c6a2843972182796ade91a60eb75 Mon Sep 17 00:00:00 2001
 From: vladmurnik <vladmurnik@users.noreply.github.com>
 Date: Sun, 22 Nov 2026 15:30:44 +0300
-Subject: [PATCH 24/27] fix(truthprobe): measure entropy over the alternatives
+Subject: [PATCH 24/28] fix(truthprobe): measure entropy over the alternatives
  it normalises by
 
 - top_logprobs longer than top_k inflated H while still dividing by ln(top_k),
@@ -6536,7 +6536,7 @@ index 641ff03..855d26a 100755
 From 80f073b11fb1cab5fe1f78d2981b206c02b70c69 Mon Sep 17 00:00:00 2001
 From: vladmurnik <vladmurnik@users.noreply.github.com>
 Date: Sun, 22 Nov 2026 16:24:27 +0300
-Subject: [PATCH 25/27] fix(truthprobe): make the honesty switches actually
+Subject: [PATCH 25/28] fix(truthprobe): make the honesty switches actually
  switch
 
 - protocol: an explicit OPENCODE_TRUTHPROBE wins over capabilities.logprobs,
@@ -6803,7 +6803,7 @@ index 0363da0..ea90a1d 100644
 From c4dc285fafd49c7bcdb252af8fa25876f91b793e Mon Sep 17 00:00:00 2001
 From: vladmurnik <vladmurnik@users.noreply.github.com>
 Date: Mon, 23 Nov 2026 00:49:26 +0300
-Subject: [PATCH 26/27] fix(truthprobe): close the nine findings from the
+Subject: [PATCH 26/28] fix(truthprobe): close the nine findings from the
  external audit
 
 - digitDensity divides by code points, not UTF-16 units; a flag emoji or an
@@ -7159,7 +7159,7 @@ index ea90a1d..000ab12 100644
 From 1ef1e55f548aae548c22ceb26d02f0e51a01f77c Mon Sep 17 00:00:00 2001
 From: vladmurnik <vladmurnik@users.noreply.github.com>
 Date: Mon, 23 Nov 2026 13:10:03 +0300
-Subject: [PATCH 27/27] fix(desktop): keep the reported CLI version out of the
+Subject: [PATCH 27/28] fix(desktop): keep the reported CLI version out of the
  stage stamp
 
 A content hash appended to opencode-cli.version made the desktop expect
@@ -7383,6 +7383,86 @@ index 5f1ceed..4391ae7 100644
    } catch {
      return ""
    }
+-- 
+2.53.0
+
+
+From 90e894d350a661ee1c41bfd6ef744dd27a4052ed Mon Sep 17 00:00:00 2001
+From: vladmurnik <vladmurnik@users.noreply.github.com>
+Date: Mon, 23 Nov 2026 13:58:55 +0300
+Subject: [PATCH 28/28] fix(desktop): cut a trailing stamp separator out of the
+ version
+
+splitStamp('2.0.32+') returned the whole string as the version, so the service
+comparison would fail exactly like the bug this split exists to fix. The version
+is now always the text before the separator; a leading plus means the file
+carries no version at all and is treated as unstamped.
+
+Tests: the trailing-plus case expects the truncated version, keptStages keeps a
+stamped stage directory, and an invariant test asserts the compared version
+never contains '+'.
+---
+ .../src/main/service/cli-version.test.ts      | 19 +++++++++++++++++--
+ .../desktop/src/main/service/cli-version.ts   |  5 ++++-
+ 2 files changed, 21 insertions(+), 3 deletions(-)
+
+diff --git a/packages/desktop/src/main/service/cli-version.test.ts b/packages/desktop/src/main/service/cli-version.test.ts
+index 2bc671e..310ac89 100644
+--- a/packages/desktop/src/main/service/cli-version.test.ts
++++ b/packages/desktop/src/main/service/cli-version.test.ts
+@@ -14,6 +14,13 @@ describe("cli-version", () => {
+     { bundled: "0.0.0-beta-2", running: "0.0.0-beta-1", expected: ["0.0.0-beta-2-arm64", "0.0.0-beta-1-arm64"] },
+     { bundled: "0.0.0-beta-2", running: "0.0.0-beta-2", expected: ["0.0.0-beta-2-arm64"] },
+     { bundled: "2.0.32", running: undefined, expected: ["2.0.32-arm64"] },
++    {
++      // Штампованный ключ стадии обязан выжить в cleanStages, иначе распакованный
++      // CLI удалят вместе с каталогом стадии: `+` превращается в `-`.
++      bundled: "0.0.0-dev-202611230939+ef470da66c44",
++      running: "0.0.0-dev-202611230939",
++      expected: ["0.0.0-dev-202611230939-ef470da66c44-arm64", "0.0.0-dev-202611230939-arm64"],
++    },
+   ])("keptStages($bundled, $running)", (input) => {
+     expect(keptStages(input.bundled, input.running, "arm64")).toEqual(input.expected)
+   })
+@@ -27,12 +34,20 @@ describe("cli-version", () => {
+     },
+     // Без штампа ключ стадии совпадает с версией.
+     { shipped: "2.0.32", version: "2.0.32", stage: "2.0.32" },
+-    // Плюс без отпечатка не должен превращать версию в пустую строку.
+-    { shipped: "2.0.32+", version: "2.0.32+", stage: "2.0.32+" },
++    // Плюс без отпечатка: версия всё равно обрезана, иначе сверка с сервисом
++    // снова провалится («2.0.32+» против «2.0.32» в service.json).
++    { shipped: "2.0.32+", version: "2.0.32", stage: "2.0.32+" },
+   ])("splitStamp($shipped)", (input) => {
+     expect(splitStamp(input.shipped)).toEqual({ version: input.version, stage: input.stage })
+   })
+ 
++  test("splitStamp never leaks a build stamp into the compared version", () => {
++    // Строка, начинающаяся с плюса, версии не несёт: такой файл считается нештампованным.
++    for (const shipped of ["0.0.0-dev-202611230939+ef470da66c44", "2.0.32+", "2.0.32"]) {
++      expect(splitStamp(shipped).version).not.toContain("+")
++    }
++  })
++
+   test.each([
+     { version: undefined, message: "Background service failed to start", expected: true },
+     { version: undefined, message: "Timed out waiting for the background service to start", expected: true },
+diff --git a/packages/desktop/src/main/service/cli-version.ts b/packages/desktop/src/main/service/cli-version.ts
+index 78cb61e..7286429 100644
+--- a/packages/desktop/src/main/service/cli-version.ts
++++ b/packages/desktop/src/main/service/cli-version.ts
+@@ -42,7 +42,10 @@ export function shouldRetryEnsure(version: string | undefined, message: string)
+  */
+ export function splitStamp(shipped: string) {
+   const at = shipped.indexOf("+")
+-  if (at <= 0 || at === shipped.length - 1) return { version: shipped, stage: shipped }
++  // Без плюса штампа нет, и ключ стадии равен версии. Плюс в конце — штамп без
++  // отпечатка: версия всё равно обрезается, иначе «2.0.32+» уйдёт в сверку с
++  // сервисом и повторится ровно тот таймаут, ради которого всё это разделение.
++  if (at <= 0) return { version: shipped, stage: shipped }
+ 
+   return { version: shipped.slice(0, at), stage: shipped }
+ }
 -- 
 2.53.0
 
