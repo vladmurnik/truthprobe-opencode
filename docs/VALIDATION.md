@@ -1158,4 +1158,6 @@ GitHub API; запрос с общего раннера ушёл анонимн�
 `github-token: ${{ secrets.GITHUB_TOKEN }}`.
 
 **Проверено.** `yaml.safe_load` разбирает workflow без ошибок; ровно пять блоков обновлены.
-Зелёный статус следующего прогона на момент записи не подтверждён — проверять по API GitHub.
+Прогон [`45163760974`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45163760974) на `b9b6212` — **7 из 7 джобов success**, включая
+`patched tree (ubuntu-latest)`, который до этого падал именно на `setup-bun`, и `cli build`,
+который до этого вообще не запускался.

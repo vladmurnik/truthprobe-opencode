@@ -13,8 +13,9 @@
 та же, что локально) и передают `github-token: ${{ secrets.GITHUB_TOKEN }}`, чтобы не остаться
 анонимными. Содержимое workflow проверено `yaml.safe_load`.
 
-**Чего это не доказывает.** Что следующий прогон будет зелёным: пин убирает одну причину 403,
-но не гарантирует, что GitHub не откажет на скачивании архива. Проверка — следующим прогоном.
+**Проверено в CI.** Прогон [`45163760974`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45163760974) на `b9b6212` — **7 из 7 джобов success**:
+`patched tree` на обеих ОС (шаг `setup-bun` проходит), `installer dry-run` на обеих ОС,
+`repo tests` с `docs numbers match the patch`, `end-to-end verdict`, `cli build`.
 
 # 0.13.12 — 2026-11-23
 
