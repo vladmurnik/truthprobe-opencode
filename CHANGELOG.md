@@ -1,1102 +1,1137 @@
+# 0.13.18 — 2026-11-23
+
+The project speaks English now; Russian survives as an optional translation.
+
+**Primary language.** `README.md`, `CHANGELOG.md`, `docs/*.md`, `PLAN.md` and `CONTRIBUTING.md` are
+English originals. The Russian text moved to `README.ru.md` and `docs/ru/*.md` (14 files), and the two
+are linked by a banner at the top of each file. `README.en.md` was removed — it was the mirror of a
+Russian main file. The rule lives in `CONTRIBUTING.md`, section "Language".
+
+**Code.** The thirty-first commit of the patch (`d54ac9f`) rewrites 28 files, 524 lines of Russian
+comments, JSDoc, messages and test names, into English. Scripts, `Makefile`, the CI workflow and both
+installers were rewritten the same way, with identical insert and delete counts per file, so behaviour
+did not move.
+
+**Intentional semantic change.** `sentences.ts` no longer carries Russian abbreviations or Cyrillic
+regex ranges; it knows `i.e.`, `e.g.`, `etc.`, `cf.` and matches `[A-Za-z]`. Sentence splitting of
+Russian text may be worse than before; Latin text behaves as before.
+
+**Also in this release**
+
+- `install.sh` and `install.ps1` retry three times and fall back to the release asset. Run
+  [`45184432491`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45184432491) failed
+  because `raw.githubusercontent.com` answered `503 Backend.max_conn reached`: a transient CDN error no
+  longer kills an install.
+- `install.ps1` was stored in cp1251 and read as UTF-8 (mojibake); the rewrite removed the last such
+  lines.
+
+**Measured.** Patch: 31 commits, 53 files, 508 953 B, sha256
+`8d6d23eb8089649f21cab4911775aff9df9889dc6921ec1274a3bb7c4578d124`; `bun test test` → 93 pass / 9 skip /
+0 fail, 211 expect, 102 tests; the core suite in the patched tree → 129 pass / 0 fail.
+
+**What this does not prove.** The translations were verified against numbers, links and heading counts,
+not by a native speaker. The live UI run was not repeated.
+
 # 0.13.17 — 2026-11-23
 
-Релиз `v0.13.16` опубликован с вложенным патчем: план `scripts/release.sh` впервые исполнен
-до конца с настоящим токеном.
+The `v0.13.16` release was published with the patch attached: the `scripts/release.sh` plan was
+executed end-to-end for the first time with a real token.
 
-**Измерено (`GET /releases/tags/v0.13.16`).** Релиз `455465241`, `draft: false`,
-`published_at: 2026-11-23T13:28:34Z`, ассет `truthprobe-0001.patch`, `size: 347540`,
-`state: uploaded`; GitHub сам посчитал
-`digest: sha256:381b37d02024f6e30a43c1bd0002b360da55c4affe70309ac4f3ed387ccc4fe5` — совпадает
-с локальным `sha256sum` и с пином `PATCH_SHA256` в `install.sh:30`. Описание релиза — 948 символов
-из записи 0.13.16 в `CHANGELOG.md`.
+**Measured (`GET /releases/tags/v0.13.16`).** Release `455465241`, `draft: false`,
+`published_at: 2026-11-23T13:28:34Z`, asset `truthprobe-0001.patch`, `size: 347540`,
+`state: uploaded`; GitHub itself computed
+`digest: sha256:381b37d02024f6e30a43c1bd0002b360da55c4affe70309ac4f3ed387ccc4fe5` — it matches
+the local `sha256sum` and the `PATCH_SHA256` pin in `install.sh:30`. The release description is 948 characters
+from the 0.13.16 entry in `CHANGELOG.md`.
 
-**Чем это сделано.** Не `curl`: в WSL запросы к `api.github.com` обрывались с
-`curl: (56) Proxy CONNECT aborted` и кодом `000`, при этом `Invoke-RestMethod` из Windows отвечал `200`.
-Тот же порядок (draft → upload → publish) выполнен в PowerShell; в `docs/DEVELOPMENT.md` записан
-обходной маршрут и его причина.
+**How it was done.** Not with `curl`: in WSL requests to `api.github.com` aborted with
+`curl: (56) Proxy CONNECT aborted` and code `000`, while `Invoke-RestMethod` from Windows answered `200`.
+The same order (draft → upload → publish) was carried out in PowerShell; `docs/DEVELOPMENT.md` records
+the workaround and its cause.
 
-**Чего это не доказывает.** Скрипт `release.sh` с настоящим токеном не исполнялся — исполнялся
-эквивалентный план запросов. Повторный запуск `make release` на уже опубликованном теге не проверялся.
+**What this does not prove.** `release.sh` was not executed with a real token — an equivalent request
+plan was executed. Re-running `make release` on an already published tag was not tested.
 
 # 0.13.16 — 2026-11-23
 
-Релиз не был воспроизводимой процедурой: теги ставились вручную, а патч в GitHub Release
-не попадал ни разу.
+The release was not a reproducible procedure: tags were created by hand, and the patch
+never made it into a GitHub Release even once.
 
-**Добавлено**
+**Added**
 
-- `scripts/release.sh` — создаёт GitHub Release для существующего тега, вкладывает
-  `patches/truthprobe-0001.patch` как ассет и берёт описание из записи этого тега в
-  `CHANGELOG.md` (если записи нет — из верхней, с предупреждением).
-  До сети проверяет: тег существует, сумма патча совпадает с пином `PATCH_SHA256` в `install.sh`,
-  `owner/repo` разбирается из `git remote get-url origin`. Повторный запуск обновляет релиз,
-  а не падает. `--dry-run` печатает план без токена и без сети.
-- `make release` и `make release TAG=… DRY=1`.
-- `docs/DEVELOPMENT.md` — раздел «Релиз».
+- `scripts/release.sh` — creates a GitHub Release for an existing tag, attaches
+  `patches/truthprobe-0001.patch` as an asset and takes the description from this tag's entry in
+  `CHANGELOG.md` (if there is no entry — from the top one, with a warning).
+  Before touching the network it checks: the tag exists, the patch checksum matches the `PATCH_SHA256` pin in `install.sh`,
+  `owner/repo` is parsed from `git remote get-url origin`. A re-run updates the release
+  instead of failing. `--dry-run` prints the plan without a token and without the network.
+- `make release` and `make release TAG=… DRY=1`.
+- `docs/DEVELOPMENT.md` — the "Release" section.
 
-**Чего это не доказывает.** С настоящим токеном скрипт не исполнялся: проверены `--dry-run`
-(тег `v0.13.15`, sha256 `381b37d0…`, 36 строк описания, 347 540 Б ассета) и негативные ветки
-(несуществующий тег → `exit 1`).
+**What this does not prove.** The script was not executed with a real token: `--dry-run` was checked
+(tag `v0.13.15`, sha256 `381b37d0…`, 36 lines of description, 347 540 B asset) and the negative branches
+(a non-existent tag → `exit 1`).
 
 # 0.13.15 — 2026-11-23
 
-Собранный `TruthProbe.exe` представлялся сборкой OpenCode: в свойствах файла стояли
-`CompanyName: OpenCode` и `LegalCopyright: Copyright c 2026 OpenCode`, а `FileVersion` равнялся
-`2.3.0` — версии оболочки, а не продукта. Форк, который ставится пользователю под своим именем,
-не должен выглядеть как чужое приложение.
+The built `TruthProbe.exe` presented itself as an OpenCode build: the file properties said
+`CompanyName: OpenCode` and `LegalCopyright: Copyright c 2026 OpenCode`, and `FileVersion` was
+`2.3.0` — the version of the shell, not of the product. A fork shipped to users under its own name
+must not look like someone else's application.
 
-**Исправлено**
+**Fixed**
 
-- `packages/desktop/electron-builder.config.ts` — `brand()` заполняет `copyright` и
-  `extraMetadata.author.name` из `OPENCODE_DESKTOP_COMPANY` (по умолчанию `OPENCODE_DESKTOP_APP`).
-- `scripts/build-desktop.sh` — выставляет `OPENCODE_DESKTOP_COMPANY`, берёт `OPENCODE_VERSION`
-  из `package.json` репозитория (версия продукта вместо 2.3.0) и в конце печатает состояние подписи:
-  без `WIN_CSC_LINK` прямо говорит, что файл не подписан.
-- `docs/DEVELOPMENT.md` — раздел «Подпись»: как собрать подписанную сборку (`WIN_CSC_LINK`,
-  `WIN_CSC_KEY_PASSWORD`), как проверить `Get-AuthenticodeSignature`, таблица метаданных до/после.
-- Патч перегенерирован: 30 коммитов, 53 файла, +3626/−55, 347 540 Б,
+- `packages/desktop/electron-builder.config.ts` — `brand()` fills `copyright` and
+  `extraMetadata.author.name` from `OPENCODE_DESKTOP_COMPANY` (defaults to `OPENCODE_DESKTOP_APP`).
+- `scripts/build-desktop.sh` — sets `OPENCODE_DESKTOP_COMPANY`, takes `OPENCODE_VERSION`
+  from the repository `package.json` (the product version instead of 2.3.0) and at the end prints the signing state:
+  without `WIN_CSC_LINK` it says plainly that the file is not signed.
+- `docs/DEVELOPMENT.md` — the "Signing" section: how to build a signed build (`WIN_CSC_LINK`,
+  `WIN_CSC_KEY_PASSWORD`), how to check `Get-AuthenticodeSignature`, a before/after metadata table.
+- Patch regenerated: 30 commits, 53 files, +3626/−55, 347 540 B,
   sha256 `381b37d02024f6e30a43c1bd0002b360da55c4affe70309ac4f3ed387ccc4fe5`.
 
-**Проверено**
+**Verified**
 
-- Пересборка `bash scripts/build-desktop.sh --win` (30 коммитов, дерево `1784470`), затем
-  `Get-Item … .VersionInfo` на `packages/desktop/dist/win-unpacked/TruthProbe.exe`:
+- Rebuild `bash scripts/build-desktop.sh --win` (30 commits, tree `1784470`), then
+  `Get-Item … .VersionInfo` on `packages/desktop/dist/win-unpacked/TruthProbe.exe`:
   `ProductName: TruthProbe`, `FileDescription: TruthProbe`, `CompanyName: TruthProbe`,
   `FileVersion: 0.13.14`, `ProductVersion: 0.13.14.0`,
   `LegalCopyright: Copyright c 2026 TruthProbe`, `Signature: NotSigned`.
-- `electron-builder` сам вызвал `signtool.exe` для трёх файлов и без сертификата оставил их
-  неподписанными — скрипт это констатирует, а не скрывает.
+- `electron-builder` called `signtool.exe` itself for three files and, with no certificate, left them
+  unsigned — the script states this instead of hiding it.
 
-**Проверено в CI.** Прогон [`45169068249`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45169068249) на `d64998e` — **7 из 7 джобов success**:
-`repo tests`, `installer dry-run` на ubuntu и windows, `patched tree` на ubuntu и windows,
+**Verified in CI.** Run [`45169068249`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45169068249) on `d64998e` — **7 of 7 jobs success**:
+`repo tests`, `installer dry-run` on ubuntu and windows, `patched tree` on ubuntu and windows,
 `end-to-end verdict`, `cli build`.
 
-**Чего это не доказывает.** Подпись не проверена с настоящим сертификатом: его нет. Запуск
-приложения после смены метаданных не проверялся — GUI по просьбе пользователя не запускается.
+**What this does not prove.** Signing was not verified with a real certificate: there is none. Launching
+the application after the metadata change was not tested — the GUI is not started at the user's request.
 
 # 0.13.14 — 2026-11-23
 
-`cli-stages.test.ts` покрывал только каталоги вида `2.0.18`, а штампованная сборка кладёт CLI
-в `0.0.0-dev-<ts>-<sha>-x64`. Теперь покрыты оба вида — и проверено, что файл вообще запускается.
+`cli-stages.test.ts` covered only directories like `2.0.18`, while a stamped build puts the CLI
+in `0.0.0-dev-<ts>-<sha>-x64`. Both kinds are covered now — and so is the fact that the file launches at all.
 
-**Что оказалось неправдой.** В отчёте 0.13.9 было записано, что `cli-stages.test.ts` «локально
-не запускается — нет `@effect/platform-node`». Зависимость есть: `@effect/platform-node: "catalog:"`
-в `devDependencies` пакета `packages/desktop`, и тест запускается из каталога пакета
-(`bun test src/main/service/cli-stages.test.ts`). Ошибка была в том, что прогон делался из корня
-репозитория, где у пакета нет своих `node_modules`. Запись исправлена здесь, а не оставлена висеть.
+**What turned out to be untrue.** The 0.13.9 report stated that `cli-stages.test.ts` "does not
+run locally — no `@effect/platform-node`". The dependency exists: `@effect/platform-node: "catalog:"`
+in the `devDependencies` of the `packages/desktop` package, and the test runs from the package directory
+(`bun test src/main/service/cli-stages.test.ts`). The mistake was that the run was made from the repository
+root, where the package has no `node_modules` of its own. The entry is corrected here instead of being left hanging.
 
-**Добавлено** — `packages/desktop/src/main/service/cli-stages.test.ts`, три кейса на реальную
-раскладку `cleanStages`:
+**Added** — `packages/desktop/src/main/service/cli-stages.test.ts`, three cases against the real
+`cleanStages` layout:
 
-- апгрейд с одной штампованной сборки на другую — старый каталог со штампом удаляется;
-- принятый сервис, поставленный предыдущей штампованной сборкой, — каталог сохраняется (`keep`);
-- обычный релиз `2.0.32-x64` рядом с забытым штампованным каталогом — чужой каталог удаляется.
+- upgrading from one stamped build to another — the old stamped directory is deleted;
+- an accepted service installed by the previous stamped build — the directory is kept (`keep`);
+- a regular release `2.0.32-x64` next to a forgotten stamped directory — the foreign directory is deleted.
 
-**Проверено**
+**Verified**
 
 - `bun test src/main/service/cli-stages.test.ts` → 7 pass / 0 fail / 14 expect.
 - `bun test src/main/service/cli-version.test.ts src/main/service/cli-stages.test.ts` → 22 pass / 0 fail.
-- Весь пакет desktop: `bun test` → 539 тестов, 535 pass / 4 skip / 0 fail, 1 761 expect, 68 файлов.
-- `bun run typecheck` в `packages/desktop` → 3 571 файл, 0 ошибок.
-- Патч перегенерирован: 29 коммитов, 53 файла, +3617/−55, 345 729 Б,
+- The whole desktop package: `bun test` → 539 tests, 535 pass / 4 skip / 0 fail, 1 761 expect, 68 files.
+- `bun run typecheck` in `packages/desktop` → 3 571 files, 0 errors.
+- Patch regenerated: 29 commits, 53 files, +3617/−55, 345 729 B,
   sha256 `ff9312863c16d79e1e7064462a286bf25cebe57fe75c80ca76ea45e184ce43c1`.
 
-**Проверено в CI.** Прогон [`45165859105`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45165859105)
-на `021059b` — **7 из 7 джобов success**: `repo tests` (включая `docs numbers match the patch`),
-оба `installer dry-run`, оба `patched tree` (в них три новых кейса стадии),
-`end-to-end verdict` и `cli build`. Красных джобов нет.
+**Verified in CI.** Run [`45165859105`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45165859105)
+on `021059b` — **7 of 7 jobs success**: `repo tests` (including `docs numbers match the patch`),
+both `installer dry-run`, both `patched tree` (with the three new stage cases),
+`end-to-end verdict` and `cli build`. No red jobs.
 
-**Чего это не доказывает.** Прогоняются только юнит-тесты стадии; живой сценарий «приложение
-подняло сервис, обновилось на новую сборку, убило старый каталог» по-прежнему не проверялся —
-GUI не запускался.
+**What this does not prove.** Only stage unit tests run; the live scenario "the application brought the
+service up, updated to a new build, killed the old directory" still has not been tested —
+the GUI was not started.
 
 # 0.13.13 — 2026-11-23
 
-Прогон [`45162922783`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45162922783) на `5e0191e`
-упал не из-за кода: шаг `oven-sh/setup-bun@v2` в джобе `patched tree (ubuntu-latest)` завершился
-через три секунды с `Error: Unexpected HTTP response: 403`, остальные шесть джобов (включая оба
-инсталлятора, `repo tests` и `end-to-end verdict`) были зелёными, а `cli build` не запускался,
-потому что зависит от упавшего джоба.
+Run [`45162922783`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45162922783) on `5e0191e`
+did not fail because of the code: the `oven-sh/setup-bun@v2` step in the `patched tree (ubuntu-latest)` job finished
+after three seconds with `Error: Unexpected HTTP response: 403`, the other six jobs (including both
+installers, `repo tests` and `end-to-end verdict`) were green, and `cli build` did not start
+because it depends on the failed job.
 
-**Причина.** `bun-version: latest` заставляет экшен разыменовывать `latest` через GitHub API;
-анонимные запросы с общих раннеров упираются в 403.
+**Cause.** `bun-version: latest` makes the action resolve `latest` through the GitHub API;
+anonymous requests from shared runners hit 403.
 
-**Фикс.** Все пять шагов `setup-bun` теперь просят конкретную версию (`bun-version: 1.4.5` —
-та же, что локально) и передают `github-token: ${{ secrets.GITHUB_TOKEN }}`, чтобы не остаться
-анонимными. Содержимое workflow проверено `yaml.safe_load`.
+**Fix.** All five `setup-bun` steps now request a concrete version (`bun-version: 1.4.5` —
+the same as locally) and pass `github-token: ${{ secrets.GITHUB_TOKEN }}` so they do not stay
+anonymous. The workflow content was checked with `yaml.safe_load`.
 
-**Проверено в CI.** Прогон [`45163760974`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45163760974) на `b9b6212` — **7 из 7 джобов success**:
-`patched tree` на обеих ОС (шаг `setup-bun` проходит), `installer dry-run` на обеих ОС,
-`repo tests` с `docs numbers match the patch`, `end-to-end verdict`, `cli build`.
+**Verified in CI.** Run [`45163760974`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45163760974) on `b9b6212` — **7 of 7 jobs success**:
+`patched tree` on both OSes (the `setup-bun` step passes), `installer dry-run` on both OSes,
+`repo tests` with `docs numbers match the patch`, `end-to-end verdict`, `cli build`.
 
 # 0.13.12 — 2026-11-23
 
-Проверка CI по API показала, что все прогоны начиная с 0.13.8 красные: два дефекта были
-в самом репозитории, не в коде патча.
+A CI check through the API showed that every run since 0.13.8 had been red: two defects were
+in the repository itself, not in the patch code.
 
-**1. Закреплённый sha256 патча не обновлялся.** `install.sh` и `install.ps1` держат
-`PATCH_SHA256` и сверяют скачанный патч с ним. После каждой перегенерации патча сумма
-оставалась прежней, поэтому `install.sh --dry-run` и `install.ps1 -DryRun` падали на сверке —
-ровно эти джобы и были красными. Теперь `scripts/make-patch.sh` пересчитывает сумму и
-переписывает её в обоих инсталляторах.
+**1. The pinned sha256 of the patch was not updated.** `install.sh` and `install.ps1` hold
+`PATCH_SHA256` and compare the downloaded patch against it. After every patch regeneration the checksum
+stayed the same, so `install.sh --dry-run` and `install.ps1 -DryRun` failed the comparison —
+exactly those jobs were red. Now `scripts/make-patch.sh` recomputes the checksum and
+rewrites it in both installers.
 
-**2. Тест протокола противоречил README.** `test/opencode-tree/protocol.test.ts` требовал,
-чтобы `capabilities.logprobs: false` побеждал `OPENCODE_TRUTHPROBE=1`, а README обещает
-обратное: явная переменная просит `logprobs` у всех chat-completions моделей. Тест переписан
-под обещанное поведение (`an explicit environment override wins over capabilities`) плюс
-отдельный случай «без переменной решают возможности».
+**2. The protocol test contradicted the README.** `test/opencode-tree/protocol.test.ts` required
+that `capabilities.logprobs: false` win over `OPENCODE_TRUTHPROBE=1`, while the README promises
+the opposite: an explicit variable asks for `logprobs` from all chat-completions models. The test was rewritten
+to the promised behaviour (`an explicit environment override wins over capabilities`) plus
+a separate case "without the variable, capabilities decide".
 
-**3. Устойчивый fetch базы.** `git fetch --depth 1 origin <sha>` GitHub отдаёт не всегда:
-на необъявленный объект сервер отвечает отказом. Оба инсталлятора падают обратно на полный
-`git fetch` и проверяют, что база действительно появилась.
+**3. Robust base fetch.** `git fetch --depth 1 origin <sha>` is not always served by GitHub:
+for an unadvertised object the server refuses. Both installers fall back to a full
+`git fetch` and verify that the base actually appeared.
 
-**4. `make docs-check` в CI.** Джоб `repo tests` теперь сверяет числа в доках с патчем.
+**4. `make docs-check` in CI.** The `repo tests` job now compares the numbers in the docs with the patch.
 
-**Проверено в CI:** прогон [`45161855972`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45161855972) на `a8fb2d8` — **7 из 7 джобов success**:
-`repo tests` (вместе с новым `docs numbers match the patch`), `installer dry-run` на Ubuntu
-и Windows, `patched tree` на обеих ОС, `end-to-end verdict`, `cli build`. Предыдущие пять
-прогонов (0.13.8–0.13.11) были красными.
+**Verified in CI:** run [`45161855972`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45161855972) on `a8fb2d8` — **7 of 7 jobs success**:
+`repo tests` (together with the new `docs numbers match the patch`), `installer dry-run` on Ubuntu
+and Windows, `patched tree` on both OSes, `end-to-end verdict`, `cli build`. The previous five
+runs (0.13.8–0.13.11) were red.
 
-**Проверено в CI:** прогон [`45161855972`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45161855972) на `a8fb2d8` — **7 из 7 джобов success**:
-`repo tests` (вместе с новым `docs numbers match the patch`), `installer dry-run` на Ubuntu
-и Windows, `patched tree` на обеих ОС, `end-to-end verdict`, `cli build`. Предыдущие пять
-прогонов (0.13.8–0.13.11) были красными.
+**Verified in CI:** run [`45161855972`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45161855972) on `a8fb2d8` — **7 of 7 jobs success**:
+`repo tests` (together with the new `docs numbers match the patch`), `installer dry-run` on Ubuntu
+and Windows, `patched tree` on both OSes, `end-to-end verdict`, `cli build`. The previous five
+runs (0.13.8–0.13.11) were red.
 
-**Проверено локально:** `TRUTHPROBE_REQUIRE_PROTOCOL_TESTS=1 bun test
-test/truthprobe-protocol.test.ts` в пропатченном дереве — 9 pass / 0 fail; `make patch`
-переписывает пин (проверено на намеренно испорченной сумме — восстановлена); `make docs-check`
-зелёный; `bun test test` — 101 тест, 0 fail.
+**Verified locally:** `TRUTHPROBE_REQUIRE_PROTOCOL_TESTS=1 bun test
+test/truthprobe-protocol.test.ts` in the patched tree — 9 pass / 0 fail; `make patch`
+rewrites the pin (checked on a deliberately corrupted checksum — restored); `make docs-check`
+green; `bun test test` — 101 tests, 0 fail.
 
 # 0.13.11 — 2026-11-23
 
-Аудит фикса 0.13.9 нашёл в `splitStamp` граничный случай, который воспроизводил ровно тот
-таймаут, ради которого штамп и разделяли.
+An audit of the 0.13.9 fix found an edge case in `splitStamp` that reproduced exactly the
+timeout the stamp was split for in the first place.
 
-**Что было.** `splitStamp("2.0.32+")` возвращал `{ version: "2.0.32+", stage: "2.0.32+" }`:
-плюс в конце файла считался «штампа нет». Версия `2.0.32+` не совпадает с `2.0.32`, которую
-CLI пишет о себе в `service.json`, поэтому сервис снова признавался чужим и перезапускался
-до `Timed out waiting for the background service to start`.
+**What it was.** `splitStamp("2.0.32+")` returned `{ version: "2.0.32+", stage: "2.0.32+" }`:
+a trailing plus in the file counted as "no stamp". The version `2.0.32+` does not match `2.0.32`, which the
+CLI writes about itself into `service.json`, so the service was again deemed foreign and restarted
+until `Timed out waiting for the background service to start`.
 
-**Фикс.** Версия — всегда текст до разделителя; ведущий плюс означает, что в файле версии
-нет вообще, и такой файл считается нештампованным. Тесты: случай с хвостовым плюсом ожидает
-обрезанную версию, `keptStages` сохраняет каталог со штампом (`+` → `-`), отдельный тест
-проверяет инвариант «в сверяемой версии никогда нет `+`».
+**Fix.** The version is always the text before the separator; a leading plus means there is no
+version in the file at all, and such a file counts as unstamped. Tests: the trailing-plus case expects
+the trimmed version, `keptStages` keeps the stamped directory (`+` → `-`), a separate test
+checks the invariant "the compared version never contains `+`".
 
-**Проверено:** `bun test src/main/service/cli-version.test.ts` — 15 pass / 0 fail; типизация всех пакетов — один прогон, 0 ошибок (schema 132, ai 357+322, core 2 036,
-client 181, tui 1 947, session-ui 384, app 2 447, desktop 3 571 файл);
-типизация desktop — 3 571 файл, 0 ошибок. Патч перегенерирован: 28 коммитов, 52 файла,
-+3573/−55, 342 760 Б.
+**Verified:** `bun test src/main/service/cli-version.test.ts` — 15 pass / 0 fail; typecheck of all
+packages — one run, 0 errors (schema 132, ai 357+322, core 2 036,
+client 181, tui 1 947, session-ui 384, app 2 447, desktop 3 571 files);
+desktop typecheck — 3 571 files, 0 errors. Patch regenerated: 28 commits, 52 files,
++3573/−55, 342 760 B.
 
 # 0.13.10 — 2026-11-23
 
-Патч, собранный в 0.13.8, вёз внутрь чужого дерева копию самого себя, а доки обещали
-переменную, которой уже нет. То и другое убрано; числа пересчитаны по артефакту.
+The patch assembled in 0.13.8 carried a copy of itself into the foreign tree, and the docs promised
+a variable that no longer exists. Both are gone; the numbers are recomputed from the artefact.
 
-**Патч больше не везёт сам себя.** Коммит 10/27 («confidence levels and sentence
-highlights») добавлял файл `patches/truthprobe-0001.patch` — устаревший набор из девяти
-коммитов, 3 735 строк. Любой, кто нашёл бы его в своём клоне opencode и применил, получил
-бы версию до 0.13.x: без пробы возможностей, без скорера, без плашки в desktop. Файл
-убран из истории `007afb1..HEAD` (27 коммитов сохранены), `git log -- patches/…` по
-диапазону пуст.
+**The patch no longer carries itself.** Commit 10/27 ("confidence levels and sentence
+highlights") added the file `patches/truthprobe-0001.patch` — a stale set of nine
+commits, 3 735 lines. Anyone who found it in their opencode clone and applied it would have
+gotten the version before 0.13.x: without the capability probe, without the scorer, without the desktop flag. The file
+was removed from the history `007afb1..HEAD` (27 commits preserved), `git log -- patches/…` over the
+range is empty.
 
-**Гейт в `scripts/make-patch.sh`.** Перед генерацией скрипт проверяет
-`git diff --name-only $BASE..HEAD` и падает, если в диапазоне есть пути вне `packages/**`
-и `bun.lock`. Именно так и проскочила копия патча.
+**A gate in `scripts/make-patch.sh`.** Before generating, the script checks
+`git diff --name-only $BASE..HEAD` and fails if the range contains paths outside `packages/**`
+and `bun.lock`. That is exactly how the patch copy slipped through.
 
-**`make docs-check`.** Новый `scripts/check-docs.sh` считает коммиты, файлы и байты прямо
-из файла патча и сверяет их с `README.md`, `README.en.md`, `docs/VALIDATION.md` и
-`CHANGELOG.md`; цель включена в `make verify`. Числа в доках больше не держатся на честном
-слове: расхождение валит проверку.
+**`make docs-check`.** The new `scripts/check-docs.sh` counts commits, files and bytes straight
+from the patch file and compares them with `README.md`, `README.en.md`, `docs/VALIDATION.md` and
+`CHANGELOG.md`; the target is part of `make verify`. The numbers in the docs no longer rest on an honest
+word: a mismatch fails the check.
 
-**Доки приведены к измеренному:** 52 файла, +3573/−55, патч 342 760 Б;
-`TRUTHPROBE_SHAKY_THRESHOLD` описан как удалённый в 0.13.8, а не «разбирается, но не
-влияет»; рецепт `git am` содержит локальную identity (без неё `empty ident name`, exit
-128); порог плашки — строгое `r > 0.45`; 127 тестов заменены на 129; карта разделов
-`VALIDATION.md` доведена до §24; typecheck desktop — 3 571 файл.
+**Docs brought to the measured values:** 52 files, +3573/−55, patch 342 760 B;
+`TRUTHPROBE_SHAKY_THRESHOLD` described as removed in 0.13.8 instead of "parsed but does not
+affect"; the `git am` recipe contains a local identity (without it `empty ident name`, exit
+128); the flag threshold is a strict `r > 0.45`; 127 tests replaced with 129; the section map of
+`VALIDATION.md` brought up to §24; desktop typecheck — 3 571 files.
 
-**Проверено:** `bun test test` 92 pass / 8 skip / 0 fail, 210 expect, 100 тестов;
-`git apply --check` на чистом worktree `007afb1` проходит; `git am` с локальной identity
-применяет все 28 коммитов. Приложение не запускалось (проверка по коду и логам).
+**Verified:** `bun test test` 92 pass / 8 skip / 0 fail, 210 expect, 100 tests;
+`git apply --check` on a clean worktree `007afb1` passes; `git am` with a local identity
+applies all 28 commits. The application was not launched (verified by code and logs).
 
 # 0.13.9 — 2026-11-23
 
-Штамп версии, добавленный в 0.13.8, сломал запуск desktop: приложение не дожидалось фонового
-сервиса и падало с `Timed out waiting for the background service to start`.
+The version stamp added in 0.13.8 broke desktop startup: the application did not wait for the background
+service and failed with `Timed out waiting for the background service to start`.
 
-**Причина.** `resources/opencode-cli.version` уходил в `serviceVersion` целиком, а CLI записывает
-в `service.json` собственную версию без штампа (`0.0.0-dev-<timestamp>`). `matchesVersion`
-сравнивает строки строго, поэтому `<версия>+<sha256>` не совпадала никогда: сервис считался чужим,
-останавливался, поднимался заново и так до таймаута в 120 секунд.
+**Cause.** `resources/opencode-cli.version` went into `serviceVersion` whole, while the CLI writes
+its own version without the stamp into `service.json` (`0.0.0-dev-<timestamp>`). `matchesVersion`
+compares strings strictly, so `<version>+<sha256>` never matched: the service was deemed foreign,
+was stopped, brought up again, and so on until the 120 second timeout.
 
-**Исправлено**
+**Fixed**
 
-- `packages/desktop/src/main/service/cli-version.ts` — `splitStamp()`: до `+` версия, которую сервис
-  обязан сообщать о себе, целиком — ключ каталога со стадией сборки.
-- `desktop-cli.ts` — `Resolved` несёт `version` и `stage` раздельно: каталог стадии строится по
-  `stage`, версия для `Service.ensure` берётся из `version`.
-- `background-service.ts`, `sidecar-probe.ts` — используют разложенные значения.
-- `scripts/build-desktop.sh` — версия снимается с самого бинаря (`opencode-cli --version`), а не из
-  файла рядом: там лежит усечённое `0.0.0-dev`, из-за чего штамп раньше получался пустым.
-- `scripts/install-desktop.sh` — `taskkill.exe /IM` с одиночным слэшем и ожидание выхода процесса:
-  с `//IM` в WSL `taskkill` не распознавал аргумент, приложение оставалось запущенным, и `cp` падал
-  с `Permission denied`.
+- `packages/desktop/src/main/service/cli-version.ts` — `splitStamp()`: before `+` is the version the service
+  must report about itself, the whole string is the key of the directory with the build stage.
+- `desktop-cli.ts` — `Resolved` carries `version` and `stage` separately: the stage directory is built from
+  `stage`, the version for `Service.ensure` is taken from `version`.
+- `background-service.ts`, `sidecar-probe.ts` — use the split values.
+- `scripts/build-desktop.sh` — the version is taken from the binary itself (`opencode-cli --version`), not from the
+  file next to it: that one holds a truncated `0.0.0-dev`, which is why the stamp used to come out empty.
+- `scripts/install-desktop.sh` — `taskkill.exe /IM` with a single slash and waiting for the process to exit:
+  with `//IM` in WSL `taskkill` did not recognise the argument, the application stayed running, and `cp` failed
+  with `Permission denied`.
 
-**Проверено**
+**Verified**
 
-- typecheck desktop: 3 571 файл, 0 ошибок; тесты `cli-version` и `cli-stages`: 17 pass / 0 fail.
-- Сборка со штампом `0.0.0-dev-202611231000+c3c4a36e358e`, установка в
-  `AppData/Local/Programs/TruthProbe`, кеш CLI очищен.
-- Лог запуска: `v2 CLI version bundled` с `version: '0.0.0-dev-202611231000'` и
-  `stage: '0.0.0-dev-202611231000+c3c4a36e358e'`, затем `v2 CLI background service ready` с
-  `runningVersion: '0.0.0-dev-202611231000'`, `probed: true`; `service.json` содержит ту же версию.
-  Таймаута нет.
+- desktop typecheck: 3 571 files, 0 errors; `cli-version` and `cli-stages` tests: 17 pass / 0 fail.
+- A build with the stamp `0.0.0-dev-202611231000+c3c4a36e358e`, installed into
+  `AppData/Local/Programs/TruthProbe`, CLI cache cleared.
+- Startup log: `v2 CLI version bundled` with `version: '0.0.0-dev-202611231000'` and
+  `stage: '0.0.0-dev-202611231000+c3c4a36e358e'`, then `v2 CLI background service ready` with
+  `runningVersion: '0.0.0-dev-202611231000'`, `probed: true`; `service.json` contains the same version.
+  No timeout.
 
 # 0.13.8 — 2026-11-23
 
-Внешний аудит кода (не чисел) нашёл девять мест, где поведение расходилось с обещаниями.
-Все исправлены в пропатченном дереве, патч перегенерирован, desktop пересобран.
+An external audit of the code (not of the numbers) found nine places where the behaviour diverged from the promises.
+All are fixed in the patched tree, the patch is regenerated, desktop is rebuilt.
 
-**Исправлено в ядре**
+**Fixed in the core**
 
-- `digitDensity` делил число цифр на `text.length`, то есть на UTF-16 units: на эмодзи и астральной
-  CJK доля цифр занижалась. Теперь числитель и знаменатель считаются в code points.
-- `Math.min(...lps)` разворачивал длинный ответ в аргументы и мог упасть `RangeError` прямо в
-  публикации события. Заменено свёрткой `minOf(values)`.
-- При дрейфе смещений токенов `sentences` оставался пустым, и снаружи это читалось как «спорных
-  предложений нет». Теперь всё складывается в одно псевдопредложение с реальным диапазоном текста,
-  причина пишется в `reason`.
-- Признак `meanLp` считался как `log(max(geo, 1e-9))`: всё ниже `1e-9` схлопывалось в одно число
-  −20.7, и линейная модель теряла разрешение на плохих ответах. В признаки идёт сырой средний logprob.
-- Флаг спорного предложения стоял при `risk >= riskyThreshold`, поэтому ровно на границе
-  (score 0.55 / risk 0.45) предложение было помечено спорным, а уровень оставался `uncertain`.
-  Теперь строгое `risk > riskyThreshold`.
-- Оценка по скрытым reasoning-токенам публиковалась со статусом `ok`, то есть выдавалась за полную.
-  Статус `partial`, TUI печатает ` · partial match`.
+- `digitDensity` divided the digit count by `text.length`, i.e. by UTF-16 units: on emoji and astral
+  CJK the digit share was understated. Now the numerator and denominator are counted in code points.
+- `Math.min(...lps)` spread a long answer into arguments and could fail with `RangeError` right in
+  event publication. Replaced by the `minOf(values)` fold.
+- On token offset drift `sentences` stayed empty, and from the outside this read as "no doubtful
+  sentences". Now everything is folded into one pseudo-sentence with the real text range,
+  and the cause is written into `reason`.
+- The `meanLp` feature was computed as `log(max(geo, 1e-9))`: everything below `1e-9` collapsed into one number
+  −20.7, and the linear model lost resolution on bad answers. The raw mean logprob now goes into the features.
+- The doubtful sentence flag was set at `risk >= riskyThreshold`, so exactly at the boundary
+  (score 0.55 / risk 0.45) a sentence was marked doubtful while the level stayed `uncertain`.
+  Now a strict `risk > riskyThreshold`.
+- An estimate from hidden reasoning tokens was published with status `ok`, i.e. passed off as complete.
+  Now `partial`, and the TUI prints ` · partial match`.
 
-**Исправлено в UI и настройках**
+**Fixed in the UI and settings**
 
-- `session-ui` и TUI повторяли пороги уровней числами (`0.9/0.75/0.55/0.35`), копируя
-  `packages/core/src/truthprobe/levels.ts`. Оба читают `LEVEL_BOUNDS` оттуда; у `session-ui`
-  появилась workspace-зависимость на `@opencode/core`.
-- `TRUTHPROBE_SHAKY_THRESHOLD` разбиралась в опции, но её не читал ни один скорер и ни один UI.
-  Переменная и поле `shakyThreshold` удалены — настройка больше не обещает того, чего нет.
-- Тест `digitDensity` закреплял именно дефект (деление на UTF-16) и переписан на code points.
-  Добавлены два теста: оценка не исчезает при дрейфе смещений и флаг не ставится на точной границе.
+- `session-ui` and the TUI repeated the level thresholds as numbers (`0.9/0.75/0.55/0.35`), copying
+  `packages/core/src/truthprobe/levels.ts`. Both read `LEVEL_BOUNDS` from there; `session-ui`
+  gained a workspace dependency on `@opencode/core`.
+- `TRUTHPROBE_SHAKY_THRESHOLD` was parsed into an option, but no scorer and no UI read it.
+  The variable and the `shakyThreshold` field are removed — the setting no longer promises what does not exist.
+- The `digitDensity` test pinned exactly the defect (division by UTF-16) and was rewritten for code points.
+  Two tests were added: the estimate does not disappear on offset drift, and the flag is not set at the exact boundary.
 
-**Проверено**
+**Verified**
 
-- `packages/core/test` — 129 pass / 0 fail, 361 expect, 6 файлов; `session-ui` doubtful — 9 pass;
-  typecheck core / session-ui / tui зелёный.
-- Патч: 26 коммитов, 48 файлов, +7234/−40, 491 498 Б; `git apply --check` на `007afb1` проходит.
-- Desktop пересобран: штамп `0.0.0-dev+ef470da66c44`, в собранном CLI
-  `TRUTHPROBE_SHAKY_THRESHOLD` отсутствует (grep → 0), установленная копия несёт тот же штамп.
+- `packages/core/test` — 129 pass / 0 fail, 361 expect, 6 files; `session-ui` doubtful — 9 pass;
+  typecheck core / session-ui / tui green.
+- Patch: 26 commits, 48 files, +7234/−40, 491 498 B; `git apply --check` on `007afb1` passes.
+- Desktop rebuilt: stamp `0.0.0-dev+ef470da66c44`, in the built CLI
+  `TRUTHPROBE_SHAKY_THRESHOLD` is absent (grep → 0), the installed copy carries the same stamp.
 
-**Чего это не меняет.** Качество детектора: `1 − exp(meanLp)` остаётся 0.799 OOF AUROC, обученные
-веса по-прежнему не превосходят формулу (см. 0.13.7). Это исправления честности и единиц, не точности.
+**What this does not change.** Detector quality: `1 − exp(meanLp)` stays 0.799 OOF AUROC, the trained
+weights still do not beat the formula (see 0.13.7). These are fixes of honesty and units, not of accuracy.
 
 # 0.13.7 — 2026-11-22
 
-Проверка собственных чисел сторонними агентами нашла ошибку в наборе данных, на котором считались
-метрики обученного детектора. Числа отозваны, веса удалены из репозитория.
+A check of our own numbers by third-party agents found an error in the dataset on which the
+metrics of the trained detector were computed. The numbers are withdrawn, the weights removed from the repository.
 
-**Почему это было сломано**
+**Why it was broken**
 
-- У **52 из 102** «ложных» ответов поле `answer` оказалось пустой строкой при `n_tokens = 160`
-  (ограничение `max_tokens`): модель отвечала, токены сохранились, текст в датасет не попал.
-  Метка при этом ставилась механически, и пустая строка получала `wrong`, потому что в ней не
-  нашлось ни ожидаемых слов, ни признаков отказа. Половина негативного класса была артефактом сбора.
-- Текст восстановлен склейкой токенов из `rows_raw2.jsonl` и `rows_raw3.jsonl`; к восстановленному
-  тексту применены те же правила разметки, что и в коллекторе. Из 52 восстановленных **26 оказались
-  верными** ответами, и набор стал таким: **76 выдумок и 189 верных** (было 102 и 163).
+- In **52 of 102** "false" answers the `answer` field turned out to be an empty string at `n_tokens = 160`
+  (`max_tokens` limit): the model answered, the tokens were saved, the text did not make it into the dataset.
+  The label was applied mechanically, and the empty string got `wrong` because neither the expected
+  words nor refusal signs were found in it. Half of the negative class was a collection artefact.
+- The text was restored by joining tokens from `rows_raw2.jsonl` and `rows_raw3.jsonl`; the same labelling rules
+  as in the collector were applied to the restored text. Of the 52 restored, **26 turned out to be
+  correct** answers, and the set became: **76 fabrications and 189 correct** (was 102 and 163).
 
-**Что показала переоценка (`docs/LEARNED-WEIGHTS.md`)**
+**What the re-evaluation showed (`docs/LEARNED-WEIGHTS.md`)**
 
-- Встроенная формула `1 − exp(meanLp)` — OOF AUROC **0.799**, CI `[0.719, 0.872]`.
-- Логистика на пяти продуктовых признаках — **0.783**, CI `[0.696, 0.867]`; на 26 признаках без
-  длины — **0.815**, CI `[0.737, 0.883]`. Разница с формулой накрывает ноль:
-  `Δ = −0.016 [−0.057, +0.020]` и `+0.016 [−0.036, +0.069]`.
-- Если убрать линейный вклад `n_tokens`, качество падает до случайного: **0.541** (5 признаков)
-  и 0.717 (26 признаков).
-- Внутри категорий с обоими классами AUROC 0.329–0.470: на `fake-work` все три оценки **хуже
-  случайного**.
-- 218 из 265 строк (82%) имеют метку, полностью определяемую вопросом.
+- The built-in formula `1 − exp(meanLp)` — OOF AUROC **0.799**, CI `[0.719, 0.872]`.
+- Logistic regression on five product features — **0.783**, CI `[0.696, 0.867]`; on 26 features without
+  length — **0.815**, CI `[0.737, 0.883]`. The difference from the formula covers zero:
+  `Δ = −0.016 [−0.057, +0.020]` and `+0.016 [−0.036, +0.069]`.
+- Removing the linear contribution of `n_tokens` drops quality to chance: **0.541** (5 features)
+  and 0.717 (26 features).
+- Within categories that have both classes, AUROC is 0.329–0.470: on `fake-work` all three estimates are **worse
+  than chance**.
+- 218 of 265 rows (82%) have a label fully determined by the question.
 
-**Удалено**
+**Removed**
 
-- `data/weights-detector.json` — веса обученного детектора. Обещание «ловим 75% выдумок при 13%
-  ложных тревог» отозвано: оно посчитано на повреждённом наборе, а на исправленном обученная модель
-  не лучше встроенной формулы.
+- `data/weights-detector.json` — the trained detector weights. The promise "we catch 75% of fabrications at 13%
+  false alarms" is withdrawn: it was computed on the corrupted set, and on the corrected one the trained model
+  is no better than the built-in formula.
 
-**Добавлено в `scripts/halluc/`**
+**Added in `scripts/halluc/`**
 
-- `repair.py` — восстановление текста из токенов и переразметка; результат пишется в `*f.jsonl`,
-  исходные файлы не перезаписываются.
-- `eval.py` — таблица AUROC, кластерный бутстрэп по `qid`, AUROC по категориям и по квартилям длины.
-- `dataset.py`, `score_all.ts` принимают пути через `RAW2/RAW3/SCORED2/SCORED3`/`DATASET_OUT`,
-  `SCORE_MODULE` — вместо зашитых абсолютных путей.
+- `repair.py` — text restoration from tokens and re-labelling; the result is written to `*f.jsonl`,
+  the source files are not overwritten.
+- `eval.py` — AUROC table, clustered bootstrap by `qid`, AUROC by category and by length quartiles.
+- `dataset.py`, `score_all.ts` accept paths via `RAW2/RAW3/SCORED2/SCORED3`/`DATASET_OUT`,
+  `SCORE_MODULE` — instead of hardcoded absolute paths.
 
-**Исправлено по дороге**
+**Fixed along the way**
 
-- `dataset.py` и `score_all.ts` по умолчанию читают **восстановленные** прогоны (`rows_raw2f.jsonl`,
-  `rows_raw3f.jsonl`): раньше порядок шагов не был нигде закреплён, и прогон на исходных файлах молча
-  возвращал испорченный набор (102/163 с 52 пустыми вместо 76/189 без пустых).
-- Относительные пути из `RAW2`/`RAW3` считаются от `HALLUC_DIR`, а не от текущего каталога.
-- `scripts/make-patch.sh` печатал 112 «файлов» вместо 46: считались заголовки `diff --git`, а не
-  уникальные пути. Теперь `sort -u` по путям.
+- `dataset.py` and `score_all.ts` read the **restored** runs by default (`rows_raw2f.jsonl`,
+  `rows_raw3f.jsonl`): before, the order of steps was pinned nowhere, and a run on the source files silently
+  returned the corrupted set (102/163 with 52 empty instead of 76/189 without empty).
+- Relative paths from `RAW2`/`RAW3` are resolved from `HALLUC_DIR`, not from the current directory.
+- `scripts/make-patch.sh` printed 112 "files" instead of 46: it counted `diff --git` headers, not
+  unique paths. Now `sort -u` over the paths.
 
 **Desktop**
 
-- `scripts/build-desktop.sh` пишет штамп `opencode-cli.version` как `<версия сборки>+<sha256[:12]>`.
-  Раньше штамп не пересобирался, и приложение продолжало брать CLI из кеша по старой строке версии:
-  сборка 22.11.2026 лежала установленной, но работала на бинаре от 19-го.
-- `scripts/install-desktop.sh` + `make desktop-install`: копирование сборки в
-  `AppData/Local/Programs/TruthProbe`, закрытие запущенного приложения и **очистка кеша CLI**;
-  `--dry-run` показывает, что будет сделано.
+- `scripts/build-desktop.sh` writes the `opencode-cli.version` stamp as `<build version>+<sha256[:12]>`.
+  Before, the stamp was not rebuilt, and the application kept taking the CLI from the cache by the old version string:
+  the 22.11.2026 build was installed but ran on the binary from the 19th.
+- `scripts/install-desktop.sh` + `make desktop-install`: copying the build into
+  `AppData/Local/Programs/TruthProbe`, closing the running application and **clearing the CLI cache**;
+  `--dry-run` shows what will be done.
 
 # 0.13.6 — 2026-11-22 (числа отозваны, см. 0.13.7)
 
-Обученные веса для вспомогательного детектора выдумок теперь лежат в репозитории в формате,
-который патч уже умеет загружать.
+The trained weights for the auxiliary fabrication detector now live in the repository in a format
+that the patch can already load.
 
-**Добавлено**
+**Added**
 
-- `data/weights-detector.json` — линейная модель на пяти признаках продукта (`meanLp`, `minLp`,
-  `meanPhi`, `fracLow`, `digitDensity`): OOF AUROC 0.881 на 265 строках (102 ложных, 68 вопросов,
-  4 модели). Признаки длины из обучения исключены. Стандартизация свёрнута в сырые веса
-  (`max|Δp| = 6.1e-16`), знаки перевёрнуты под семантику уверенности: `score` — вероятность
-  «ответ верен», поэтому штатные уровни к нему применимы как обычно.
-- `docs/LEARNED-WEIGHTS.md` — что внутри, рабочие точки (0.35 → 95.1% / 33.7%, 0.55 → 75.5% /
-  12.9%, 0.65 → 62.7% / 9.2%), команда включения, ограничения и раздел «чего это не доказывает»
-  (маленький набор, провал переноса на `glm-5.3-flash`, промптовая природа негативов).
-- `README.md`: короткий раздел со ссылкой на документ.
+- `data/weights-detector.json` — a linear model on five product features (`meanLp`, `minLp`,
+  `meanPhi`, `fracLow`, `digitDensity`): OOF AUROC 0.881 on 265 rows (102 false, 68 questions,
+  4 models). Length features are excluded from training. Standardisation is folded into the raw weights
+  (`max|Δp| = 6.1e-16`), signs are flipped for confidence semantics: `score` is the probability
+  that "the answer is correct", so the standard levels apply to it as usual.
+- `docs/LEARNED-WEIGHTS.md` — what is inside, operating points (0.35 → 95.1% / 33.7%, 0.55 → 75.5% /
+  12.9%, 0.65 → 62.7% / 9.2%), the enabling command, limitations and the section "what this does not prove"
+  (a small set, failed transfer to `glm-5.3-flash`, the prompted nature of the negatives).
+- `README.md`: a short section linking to the document.
 
-Включается без пересборки патча: `install.sh --scorer data/weights-detector.json` или
-`TRUTHPROBE_SCORER=linear:<путь>`.
+Enabled without rebuilding the patch: `install.sh --scorer data/weights-detector.json` or
+`TRUTHPROBE_SCORER=linear:<path>`.
 
 # 0.13.5 — 2026-11-22
 
-Обучение детектора выдумок на собранных ответах: 265 строк, 102 ложных, 68 вопросов, 4 модели.
-Результат — с оговорками, и ни одна модель не готова к поставке.
+Training a fabrication detector on collected answers: 265 rows, 102 false, 68 questions, 4 models.
+The result comes with caveats, and no model is ready to ship.
 
-**Добавлено**
+**Added**
 
-- `scripts/halluc/`: `collect3.py` (31 вопрос с ловушкой), `score_all.ts`, `dataset.py`
-  (30 признаков из токенов и текста), `train.py` (логистика, CART, случайный лес, мини-MLP на
-  stdlib — numpy/sklearn в окружении нет), `ablate.py`, `thresholds.py` и `README.md`.
-- `docs/VALIDATION.md` §21: методика, таблицы, абляции, `leave-one-model-out`, оговорки.
+- `scripts/halluc/`: `collect3.py` (31 trick questions), `score_all.ts`, `dataset.py`
+  (30 features from tokens and text), `train.py` (logistic regression, CART, random forest, a mini-MLP on
+  stdlib — numpy/sklearn are not available in the environment), `ablate.py`, `thresholds.py` and `README.md`.
+- `docs/VALIDATION.md` §21: methodology, tables, ablations, `leave-one-model-out`, caveats.
 
-**Измерено**
+**Measured**
 
-- Одна формула `exp(meanLp)` разделяет ложные и верные ответы с AUROC **0.886**; обученная
-  логистика без признаков длины — **0.931**, случайный лес — **0.938**.
-- Признаки длины исключены из основного эксперимента: `n_tokens` один даёт 0.973, потому что
-  выдумки длинные, а контрольные верные короткие.
-- Сигнал — не средняя уверенность, а разброс: `frac_below_half` 0.838, `std_lp` 0.835.
-- Перенос на невиданную модель: 0.939 / 0.974 / 0.961 для deepseek и particle, **0.500** для
-  `glm-5.3-flash` — детектор не универсален.
-- Пороги продукта не подходят этому классу ошибок: при `score < 0.55` плашка не сработала ни разу
-  из 102 ложных; при `score < 0.90` поймано 98% ложных, но и 42% верных.
+- A single formula `exp(meanLp)` separates false from correct answers with AUROC **0.886**; the trained
+  logistic regression without length features — **0.931**, random forest — **0.938**.
+- Length features are excluded from the main experiment: `n_tokens` alone gives 0.973, because
+  fabrications are long and control correct answers are short.
+- The signal is not the mean confidence but the spread: `frac_below_half` 0.838, `std_lp` 0.835.
+- Transfer to an unseen model: 0.939 / 0.974 / 0.961 for deepseek and particle, **0.500** for
+  `glm-5.3-flash` — the detector is not universal.
+- The product thresholds do not fit this class of error: at `score < 0.55` the flag never fired on any
+  of the 102 false answers; at `score < 0.90` 98% of false answers were caught, but also 42% of correct ones.
 
-**Не сделано**
+**Not done**
 
-- Детектор не подключён к продукту: нет второго независимого набора, 102 негатива мало для
-  калибровки, а перенос между моделями провалился на одной из четырёх.
+- The detector is not wired into the product: there is no second independent set, 102 negatives are too few for
+  calibration, and transfer between models failed on one of four.
 
 # 0.13.4 — 2026-11-22
 
-Первый замер на самопроизвольных галлюцинациях. Результат отрицательный: уверенность токенов
-такие выдумки не ловит.
+The first measurement on spontaneous hallucinations. The result is negative: token confidence
+does not catch such fabrications.
 
-**Измерено** (`docs/VALIDATION.md` §20)
+**Measured** (`docs/VALIDATION.md` §20)
 
-- 40 вопросов × 4 модели шлюза free-pi, `temperature 0`, 156 ответов, две инструкции.
-- Свободная инструкция: модели либо отвечают верно, либо прямо отказываются — после ручной сверки
-  из 16 «ложных» ответов ложных оказалось 0 (9 отказов, 7 верных с оговоркой). Мерить нечего.
-- Инструкция «отвечай, как будто предпосылка верна»: 32 ложных ответа, из них измеримы 12
-  (остальным шлюз не отдал logprobs). AUROC **0.769**, средний score верных 0.9625 против 0.9217
-  у ложных; **все 12** ложных ≥ 0.55, **8 из 12** ≥ 0.90 (`safe`).
-- Примеры: «Napoleon won the Battle of Waterloo in 1815» — 0.9573 `safe`; «the Great Wall is the
-  only man-made object visible from space» — 0.9903 `safe`; выдуманный химик Воскобойников —
+- 40 questions × 4 free-pi gateway models, `temperature 0`, 156 answers, two instructions.
+- Free instruction: the models either answer correctly or outright refuse — after manual verification,
+  of 16 "false" answers 0 turned out to be false (9 refusals, 7 correct with a caveat). Nothing to measure.
+- Instruction "answer as if the premise were true": 32 false answers, of which 12 are measurable
+  (the gateway did not return logprobs for the rest). AUROC **0.769**, mean score of correct answers 0.9625 versus 0.9217
+  for false ones; **all 12** false answers ≥ 0.55, **8 of 12** ≥ 0.90 (`safe`).
+- Examples: "Napoleon won the Battle of Waterloo in 1815" — 0.9573 `safe`; "the Great Wall is the
+  only man-made object visible from space" — 0.9903 `safe`; the invented chemist Voskoboinikov —
   0.8352 `likely`.
 
-**Не менялось**
+**Not changed**
 
-- Ни формула, ни пороги: подгонять порог под двенадцать точек было бы подгонкой, а не измерением.
-  Вывод для интерфейса прежний — score показывает ровность генерации, а не правдивость.
+- Neither the formula nor the thresholds: fitting a threshold to twelve points would be fitting, not measuring.
+  The conclusion for the interface is the same — the score shows the smoothness of generation, not truthfulness.
 
 # 0.13.3 — 2026-11-22
 
-Повторный аудит пятью независимыми агентами проверил, что 0.13.2 действительно закрыл
-обещанное. Часть пунктов там была заявлена, но не сделана — ниже то, что пришлось доделать
-на самом деле, и места, где поведение расходилось с документацией.
+A re-audit by five independent agents checked that 0.13.2 really closed what was
+promised. Some items there were claimed but not done — below is what actually had to be finished,
+and the places where the behaviour diverged from the documentation.
 
-**Исправлено**
+**Fixed**
 
-- `packages/ai` (`truthprobeEnabled`): явный `OPENCODE_TRUTHPROBE` теперь перекрывает
-  `capabilities.logprobs`. Плагин после удачного пробинга сам пишет туда `true`, поэтому раньше
-  `OPENCODE_TRUTHPROBE=off` переставал работать на проверенной модели. Флаг сравнивается без
-  учёта регистра и пробелов.
-- `packages/core` (плагин автопроверки): ключ кэша и включение модели берутся по той модели,
-  которую реально проверяли (`model` из тела запроса), а не по каталожному имени.
-- `packages/core` (`parseLinearWeights`): строки, массивы и boolean больше не проходят как числа
-  (`Number("") === 0`); коэффициент обязан быть числом.
-- `packages/core` (`publish-llm-event`): оценка по reasoning-токенам забирается один раз и
-  очищается при обрыве — иначе приклеивалась к следующему текстовому блоку.
-- `packages/tui`: спорные предложения печатаются только при наличии сигнала, номер опускается
-  при отсутствии индекса (было `#NaN`), при старом парте без `level` остаётся откат на флаг.
-- `scripts/collect.py`: вырожденная ветка `phi` возвращала `1 − exp(logprob)` вместо
-  `exp(logprob)` — обратный знак относительно рантайма.
-- `scripts/calibrate.py`: `--demo` и пример в docstring помечают `phiDef: "confidence"`;
-  при конвертации немаркированных строк печатается предупреждение.
-- `install.sh`, `install.ps1`: `--dry-run` больше не двигает ветку и не делает `reset --hard`
-  (проверка идёт в одноразовом клоне); `--uninstall` уважает `--dry-run` и отказывается стирать
-  незакоммиченные правки; отсутствие `sha256sum`/`shasum` — ошибка, а не пропуск сверки.
-- Тесты: убраны две тавтологии (`risk = 1 − score` — это определение), добавлены проверки
-  приоритета флага над каталогом, строгого разбора весов и отката уровня на флаг.
-- `docs/VALIDATION.md`: убрано обещание, что score — вероятность правды; `+0.034` заменено на
-  измеренное `+0.014`; у дублирующихся номеров разделов (§9/§10) номера исправлены на 18/19.
+- `packages/ai` (`truthprobeEnabled`): an explicit `OPENCODE_TRUTHPROBE` now overrides
+  `capabilities.logprobs`. After a successful probe the plugin itself writes `true` there, so before,
+  `OPENCODE_TRUTHPROBE=off` stopped working on a verified model. The flag is compared ignoring
+  case and whitespace.
+- `packages/core` (auto-check plugin): the cache key and model enabling are taken by the model
+  that was actually checked (`model` from the request body), not by the catalogue name.
+- `packages/core` (`parseLinearWeights`): strings, arrays and booleans no longer pass as numbers
+  (`Number("") === 0`); a coefficient must be a number.
+- `packages/core` (`publish-llm-event`): the reasoning-token estimate is taken once and
+  cleared on abort — otherwise it stuck to the next text block.
+- `packages/tui`: doubtful sentences are printed only when a signal is present, the number is omitted
+  when the index is absent (it used to be `#NaN`), and with an old part without `level` there is a fallback to the flag.
+- `scripts/collect.py`: the degenerate `phi` branch returned `1 − exp(logprob)` instead of
+  `exp(logprob)` — the opposite sign relative to the runtime.
+- `scripts/calibrate.py`: `--demo` and the docstring example mark `phiDef: "confidence"`;
+  when converting unmarked rows a warning is printed.
+- `install.sh`, `install.ps1`: `--dry-run` no longer moves the branch and does not do `reset --hard`
+  (the check happens in a throwaway clone); `--uninstall` respects `--dry-run` and refuses to wipe
+  uncommitted edits; a missing `sha256sum`/`shasum` is an error, not a skipped check.
+- Tests: two tautologies removed (`risk = 1 − score` is the definition), checks added for
+  the flag priority over the catalogue, strict weight parsing and the level fallback to the flag.
+- `docs/VALIDATION.md`: the promise that score is the probability of truth removed; `+0.034` replaced with
+  the measured `+0.014`; for the duplicate section numbers (§9/§10) the numbers are fixed to 18/19.
 
-**Патч**
+**Patch**
 
-- `patches/truthprobe-0001.patch` пересобран: 25 коммитов, 46 файлов, +7162/−40, 473 067 Б.
-  `git am` на `007afb1` даёт дерево, совпадающее с dev-деревом (`13118de3…`). Пин sha256
-  в `install.sh`/`install.ps1` обновлён на `dd7b5f35…`.
+- `patches/truthprobe-0001.patch` rebuilt: 25 commits, 46 files, +7162/−40, 473 067 B.
+  `git am` on `007afb1` yields a tree matching the dev tree (`13118de3…`). The sha256 pin
+  in `install.sh`/`install.ps1` updated to `dd7b5f35…`.
 
 # 0.13.2 — 2026-11-22
 
-Ревью пятью независимыми агентами (математика, плумбинг logprobs, UI, установка/сборка, тесты и
-честность чисел) нашло два блокера и четырнадцать серьёзных дефектов. Эта версия закрывает все.
+A review by five independent agents (math, logprobs plumbing, UI, installation/build, tests and
+number honesty) found two blockers and fourteen serious defects. This version closes all of them.
 
-**Исправлено — числа**
+**Fixed — numbers**
 
-- Фолды кросс-валидации резались по строкам: 626 строк, 205 уникальных пар, у 88.5% тестовых строк
-  тот же ответ был в обучении. Теперь фолды по `(model, prompt)` — `docs/VALIDATION.md` §17.
-  AUROC обученных весов 0.809 → 0.800, вклад `digitDensity` +0.046 → +0.014.
-- `phi` в `scripts/collect.py` считалась энтропией, а рантайм считает уверенность: вес `meanPhi`
-  обучался с обратным знаком. Теперь обе стороны считают `1 − H/ln K`; старые наборы
-  нормализуются при загрузке в `calibrate.py`.
-- `digitDensity` в Python считался по Unicode-цифрам и кодпоинтам, в TS — по ASCII и UTF-16.
-  Приведено к поведению TS.
-- `--by-model` выдавал веса моделям с четырьмя негативами (AUROC 0.153). Порог — 30 примеров
-  каждого класса, иначе в бандле `"weights": null`.
-- `normalizedEntropy` нормировала энтропию на `topK`, но считала по всем альтернативам.
+- Cross-validation folds were cut by rows: 626 rows, 205 unique pairs, and in 88.5% of test rows
+  the same answer was in training. Now folds are by `(model, prompt)` — `docs/VALIDATION.md` §17.
+  AUROC of the trained weights 0.809 → 0.800, the `digitDensity` contribution +0.046 → +0.014.
+- `phi` in `scripts/collect.py` was computed as entropy, while the runtime computes confidence: the `meanPhi` weight
+  was trained with the opposite sign. Now both sides compute `1 − H/ln K`; old sets
+  are normalised on load in `calibrate.py`.
+- `digitDensity` in Python was computed over Unicode digits and code points, in TS — over ASCII and UTF-16.
+  Aligned with the TS behaviour.
+- `--by-model` gave weights to models with four negatives (AUROC 0.153). The threshold is 30 examples
+  of each class, otherwise the bundle has `"weights": null`.
+- `normalizedEntropy` normalised entropy by `topK` but computed it over all alternatives.
 
-**Исправлено — рантайм**
+**Fixed — runtime**
 
-- `OPENCODE_TRUTHPROBE=off/0/false` действительно выключает logprobs (раньше значение проваливалось
-  в кэш автопроверки).
-- Кэш автопроверки адресуется парой `provider/model`; подтверждённая модель больше не включает
-  logprobs остальным моделям провайдера.
-- `classify` признаёт `ok` токены в любом канале (`logprobs.content`, `reasoning_content`), поэтому
-  reasoning-модели больше не кэшируются как `ignored`.
-- `parseLinearWeights` бросает на `null` вместо тихого нуля; отсутствие per-model весов один раз
-  пишется в stderr.
-- При аборте шага уверенность уже полученного текста не теряется, карты токенов очищаются.
+- `OPENCODE_TRUTHPROBE=off/0/false` really turns logprobs off (before, the value fell through
+  into the auto-check cache).
+- The auto-check cache is addressed by the `provider/model` pair; a verified model no longer enables
+  logprobs for the rest of the provider's models.
+- `classify` recognises `ok` tokens in any channel (`logprobs.content`, `reasoning_content`), so
+  reasoning models are no longer cached as `ignored`.
+- `parseLinearWeights` throws on `null` instead of a silent zero; the absence of per-model weights is written
+  to stderr once.
+- On step abort the confidence of the text already received is not lost, token maps are cleared.
 
-**Исправлено — интерфейс**
+**Fixed — interface**
 
-- TUI показывает `answer confidence … bar · level` всегда, а не только при спорных предложениях.
-- desktop восстанавливает уровень из `score`, если парт старый.
-- `pct`/`level` в TUI устойчивы к `NaN`, обрезка предложений — по кодпоинтам, эмодзи не рвётся.
-- `ConfidenceMeter`: бледный трек вместо overlay поверх заливки.
+- The TUI shows `answer confidence … bar · level` always, not only with doubtful sentences.
+- desktop restores the level from `score` if the part is old.
+- `pct`/`level` in the TUI are robust to `NaN`, sentence trimming is by code points, emoji are not broken.
+- `ConfidenceMeter`: a faint track instead of an overlay on top of the fill.
 
-**Исправлено — установка и CI**
+**Fixed — installation and CI**
 
-- `install.sh`: проверка `git status --porcelain` перед `git reset --hard`; `--dry-run` действительно
-  не меняет дерево; патч сверяется по sha256.
-- `install.ps1`: уникальный временный файл, сверка хеша, приведение существующего клона к базе.
-- `scripts/dev-setup.sh`: идемпотентность через `apply --reverse --check`, `git am --abort`.
-- CI: typecheck `session-ui`, `tui`, `desktop`; protocol-тесты ai-слоя запускаются по-настоящему
-  (`TRUTHPROBE_REQUIRE_PROTOCOL_TESTS=1`), а не скипаются.
-- `package.json`: `bun test test` вместо одного файла.
+- `install.sh`: a `git status --porcelain` check before `git reset --hard`; `--dry-run` really
+  does not change the tree; the patch is verified by sha256.
+- `install.ps1`: a unique temporary file, hash verification, bringing an existing clone to the base.
+- `scripts/dev-setup.sh`: idempotency via `apply --reverse --check`, `git am --abort`.
+- CI: typecheck `session-ui`, `tui`, `desktop`; protocol tests of the ai layer really run
+  (`TRUTHPROBE_REQUIRE_PROTOCOL_TESTS=1`) instead of being skipped.
+- `package.json`: `bun test test` instead of a single file.
 
-**Тесты**
+**Tests**
 
-- 127 truthprobe-тестов (было 119), 349 assert: `partial`-статус, `digitDensity` на не-ASCII,
-  `top_logprobs` длиннее `topK`, null-веса, reasoning-канал в `classify`.
-- Убраны две тавтологичные проверки в `test/score.test.ts`.
+- 127 truthprobe tests (was 119), 349 asserts: `partial` status, `digitDensity` on non-ASCII,
+  `top_logprobs` longer than `topK`, null weights, the reasoning channel in `classify`.
+- Two tautological checks removed in `test/score.test.ts`.
 
 # 0.13.1 — 2026-11-21
 
-Демонстрационный пример в доках пересчитан на текущей формуле и переписан в том виде, в каком
-его реально печатает TUI. Старые числа были сняты до §14, и подписи не совпадали с интерфейсом.
+The demonstration example in the docs is recomputed with the current formula and rewritten the way
+the TUI really prints it. The old numbers were taken before §14, and the labels did not match the interface.
 
-**Исправлено**
+**Fixed**
 
-- `README.md`, `README.en.md`, `docs/SMOKE-E2E.md`, `docs/VALIDATION.md` §6: транскрипт
-  «`first-sentence confidence 71%` / `answer confidence 40% · 1 doubtful sentence` / `! #2 8%`»
-  заменён на измеренный вывод текущей сборки: `first-token confidence 71%`,
+- `README.md`, `README.en.md`, `docs/SMOKE-E2E.md`, `docs/VALIDATION.md` §6: the transcript
+  "`first-sentence confidence 71%` / `answer confidence 40% · 1 doubtful sentence` / `! #2 8%`"
+  replaced with the measured output of the current build: `first-token confidence 71%`,
   `answer confidence 44% ▰▰░░░ · risky · 1 doubtful sentence`,
-  `▌ #2 ▰░░░░ 16% · unreliable: …`. Проценты сняты прогоном мока через `scoreAnswer`:
-  ответ `0.4442 · risky`, предложения `0.9672` и `0.1584`, первый токен `0.7076`.
-- `docs/SMOKE-E2E.md`, `docs/VALIDATION.md`: JSON парта в этих разделах пересчитан на тех же
-  токенах (`score 0.4442`, `risk 0.5558`, `level risky`), а не оставлен от старой формулы.
-  В §6 добавлена строка, что до §14 на тех же токенах выходило 40% и 8%.
-- `package.json`: описание больше не обещает «first-sentence confidence badge» — теперь
-  «first-token confidence badge, answer confidence line with a level and a meter, doubtful sentences».
+  `▌ #2 ▰░░░░ 16% · unreliable: …`. The percentages were taken by running the mock through `scoreAnswer`:
+  answer `0.4442 · risky`, sentences `0.9672` and `0.1584`, first token `0.7076`.
+- `docs/SMOKE-E2E.md`, `docs/VALIDATION.md`: the part JSON in those sections is recomputed on the same
+  tokens (`score 0.4442`, `risk 0.5558`, `level risky`) instead of being left from the old formula.
+  A line was added in §6 that before §14 the same tokens gave 40% and 8%.
+- `package.json`: the description no longer promises a "first-sentence confidence badge" — now
+  "first-token confidence badge, answer confidence line with a level and a meter, doubtful sentences".
 
 # 0.13.0 — 2026-11-20
 
-Надёжность на нелатинском тексте: проверено, что выравнивание токенов не ломается, и это
-закреплено тестом. Плюс две команды, которых не хватало для воспроизводимости данных.
+Reliability on non-Latin text: verified that token alignment does not break, and this is
+pinned by a test. Plus two commands that were missing for data reproducibility.
 
-**Добавлено**
+**Added**
 
-- `packages/core/test/truthprobe-unicode.test.ts`: пять сценариев — кириллица, CJK
-  (`北京是中国的首都。`), эмодзи-флаг, `Zürich` с combining-знаками, арабский. Для каждого
-  проверяется, что токены склеиваются в исходный текст, смещения покрывают весь текст
-  (`lastEnd == text.length`), `status = ok`, `risk = 1 − score`, границы предложений совпадают
-  с `text.slice(start, end)`; отдельно — CJK-сегментация по `。` и деградация «чужие токены →
-  unavailable». Тестов в truthprobe-наборе стало **119** (6 файлов вместо 5).
-- `Makefile`: цели `data` (сбор строк через `scripts/collect.py` с env `COLLECT_URL`,
-  `COLLECT_MODELS`, `COLLECT_SAMPLES`) и `weights` (`scripts/calibrate.py --fit --by-model
+- `packages/core/test/truthprobe-unicode.test.ts`: five scenarios — Cyrillic, CJK
+  (`北京是中国的首都。`), an emoji flag, `Zürich` with combining marks, Arabic. For each
+  it checks that tokens join into the source text, the offsets cover the whole text
+  (`lastEnd == text.length`), `status = ok`, `risk = 1 − score`, sentence boundaries match
+  `text.slice(start, end)`; separately — CJK segmentation by `。` and the degradation "foreign tokens →
+  unavailable". The truthprobe suite now has **119** tests (6 files instead of 5).
+- `Makefile`: targets `data` (collecting rows via `scripts/collect.py` with env `COLLECT_URL`,
+  `COLLECT_MODELS`, `COLLECT_SAMPLES`) and `weights` (`scripts/calibrate.py --fit --by-model
   --out data/weights.json`).
 
-**Проверено прогоном**
+**Verified by a run**
 
-Код выравнивания менять не пришлось: на всех пяти текстах `scoreAnswer` вернул `status=ok`,
-`score 0.9512` (токены нарезаны ровно, вероятности одинаковые), предложения разрезались верно,
-последнее смещение совпало с длиной текста. Это и есть смысл теста: зафиксировать поведение,
-которое уже правильное, чтобы будущая правка `alignTokens` не сломала его молча.
+No alignment code had to change: on all five texts `scoreAnswer` returned `status=ok`,
+`score 0.9512` (tokens cut exactly, probabilities equal), sentences were split correctly,
+the last offset matched the text length. That is the point of the test: to pin down behaviour
+that is already correct, so that a future edit of `alignTokens` does not break it silently.
 
-**Оговорка**
+**Caveat**
 
-Тест ловит деградацию только при полном несовпадении токенов и текста: `alignTokens` ищет
-токен в окне из 8 символов, поэтому одиночный общий иероглиф всё ещё даёт совпадение. Это
-поведение известное и намеренно не менялось.
+The test catches degradation only with a complete mismatch of tokens and text: `alignTokens` looks for
+a token in an 8-character window, so a single shared character still yields a match. This is known
+behaviour and was deliberately left unchanged.
 
-**Патч**
+**Patch**
 
-Девятнадцать коммитов, `46 файлов, +7023/−40`, 431 079 Б, `git am` на `007afb1` даёт
-побайтово то же дерево.
+Nineteen commits, `46 files, +7023/−40`, 431 079 B, `git am` on `007afb1` yields
+the same tree byte for byte.
 
-**CI**: прогон [`44787911144`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44787911144) на `92f1c65` — **7 job'ов из 7**: патч из 19
-коммитов применяется на ubuntu и windows, 119 truthprobe-тестов зелёные, установщики
-применяют 19 коммитов, e2e кладёт вердикт в базу, CLI собирается. После пересоздания репозитория (21.11.2026) первый прогон [`44918215420`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44918215420) на `69b0b4e` тоже дал **7/7**, а Contributors API показывает только `vladmurnik`.
+**CI**: run [`44787911144`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44787911144) on `92f1c65` — **7 of 7 jobs**: a patch of 19
+commits applies on ubuntu and windows, 119 truthprobe tests are green, the installers
+apply 19 commits, e2e puts the verdict into the base, the CLI builds. After the repository was recreated (21.11.2026) the first run [`44918215420`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44918215420) on `69b0b4e` also gave **7/7**, and the Contributors API shows only `vladmurnik`.
 
-**Исправлено в DX**
+**Fixed in DX**
 
-- `scripts/build-desktop.sh`: desktop молча упаковывал старый CLI — electron-builder берёт бинарь
-  из `packages/desktop/resources/opencode-cli[.exe]` (`extraResources`), а не из `packages/cli/dist`.
-  Добавлен шаг staging (2/4) и предупреждение в `docs/DEVELOPMENT.md`.
-- `scripts/build-desktop.sh`: запуск из неинтерактивного `bash -lc` не подхватывал `~/.bun/bin`,
-  и сборка падала на `error: preload not found "@opentui/solid/preload"`. Теперь скрипт сам
-  ставит `$HOME/.bun/bin` в начало `PATH`. Полная сборка скриптом проверена: `TruthProbe.exe`
-  246 624 768 Б, в `resources/opencode-cli.exe` есть `digitDensity`.
+- `scripts/build-desktop.sh`: desktop silently packaged the old CLI — electron-builder takes the binary
+  from `packages/desktop/resources/opencode-cli[.exe]` (`extraResources`), not from `packages/cli/dist`.
+  A staging step (2/4) and a warning in `docs/DEVELOPMENT.md` were added.
+- `scripts/build-desktop.sh`: launching from a non-interactive `bash -lc` did not pick up `~/.bun/bin`,
+  and the build failed with `error: preload not found "@opentui/solid/preload"`. Now the script itself
+  puts `$HOME/.bun/bin` at the front of `PATH`. A full build by the script was verified: `TruthProbe.exe`
+  246 624 768 B, `resources/opencode-cli.exe` contains `digitDensity`.
 
 # 0.12.0 — 2026-11-20
 
-Первый текстовый признак, у которого замер нашёл вклад: доля цифр в ответе.
+The first text feature whose contribution a measurement found: the share of digits in the answer.
 
-**Добавлено**
+**Added**
 
-- `packages/core/src/truthprobe/score.ts`: `digitDensity(text)` — доля символов-цифр в видимом
-  ответе; значение кладётся в `ScorerFeatures.digitDensity` для предложения и для ответа.
-  В оценку по умолчанию НЕ входит, только в обученные веса.
-- `packages/core/src/truthprobe/scorer.ts`: `FEATURE_NAMES` дополнен `digitDensity`,
-  `LinearWeights.digitDensity` объявлен необязательным — файлы весов без поля читаются как 0.
-- `scripts/enrich-digits.py`: досчитывает признак в уже собранных JSONL из поля `answer`
-  (идемпотентно, `--check` только сообщает расхождения).
-- `scripts/collect.py`, `scripts/calibrate.py`, `scripts/evaluate.py`: считают/читают тот же
-  признак, чтобы веса применялись к тем же числам, что видел рантайм.
+- `packages/core/src/truthprobe/score.ts`: `digitDensity(text)` — the share of digit characters in the visible
+  answer; the value goes into `ScorerFeatures.digitDensity` for the sentence and for the answer.
+  It is NOT part of the default score, only of the trained weights.
+- `packages/core/src/truthprobe/scorer.ts`: `FEATURE_NAMES` extended with `digitDensity`,
+  `LinearWeights.digitDensity` declared optional — weight files without the field are read as 0.
+- `scripts/enrich-digits.py`: recomputes the feature in already collected JSONL from the `answer` field
+  (idempotent, `--check` only reports discrepancies).
+- `scripts/collect.py`, `scripts/calibrate.py`, `scripts/evaluate.py`: compute/read the same
+  feature so that the weights apply to the same numbers the runtime saw.
 
-**Измерено** (626 строк, 544 правды / 82 заказанной лжи, out-of-fold, 5 фолдов):
+**Measured** (626 rows, 544 truths / 82 ordered lies, out-of-fold, 5 folds):
 
-| набор признаков | AUROC | ECE |
+| feature set | AUROC | ECE |
 | --- | --- | --- |
-| `exp(meanLp)` (формула рантайма) | 0.597 | 0.098 |
+| `exp(meanLp)` (runtime formula) | 0.597 | 0.098 |
 | meanLp + minLp + phi + fracLow | 0.774 | 0.282 |
-| то же + `digitDensity` | **0.809** | 0.274 |
+| same + `digitDensity` | **0.809** | 0.274 |
 
-Хеджирование проверить не удалось: у правды и лжи доля хеджирующих слов одинакова и равна 0 —
-называем это непроверенным, а не «не работает». Подробности — `docs/VALIDATION.md` §15.
+Hedging could not be checked: in truths and lies the share of hedging words is the same and equals 0 —
+we call this unverified rather than "does not work". Details — `docs/VALIDATION.md` §15.
 
-**Исправлено**
+**Fixed**
 
-- `packages/core/test/truthprobe-scorer-bundle.test.ts`: фикстура признаков не содержала
-  `digitDensity`, из-за чего typecheck пропатченного дерева падал (7 × TS2741) — тесты при этом
-  проходили, потому что в рантайме поле необязательное. Найдено CI-прогоном `44784193788`.
-- `scripts/build-desktop.sh`: desktop молча упаковывал **старый** CLI — electron-builder берёт
-  бинарь из `packages/desktop/resources/opencode-cli[.exe]` (`extraResources`), а не из
-  `packages/cli/dist`. Добавлен шаг staging: собранный CLI копируется в `resources` до
-  `electron-vite`/`electron-builder`. Проверено на установленной сборке: в
-  `resources/opencode-cli.exe` есть `digitDensity` (3 вхождения), в `app.asar` —
-  `confidence-meter` и `doubtful-list`.
+- `packages/core/test/truthprobe-scorer-bundle.test.ts`: the feature fixture did not contain
+  `digitDensity`, which made the typecheck of the patched tree fail (7 × TS2741) — the tests
+  still passed because the field is optional at runtime. Found by the CI run `44784193788`.
+- `scripts/build-desktop.sh`: desktop silently packaged the **old** CLI — electron-builder takes the
+  binary from `packages/desktop/resources/opencode-cli[.exe]` (`extraResources`), not from
+  `packages/cli/dist`. A staging step was added: the built CLI is copied into `resources` before
+  `electron-vite`/`electron-builder`. Verified on the installed build: in
+  `resources/opencode-cli.exe` there is `digitDensity` (3 occurrences), in `app.asar` —
+  `confidence-meter` and `doubtful-list`.
 
-**Не проверено**: набор негативов один и получен заказом (модель просили соврать), поэтому
-прирост +0.034 на самопроизвольную галлюцинацию переносить нельзя. Формула по умолчанию та же.
+**Not verified**: the negative set is single and obtained by ordering (the model was asked to lie), so
+the +0.034 gain cannot be transferred to spontaneous hallucination. The default formula is the same.
 
 # 0.11.0 — 2026-11-20
 
-Встроенная формула уверенности переписана по замеру: `phi` разворачивала оценку.
+The built-in confidence formula is rewritten after measurement: `phi` was inverting the score.
 
-**Изменено**
+**Changed**
 
-- `packages/core/src/truthprobe/scorer.ts`: `geometricScorer()` теперь `clamp01(exp(meanLp))` —
-  только геометрическое среднее вероятностей токенов ответа. Слагаемое худшего токена и `phi`
-  убраны из формулы по умолчанию; как признаки они остались и работают в обученных весах.
-- `packages/core/src/truthprobe/score.ts`: та же формула в пути без сменного скорера.
-- `packages/core/test/truthprobe-scorer.test.ts`: тест формулы обновлён, добавлен тест
-  «`phi` и худший токен больше не влияют на встроенную оценку».
-- `scripts/measure-lies.py`: `geometric()` приведён к рантайму, добавлен `--variants` — сравнение
-  фиксированных формул без обучения, чтобы замер воспроизводился из репозитория.
+- `packages/core/src/truthprobe/scorer.ts`: `geometricScorer()` is now `clamp01(exp(meanLp))` —
+  only the geometric mean of the answer token probabilities. The worst-token term and `phi`
+  are removed from the default formula; as features they remain and work in the trained weights.
+- `packages/core/src/truthprobe/score.ts`: the same formula in the path without a swappable scorer.
+- `packages/core/test/truthprobe-scorer.test.ts`: the formula test updated, a test added for
+  "`phi` and the worst token no longer affect the built-in score".
+- `scripts/measure-lies.py`: `geometric()` aligned with the runtime, `--variants` added — a comparison
+  of fixed formulas without training, so the measurement is reproducible from the repository.
 
-**Измерено** (626 строк: 544 правдивых, 82 заказанно-ложных)
+**Measured** (626 rows: 544 truthful, 82 ordered-lies)
 
-| формула | AUROC | ECE | Brier |
+| formula | AUROC | ECE | Brier |
 | --- | --- | --- | --- |
-| прежняя `0.4·geo + 0.3·worst + 0.3·φ` | 0.388 | 0.368 | 0.292 |
-| новая `exp(meanLp)` | **0.597** | **0.098** | **0.127** |
-| обученные веса, out-of-fold | 0.774 | 0.282 | 0.181 |
+| previous `0.4·geo + 0.3·worst + 0.3·φ` | 0.388 | 0.368 | 0.292 |
+| new `exp(meanLp)` | **0.597** | **0.098** | **0.127** |
+| trained weights, out-of-fold | 0.774 | 0.282 | 0.181 |
 
-На 739 полностью верных строках (`data/rows-hard.jsonl`) ECE падает с 0.493 до **0.160**,
-Brier — с 0.269 до **0.044**: прежняя формула систематически занижала уверенность.
+On 739 fully correct rows (`data/rows-hard.jsonl`) ECE drops from 0.493 to **0.160**,
+Brier — from 0.269 to **0.044**: the previous formula systematically understated confidence.
 
-**Не проверено**
+**Not verified**
 
-- Настоящие (не заказанные) галлюцинации по-прежнему не измерены: 1 440 запросов на четырёх
-  банках не дали ни одной ошибки модели. 0.597 — слабое разделение на одном узком наборе.
-- Пороги уровней не перекалиброваны под новую шкалу: те же ответы теперь получают более высокий
-  уровень, это ожидаемо, но отдельно не проверено на живых сессиях.
+- Real (not ordered) hallucinations are still not measured: 1 440 requests on four
+  banks produced not a single model error. 0.597 is weak separation on one narrow set.
+- Level thresholds are not recalibrated for the new scale: the same answers now get a higher
+  level, which is expected, but was not separately checked on live sessions.
 
-- CI [`44761971781`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44761971781) на `128b5f4`: **7 job'ов из 7 success** — пропатченное дерево
-  (110 truthprobe-тестов) на ubuntu и windows, установщики, e2e-вердикт, сборка CLI.
+- CI [`44761971781`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44761971781) on `128b5f4`: **7 of 7 jobs success** — the patched tree
+  (110 truthprobe tests) on ubuntu and windows, the installers, the e2e verdict, the CLI build.
 
 # 0.10.0 — 2026-11-20
 
-Первое измерение на классе «ложь», пусть и заказанной, и один неудобный результат.
+The first measurement on the "lie" class, even if an ordered one, and one inconvenient result.
 
-**Добавлено**
+**Added**
 
-- `scripts/make-liar-bank.py`: банк, где модель просят ответить неправильно; метка «ложь» известна
-  из постановки задачи, а logprobs настоящие. Если модель откажется врать, `--auto-label` вернёт
-  строке метку 1, и она не попадёт в негативы.
-- `scripts/measure-lies.py`: сравнение встроенной формулы `geometric` и обученных весов
-  (out-of-fold, 5 фолдов) на одном наборе, `--json`, разбивка по моделям.
+- `scripts/make-liar-bank.py`: a bank where the model is asked to answer incorrectly; the "lie" label is known
+  from the task setup, and the logprobs are real. If the model refuses to lie, `--auto-label` returns
+  label 1 for the row, and it does not end up in the negatives.
+- `scripts/measure-lies.py`: comparison of the built-in `geometric` formula and the trained weights
+  (out-of-fold, 5 folds) on one set, `--json`, breakdown by model.
 - `data/qa-liar-bank.jsonl`, `data/rows-liar.jsonl`, `data/rows-lie-vs-truth.jsonl`.
 
-**Измерено**
+**Measured**
 
-- 34 вопроса × 4 модели: 626 строк, 544 правдивых, 82 заказанно-ложных.
-- `geometric` AUROC **0.388** (хуже случайного), ECE 0.368, Brier 0.292.
-- `fitted` (те же 4 признака, out-of-fold) AUROC **0.774**, ECE 0.282, Brier 0.181.
-- По моделям: `glm-5.3-flash` 0.863, `deepseek-v4.1-flash` 0.629, `particle` 0.522.
+- 34 questions × 4 models: 626 rows, 544 truthful, 82 ordered-lies.
+- `geometric` AUROC **0.388** (worse than chance), ECE 0.368, Brier 0.292.
+- `fitted` (the same 4 features, out-of-fold) AUROC **0.774**, ECE 0.282, Brier 0.181.
+- By model: `glm-5.3-flash` 0.863, `deepseek-v4.1-flash` 0.629, `particle` 0.522.
 
-**Наблюдение**
+**Observation**
 
-- Причина разворота встроенной формулы: у заказанной лжи `phi` 0.468 против 0.125 у правды, а
-  `phi` входит в формулу с весом 0.3. Первый токен после странной инструкции менее предсказуем,
-  и формула читает это как «увереннее».
-- 1 440 запросов на четырёх банках не дали ни одного настоящего негатива: модели отвечают верно
-  или молчат. Поэтому веса по умолчанию по-прежнему `geometric`, а заказанная ложь не годится как
-  основа для переобучения.
+- The cause of the built-in formula's inversion: for ordered lies `phi` is 0.468 versus 0.125 for truths, and
+  `phi` enters the formula with weight 0.3. The first token after a strange instruction is less predictable,
+  and the formula reads that as "more confident".
+- 1 440 requests on four banks produced not a single real negative: the models answer correctly
+  or stay silent. That is why the default weights are still `geometric`, and ordered lies are not suitable as
+  a basis for retraining.
 
 # 0.9.1 — 2026-11-20
 
-Отзыв неверных чисел, исправление брака в разметке и защита от него на будущее.
+Withdrawal of wrong numbers, a fix for defective labelling and protection against it in the future.
 
-**Отозвано**
+**Withdrawn**
 
-- AUROC `0.538 / 0.683 / 0.866` из раздела 0.9.0 и вывод «логпробные признаки не ловят уверенную
-  ложь» — неверны. Все 40 «негативов» были браком наших данных: 23 ответа на двусмысленный вопрос
-  («Which is the largest planet: Saturn or Neptune?» при эталоне `jupiter`, которого среди вариантов
-  нет — модели ответили на заданный вопрос правильно) и 17 обрывов по `max_tokens 80`.
-  После чистки в наборе **739 верных и 0 неверных**, `evaluate.py` печатает `AUROC n/a (one class)`.
-  Файл `data/weights-hard.json` удалён: обучать его было не на чем.
+- AUROC `0.538 / 0.683 / 0.866` from section 0.9.0 and the conclusion "logprob features do not catch confident
+  lies" — are wrong. All 40 "negatives" were defects in our data: 23 answers to an ambiguous question
+  ("Which is the largest planet: Saturn or Neptune?" with the reference `jupiter`, which is not among the options
+  — the models answered the question asked correctly) and 17 truncations by `max_tokens 80`.
+  After cleaning the set has **739 correct and 0 wrong**, `evaluate.py` prints `AUROC n/a (one class)`.
+  The file `data/weights-hard.json` is deleted: there was nothing to train it on.
 
-**Добавлено**
+**Added**
 
-- `scripts/audit-bank.py` — аудит банка вопросов по собранным строкам: если несколько разных моделей
-  независимо сходятся на ответе, которого нет в эталоне, пункт помечается как брак банка; отдельно
-  ловится «вопрос предлагает `X or Y`, а эталон вне этих вариантов». Выход с кодом 1 при находках.
-  На старом банке нашёл ровно 4 таких пункта.
-- `scripts/collect.py`: ответ с `finish_reason == "length"` помечается `truncated`, и `label=0`
-  из обрыва не ставится — иначе веса учатся на нашей жадности.
+- `scripts/audit-bank.py` — an audit of the question bank against the collected rows: if several different models
+  independently converge on an answer that is not in the reference, the item is marked as a bank defect; separately
+  it catches "the question offers `X or Y`, while the reference is outside those options". Exits with code 1 on findings.
+  On the old bank it found exactly 4 such items.
+- `scripts/collect.py`: an answer with `finish_reason == "length"` is marked `truncated`, and `label=0`
+  is not set from a truncation — otherwise the weights learn from our greed.
 
-**Исправлено**
+**Fixed**
 
-- `data/qa-hard-bank.jsonl`: 4 вопроса переписаны без ложного выбора («Saturn or Neptune»,
-  «three or five», «Zurich or Geneva», «Buzz Aldrin or Yuri Gagarin»).
-- `data/rows-hard.jsonl` и `data/rows-hard-t1.jsonl` пересобраны для исправленных вопросов
-  с `max_tokens 220`; строки с неверными лейблами удалены.
+- `data/qa-hard-bank.jsonl`: 4 questions rewritten without a false choice ("Saturn or Neptune",
+  "three or five", "Zurich or Geneva", "Buzz Aldrin or Yuri Gagarin").
+- `data/rows-hard.jsonl` and `data/rows-hard-t1.jsonl` rebuilt for the fixed questions
+  with `max_tokens 220`; rows with wrong labels removed.
 
-**Что осталось измеренным**
+**What remains measured**
 
-- `geometric` на 739 строках: ECE 0.493, Brier 0.269 — скорер систематически занижает уверенность.
-- Уровни `likely / uncertain / risky` дают 100% верных на этом наборе: плашка срабатывает на
-  правильных ответах чаще, чем нужно.
+- `geometric` on 739 rows: ECE 0.493, Brier 0.269 — the scorer systematically understates confidence.
+- The levels `likely / uncertain / risky` give 100% correct on this set: the flag fires on
+  correct answers more often than it should.
 
 # 0.9.0 — 2026-11-20
 
-Появилось измерение и первые настоящие негативы: теперь у скорера есть число качества, а не только
-ощущение.
+Measurement appeared, and with it the first real negatives: the scorer now has a quality number, not just
+a feeling.
 
-**Добавлено**
+**Added**
 
-- `scripts/evaluate.py` — AUROC (с усреднением по связкам), ECE, Brier, доля верных внутри каждого
-  уровня; три режима (`geometric` / `global` / `per-model`), `--json`, гейт `--min-auroc`.
-  Только stdlib.
-- `make eval` на фикстуре `data/eval-fixture.jsonl` (96 реальных строк).
-- `scripts/collect.py`: `--samples N` — несколько сэмплов на пару (модель, промпт), поле `sample`
-  в строке, `--resume` пропускает по `(model, prompt, sample)`.
-- `data/qa-hard-bank.jsonl` — 47 каверзных, но машинно-проверяемых вопросов.
-- `data/rows-hard.jsonl` и `data/rows-hard-t1.jsonl` — по 752 строки (`T=0.8` и `T=1.0`),
-  `data/weights-hard.json` — бандл весов, обученный на них.
-- `packages/tui/src/routes/session/message-parts.tsx`: шкала `▰▰▰░░` фиксированной ширины 5 и метка
-  уровня в семантических цветах темы; строки спорных предложений красятся по уровню.
+- `scripts/evaluate.py` — AUROC (with tie averaging), ECE, Brier, the share of correct answers within each
+  level; three modes (`geometric` / `global` / `per-model`), `--json`, a `--min-auroc` gate.
+  Stdlib only.
+- `make eval` on the `data/eval-fixture.jsonl` fixture (96 real rows).
+- `scripts/collect.py`: `--samples N` — several samples per (model, prompt) pair, a `sample` field
+  in the row, `--resume` skips by `(model, prompt, sample)`.
+- `data/qa-hard-bank.jsonl` — 47 tricky but machine-checkable questions.
+- `data/rows-hard.jsonl` and `data/rows-hard-t1.jsonl` — 752 rows each (`T=0.8` and `T=1.0`),
+  `data/weights-hard.json` — a weights bundle trained on them.
+- `packages/tui/src/routes/session/message-parts.tsx`: the `▰▰▰░░` bar with fixed width 5 and the
+  level label in the theme's semantic colours; doubtful sentence rows are coloured by level.
 
-**Исправлено**
+**Fixed**
 
-- `scripts/calibrate.py`: `load()` принимал только `true/false`, а `collect.py` пишет `1/0` — из-за
-  этого все собранные строки молча отбрасывались и `--fit` никогда не видел оба класса.
-- `packages/tui`: 4 предсуществующие ошибки типов в `level()` (`TruthprobeLevel | null` не
-  приводился к `string | undefined`).
+- `scripts/calibrate.py`: `load()` accepted only `true/false`, while `collect.py` writes `1/0` — because of
+  that all collected rows were silently discarded and `--fit` never saw both classes.
+- `packages/tui`: 4 pre-existing type errors in `level()` (`TruthprobeLevel | null` was not
+  coerced to `string | undefined`).
 
-**Измерено** (720 строк: 700 верных, 20 неверных)
+**Measured** (720 rows: 700 correct, 20 wrong)
 
-| режим | AUROC | ECE | Brier |
+| mode | AUROC | ECE | Brier |
 | --- | --- | --- | --- |
 | `geometric` | 0.538 | 0.470 | 0.272 |
-| `global` веса | 0.683 | 0.437 | 0.227 |
-| `per-model` веса | 0.866 | 0.285 | 0.161 |
+| `global` weights | 0.683 | 0.437 | 0.227 |
+| `per-model` weights | 0.866 | 0.285 | 0.161 |
 
-Out-of-fold AUROC по моделям: `glm-5.3-flash` 0.964, `particle` 0.791, `deepseek-v4.1-flash` 0.726,
+Out-of-fold AUROC by model: `glm-5.3-flash` 0.964, `particle` 0.791, `deepseek-v4.1-flash` 0.726,
 `deepseek-v4-flash` 0.612.
 
-**Не проверено**
+**Not verified**
 
-- 23 из 40 негативов — один и тот же вопрос, поэтому 0.866 нельзя читать как качество детектора.
-- Уверенная ложь по logprobs неотличима от уверенной правды: у неверного ответа «Saturn» те же
-  низкие энтропии, что у верных. Логпробные признаки ловят хеджирование, а не уверенную выдумку.
-- CI-гейт по AUROC не включён: на таком наборе он даст шум вместо защиты.
+- 23 of the 40 negatives are the same question, so 0.866 cannot be read as detector quality.
+- Confident lies are indistinguishable from confident truths by logprobs: the wrong answer "Saturn" has the same
+  low entropies as correct ones. Logprob features catch hedging, not confident fabrication.
+- The AUROC CI gate is not enabled: on such a set it would give noise instead of protection.
 
 # 0.8.0 — 2026-11-20
 
-Вердикт уверенности стало видно глазами, а не только числом в мета-строке.
+The confidence verdict became visible to the eye, not just a number in the meta line.
 
-**Добавлено**
+**Added**
 
-- `packages/session-ui/src/message/confidence.tsx` — общий компонент для desktop:
-  `ConfidenceMeter` (шкала 4px с заливкой по проценту и цветом уровня),
-  `ConfidenceLine` (точка уровня + «confidence NN% · level» + шкала; при
-  `status: unavailable` — чип «no confidence signal» с причиной в `title`),
-  `DoubtfulList` (список спорных предложений: плашка «#N NN% level» + текст,
-  левая граница и подложка в цвете уровня, `data-slot` для тестов и стилей).
-- `packages/session-ui/src/message/message-content.tsx` — блок
-  `data-slot="text-part-doubtful"` теперь рендерит `ConfidenceLine` + `DoubtfulList`
-  вместо россыпи `span`; мёртвые мемо `doubtful` и `answerConfidence` удалены.
+- `packages/session-ui/src/message/confidence.tsx` — a shared component for desktop:
+  `ConfidenceMeter` (a 4px bar with a fill by percentage and a level colour),
+  `ConfidenceLine` (level dot + "confidence NN% · level" + bar; with
+  `status: unavailable` — a "no confidence signal" chip with the cause in `title`),
+  `DoubtfulList` (a list of doubtful sentences: the "#N NN% level" flag + text,
+  a left border and a backdrop in the level colour, `data-slot` for tests and styles).
+- `packages/session-ui/src/message/message-content.tsx` — the
+  `data-slot="text-part-doubtful"` block now renders `ConfidenceLine` + `DoubtfulList`
+  instead of a scattering of `span`s; the dead `doubtful` and `answerConfidence` memos are removed.
 
-**Проверено**
+**Verified**
 
-- `bun check --no-script -b` в `packages/session-ui`: «No type errors in 383 files».
+- `bun check --no-script -b` in `packages/session-ui`: "No type errors in 383 files".
 - `bun test src/message/doubtful.test.ts`: 8 pass / 0 fail.
 - `cd packages/core && bun test test/truthprobe`: **109 pass / 0 fail**.
-- Патч: **15 коммитов**, `45 файлов, +6875/−40`, 406 664 Б, `git am` на `007afb1`
-  даёт побайтово то же дерево (`WT_TREE == DEV_TREE`, 0 расхождений).
+- Patch: **15 commits**, `45 files, +6875/−40`, 406 664 B, `git am` on `007afb1`
+  yields the same tree byte for byte (`WT_TREE == DEV_TREE`, 0 differences).
 - CI [`44736706708`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44736706708):
-  **7 job'ов из 7 success** на hosted ubuntu-latest и windows-latest, включая `cli build`.
-- Desktop пересобран и установлен: `TruthProbe.exe` 246 624 768 Б, сборка 15:39,
-  в `app.asar` лежат `confidence-meter` и `doubtful-list` — новый вердикт в сборке есть.
+  **7 of 7 jobs success** on hosted ubuntu-latest and windows-latest, including `cli build`.
+- Desktop rebuilt and installed: `TruthProbe.exe` 246 246 624 768 B, build 15:39,
+  `app.asar` contains `confidence-meter` and `doubtful-list` — the new verdict is in the build.
 
 # 0.7.0 — 2026-11-20
 
-Веса калибровки теперь работают на модель, а не «на всех сразу», и их стало чем собирать.
+Calibration weights now work per model, not "for all at once", and there is something to collect them with.
 
-**Добавлено**
+**Added**
 
 - `packages/core/src/truthprobe/scorer.ts`: `WeightsBundle`, `parseWeightsBundle`,
-  `bundleScorer`, `weightsFor`. Бандл `{global, models}` из `calibrate.py --fit --by-model`
-  читается как есть; `TRUTHPROBE_SCORER=linear:<file>` выбирает веса по
-  `providerID/modelID` с откатом на `global`. Плоский JSON весов по-прежнему принимается.
-- `packages/core/src/truthprobe/score.ts`: `scoreAnswer(..., model?)` — четвёртый аргумент
-  `providerID/modelID`, который уходит в `ScorerInput.model`.
-- `packages/core/src/session/runner/publish-llm-event.ts`: `modelKey` из `input.model`
-  передаётся и в обычный, и в reasoning-путь оценки.
-- `scripts/collect.py`: сбор калибровочных строк по списку моделей и промптов
-  (`--models`, `--prompts`, `--out`, `--resume`, `--dry-run`, `--limit`). Признаки
-  считаются ровно как в рантайме: `phi` — энтропия `top_logprobs` первого токена,
-  `fracLow` — доля `logprob < ln 0.5`.
-- `packages/core/test/truthprobe-scorer-bundle.test.ts`: 12 тестов на разбор бандла,
-  выбор весов, откат на `global` и на geometric при битом файле.
+  `bundleScorer`, `weightsFor`. The `{global, models}` bundle from `calibrate.py --fit --by-model`
+  is read as is; `TRUTHPROBE_SCORER=linear:<file>` selects the weights by
+  `providerID/modelID` with a fallback to `global`. A flat weights JSON is still accepted.
+- `packages/core/src/truthprobe/score.ts`: `scoreAnswer(..., model?)` — the fourth argument
+  `providerID/modelID`, which goes into `ScorerInput.model`.
+- `packages/core/src/session/runner/publish-llm-event.ts`: `modelKey` from `input.model`
+  is passed to both the regular and the reasoning scoring path.
+- `scripts/collect.py`: collection of calibration rows over a list of models and prompts
+  (`--models`, `--prompts`, `--out`, `--resume`, `--dry-run`, `--limit`). Features
+  are computed exactly as in the runtime: `phi` — the entropy of the first token's `top_logprobs`,
+  `fracLow` — the share of `logprob < ln 0.5`.
+- `packages/core/test/truthprobe-scorer-bundle.test.ts`: 12 tests for bundle parsing,
+  weight selection, fallback to `global` and to geometric on a broken file.
 
-**Исправлено**
+**Fixed**
 
-- `scripts/probe-freellmapi.py`: `fracLow` считался по порогу `−1.0`, а рантайм — по
-  `ln 0.5`; `phi` был отношением `minLp/meanLp`, а не энтропией. Обе метрики приведены
-  к рантаймовым, иначе собранный набор не соответствовал бы числам скорера.
+- `scripts/probe-freellmapi.py`: `fracLow` was computed by the `−1.0` threshold, while the runtime uses
+  `ln 0.5`; `phi` was the `minLp/meanLp` ratio, not entropy. Both metrics are aligned
+  with the runtime, otherwise the collected set would not correspond to the scorer's numbers.
 
-**Проверено**
+**Verified**
 
-- `bun test test/truthprobe` в `packages/core`: **109 pass, 0 fail** (5 файлов); typecheck
-  schema/ai/core/client зелёный; репозиторный `bun test test` — **90 pass / 8 skip / 0 fail**.
-- Живой прогон на моке: один и тот же ответ получает `0.99966 · safe`, когда бандл содержит
-  веса для `mock/mock-1`, и `0.000335 · unreliable`, когда веса есть только у `other/model`.
-- CI [`44678633546`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44678633546):
-  **7 job'ов из 7 success** на hosted ubuntu-latest и windows-latest.
-- Патч перегенерирован (`14 коммитов`, 394 805 Б) и проверен `git am` на `007afb1`: дерево
-  совпадает с dev-веткой побайтово.
+- `bun test test/truthprobe` in `packages/core`: **109 pass, 0 fail** (5 files); typecheck
+  schema/ai/core/client green; the repository `bun test test` — **90 pass / 8 skip / 0 fail**.
+- A live run on the mock: the same answer gets `0.99966 · safe` when the bundle contains
+  weights for `mock/mock-1`, and `0.000335 · unreliable` when only `other/model` has weights.
+- CI [`44736706708`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44736706708):
+  **7 of 7 jobs success** on hosted ubuntu-latest and windows-latest.
+- Patch regenerated (`28 commits`, 342 760 B) and verified by `git am` on `007afb1`: the tree
+  matches the dev branch byte for byte.
 
-**Не проверено**
+**Not verified**
 
-- Калибровка на реальных размеченных данных: нужен набор 200–500 строк с `label`. `collect.py`
-  для этого готов, но ключей провайдеров FreeLLMAPI нет — все 25 моделей `enabled: false`.
+- Calibration on real labelled data: a set of 200–500 rows with `label` is needed. `collect.py`
+  is ready for that, but there are no FreeLLMAPI provider keys — all 25 models are `enabled: false`.
 
 # 0.6.3 — 2026-11-20
 
-Внешний источник данных для калибровки: FreeLLMAPI.
+An external data source for calibration: FreeLLMAPI.
 
-**Добавлено**
+**Added**
 
-- `scripts/probe-freellmapi.py`: проверяет, отдаёт ли эндпоинт `logprobs`, и пишет
-  строку замера (`meanLp`, `minLp`, `phi`, `fracLow`) в JSONL. Если токенов нет —
-  печатает вердикт «модель не годится» вместо тишины.
-- `scripts/calibrate.py --fit --by-model`: отдельные веса скорера на каждую модель
-  (группировка по полю `model`), out-of-fold AUROC/ECE по группам, бандл
-  `{version, features, global, models}`. Рантайм берёт `global`; выбор по модели не
-  реализован и назван открытым пунктом.
-- `docs/FREELLMAPI.md`: как поднять роутер в Docker, где взять unified key, как
-  подключить его провайдером в opencode, что измерено и что нет.
+- `scripts/probe-freellmapi.py`: checks whether the endpoint returns `logprobs`, and writes
+  a measurement row (`meanLp`, `minLp`, `phi`, `fracLow`) into JSONL. If there are no tokens, it
+  prints the verdict "the model is not suitable" instead of silence.
+- `scripts/calibrate.py --fit --by-model`: separate scorer weights per model
+  (grouping by the `model` field), out-of-fold AUROC/ECE by group, a bundle
+  `{version, features, global, models}`. The runtime takes `global`; per-model selection is not
+  implemented and is named as an open item.
+- `docs/FREELLMAPI.md`: how to bring the router up in Docker, where to get a unified key, how to
+  connect it as a provider in opencode, what is measured and what is not.
 
-**Проверено**
+**Verified**
 
-- Образ FreeLLMAPI поднимается (`healthy`, 25 моделей засеяно, вход в API работает).
-- `probe-freellmapi.py` прогнан на живом источнике логвероятностей `freepi/particle`:
-  22 токена с logprob, `meanLp -0.0573`, `minLp -0.4930`.
-- `calibrate.py --demo --fit --by-model` строит бандл без ошибок.
+- The FreeLLMAPI image comes up (`healthy`, 25 models seeded, API login works).
+- `probe-freellmapi.py` run against a live log-likelihood source `freepi/particle`:
+  22 tokens with logprob, `meanLp -0.0573`, `minLp -0.4930`.
+- `calibrate.py --demo --fit --by-model` builds a bundle without errors.
 
-**Не проверено**
+**Not verified**
 
-- Сквозной инференс через FreeLLMAPI: нужны ключи провайдеров, которых нет.
-  Проброс `logprobs` через роутер — тоже открытый вопрос по каждой модели.
+- End-to-end inference through FreeLLMAPI: provider keys are needed, and there are none.
+  Passing `logprobs` through the router is also an open question per model.
 
 # 0.6.2 — 2026-11-19
 
-Патч проверен на чужих чистых машинах.
+The patch was verified on someone else's clean machines.
 
-**Добавлено**
+**Added**
 
-- `.github/workflows/verify.yml`: GitHub Actions на hosted-раннерах `ubuntu-latest` и `windows-latest`.
-  Матрица: `patched tree` (клон opencode на `007afb1` → `git am` → `bun install` → typecheck четырёх
-  пакетов → truthprobe-тесты), `installer dry-run` (оба установщика), `repo tests`, `end-to-end verdict`
-  через мок-провайдер с logprobs, `cli build`.
-- Прогон [`44593481931`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44593481931):
-  **все 7 job'ов success**.
+- `.github/workflows/verify.yml`: GitHub Actions on hosted runners `ubuntu-latest` and `windows-latest`.
+  Matrix: `patched tree` (clone opencode at `007afb1` → `git am` → `bun install` → typecheck of four
+  packages → truthprobe tests), `installer dry-run` (both installers), `repo tests`, `end-to-end verdict`
+  through a mock provider with logprobs, `cli build`.
+- Run [`44593481931`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44593481931):
+  **all 7 jobs success**.
 
-**Исправлено**
+**Fixed**
 
-- Патч перегенерирован после починки 7 ошибок типов, которые всплыли только при typecheck
-  пропатченного дерева (`packages/schema`, `packages/core`: `Level` → type alias, `Required<Omit<…>>`,
-  guard'ы весов в скорере, `level` в reasoning-fallback, сравнение уровней через `String(...)`).
-  Теперь `git am` патча даёт побайтово то же дерево, что dev-ветка, и оно проходит typecheck.
+- The patch was regenerated after fixing 7 type errors that only surfaced during typecheck of the
+  patched tree (`packages/schema`, `packages/core`: `Level` → type alias, `Required<Omit<…>>`,
+  weight guards in the scorer, `level` in the reasoning fallback, level comparison via `String(...)`).
+  Now `git am` of the patch yields the same tree as the dev branch, byte for byte, and it passes typecheck.
 
 # 0.6.1 — 2026-11-19
 
-Найдено прогоном полного набора тестов монорепо (7 713 тестов), а не на глаз.
+Found by running the full monorepo test suite (7 713 tests), not by eye.
 
-**Исправлено**
+**Fixed**
 
-- `packages/schema/src/truthprobe.ts`: `level` принимал только значение из пяти уровней или `undefined`,
-  но `scoreAnswer` кладёт `null`, когда сигнала нет. Из-за этого парты с вердиктом `unavailable`
-  падали на декодировании (`Expected Truthprobe.Level | undefined`), а в полном прогоне это давало
-  **218 падений** в чужих сюитах (`SessionRunnerLLM` и соседи). Теперь схема — `optional(NullOr(Level))`,
-  клиентские типы тоже допускают `null`. После правки: 218 → 62 падения, и все 62 — сетевые/спавновые
-  тесты, не связанные с патчем.
+- `packages/schema/src/truthprobe.ts`: `level` accepted only a value from the five levels or `undefined`,
+  but `scoreAnswer` puts `null` when there is no signal. Because of this, parts with the `unavailable` verdict
+  failed on decoding (`Expected Truthprobe.Level | undefined`), and in the full run this produced
+  **218 failures** in foreign suites (`SessionRunnerLLM` and neighbours). Now the schema is `optional(NullOr(Level))`,
+  and the client types also allow `null`. After the fix: 218 → 62 failures, and all 62 are network/spawn
+  tests unrelated to the patch.
 - `packages/client/src/promise/generated/types.ts`: `level?: TruthprobeLevel | null`.
 
-**Документация**
+**Documentation**
 
-- README (ru/en): раздел «Что реально проверено» с замерами, числами тестов и честным перечнем того,
-  что не проверялось (чистые VM, Linux/macOS, облачные провайдеры, калибровка).
+- README (ru/en): a "What is actually verified" section with measurements, test numbers and an honest list of what
+  was not verified (clean VMs, Linux/macOS, cloud providers, calibration).
 
 # 0.6.0 — 2026-11-19
 
-Скорер стал сменным, установка — одним скриптом с флагами.
+The scorer became swappable, installation — a single script with flags.
 
-**Добавлено**
+**Added**
 
-- `packages/core/src/truthprobe/scorer.ts`: интерфейс `Scorer`, встроенный `geometric` и
+- `packages/core/src/truthprobe/scorer.ts`: the `Scorer` interface, the built-in `geometric` and
   `linear:<weights.json>` — `score = sigmoid(bias + w·[meanLp, minLp, meanPhi, fracLow])`.
-  Загрузка через `TRUTHPROBE_SCORER`; битый файл или нечисловой вес не ломают оценку — одно
-  предупреждение и откат на встроенную формулу.
-- `scripts/calibrate.py --fit [--out FILE]`: логистическая регрессия с балансом классов,
-  AUROC/ECE по out-of-fold предсказаниям, готовый JSON весов.
-- `install.sh` / `install.ps1`: флаги `--dir`, `--dry-run`, `--uninstall`, `--scorer`,
-  проверка `git apply --check` до применения и печать команды запуска.
-- `docs/MODEL-SUPPORT.md`: какие модели отдают logprobs, как проверить свою.
-- `scripts/probe-logprobs.py --md`: таблица Markdown из результата зонда.
+  Loading via `TRUTHPROBE_SCORER`; a broken file or a non-numeric weight does not break scoring — one
+  warning and a fallback to the built-in formula.
+- `scripts/calibrate.py --fit [--out FILE]`: logistic regression with class balancing,
+  AUROC/ECE on out-of-fold predictions, a ready weights JSON.
+- `install.sh` / `install.ps1`: flags `--dir`, `--dry-run`, `--uninstall`, `--scorer`,
+  a `git apply --check` before applying and printing the launch command.
+- `docs/MODEL-SUPPORT.md`: which models return logprobs, how to check your own.
+- `scripts/probe-logprobs.py --md`: a Markdown table from the probe result.
 
-**Исправлено**
+**Fixed**
 
-- Установщик больше не оставляет дерево полупропатченным: сначала `--check`, потом `am`/`apply`.
+- The installer no longer leaves the tree half-patched: first `--check`, then `am`/`apply`.
 
 # 0.5.0 — 2026-11-19
 
-Уверенность стала читаемой: рядом с процентом стоит уровень, спорные предложения подсвечены
-плашкой, а не только цветом текста.
+Confidence became readable: next to the percentage there is a level, doubtful sentences are highlighted
+with a flag, not just with text colour.
 
-**Добавлено**
+**Added**
 
-- Шкала уровней `safe` / `likely` / `uncertain` / `risky` / `unreliable`
-  (`packages/core/src/truthprobe/levels.ts`). Уровень считается в ядре и едет в парте рядом со
-  `score`, поэтому session-ui, TUI и REST показывают одно и то же.
-- Строка ответа: `answer confidence 71% · uncertain`; мета-бейдж: `answer 71% uncertain`.
-- Пороги риска можно сдвинуть окружением: `TRUTHPROBE_RISKY_THRESHOLD`, `TRUTHPROBE_SHAKY_THRESHOLD`
-  (0..1; некорректное значение игнорируется, числа не ломаются).
-- `no confidence signal` вместо `confidence unavailable`: в тексте прямо сказано, что провайдер не
-  прислал вероятности токенов, и приведена причина.
+- The level scale `safe` / `likely` / `uncertain` / `risky` / `unreliable`
+  (`packages/core/src/truthprobe/levels.ts`). The level is computed in the core and travels in the part next to
+  `score`, so session-ui, the TUI and REST show the same thing.
+- The answer line: `answer confidence 71% · uncertain`; the meta badge: `answer 71% uncertain`.
+- Risk thresholds can be shifted by the environment: `TRUTHPROBE_RISKY_THRESHOLD`, `TRUTHPROBE_SHAKY_THRESHOLD`
+  (0..1; an invalid value is ignored, the numbers do not break).
+- `no confidence signal` instead of `confidence unavailable`: the text states plainly that the provider did not
+  send token probabilities, and gives the cause.
 
-**Исправлено**
+**Fixed**
 
-- Спорные предложения больше не «невидимые»: вместо цвета текста — плашка с левой границей и фоном
-  (янтарная для `risky`, красная для `unreliable`), работает в светлой и тёмной теме. В TUI —
-  маркер `▌` и цвет по уровню.
-- Тест «дрейф токенов» приведён к фактическому поведению: несовпадающие токены дают
-  `unavailable` с причиной `tokens do not match the answer text`, а не выдуманный `partial`.
+- Doubtful sentences are no longer "invisible": instead of text colour — a flag with a left border and a background
+  (amber for `risky`, red for `unreliable`), works in light and dark themes. In the TUI —
+  the `▌` marker and colour by level.
+- The "token drift" test is aligned with the actual behaviour: mismatched tokens give
+  `unavailable` with the cause `tokens do not match the answer text`, not an invented `partial`.
 
 # 0.4.0 — 2026-11-19
 
-Цифры уверенности наконец видны на реальных шлюзах: free-pi (`particle`, `deepseek-*`) присылает
-logprobs отдельным чанком без текста, и старый код их терял.
+Confidence numbers are finally visible on real gateways: free-pi (`particle`, `deepseek-*`) sends
+logprobs in a separate chunk without text, and the old code lost them.
 
-**Исправлено**
+**Fixed**
 
-- Протокол больше не выбрасывает logprobs, которые приходят в чанке с пустой дельтой: токены
-  копятся в состоянии парсера и уезжают в `providerMetadata` следующей текстовой дельты, а остаток —
-  в закрывающее событие. Это и была причина «цифр нет» на particle и deepseek.
-- Парт получает вердикт **всегда**, даже когда токенов нет: `status: "unavailable"` с причиной вместо
-  пустого места. UI теперь говорит вслух, а не молчит.
-- Уверенность по reasoning-токенам подставляется в ответ, когда видимый текст пришёл без logprobs
+- The protocol no longer discards logprobs that arrive in a chunk with an empty delta: tokens
+  accumulate in the parser state and travel in the `providerMetadata` of the next text delta, and the remainder —
+  in the closing event. That was the cause of "no numbers" on particle and deepseek.
+- The part gets a verdict **always**, even when there are no tokens: `status: "unavailable"` with a cause instead of
+  an empty space. The UI now speaks up instead of staying silent.
+- Confidence from reasoning tokens is substituted into the answer when the visible text arrived without logprobs
   (`reason: "confidence from reasoning tokens"`).
-- Токены сопоставляются с текстом (`alignTokens`), поэтому внутренние токены вроде `<​/think>` больше
-  не сдвигают границы предложений: `status: "ok"` и непустые `sentences` на живых ответах.
-- Проба провайдера просит тот же `top_logprobs: 20`, что и боевой запрос.
-- `OPENCODE_TRUTHPROBE=off` выключает фичу до чтения кэша, как и обещано.
-- Одиночный CJK/канa/хангыль-символ считается содержательным токеном.
-- `first-token confidence` назван тем, что он измеряет (раньше писал «first sentence»).
-- В desktop и TUI строка `answer confidence` показывается и без флагов, с причиной при `unavailable`.
-- `GET /api/info` отвечает в любом состоянии сервиса — из-за этого desktop выходил по таймауту.
-- `install.sh` переключает существующий checkout на `BASE` и проверяет патч через `git apply --check`
-  перед применением.
+- Tokens are matched against the text (`alignTokens`), so internal tokens like `<​/think>` no longer
+  shift sentence boundaries: `status: "ok"` and non-empty `sentences` on live answers.
+- The provider probe requests the same `top_logprobs: 20` as the production request.
+- `OPENCODE_TRUTHPROBE=off` disables the feature before the cache is read, as promised.
+- A single CJK/kana/hangul character counts as a content token.
+- `first-token confidence` is named for what it measures (it used to say "first sentence").
+- In desktop and the TUI the `answer confidence` line is shown even without flags, with a cause at `unavailable`.
+- `GET /api/info` answers in any service state — because of this desktop exited on a timeout.
+- `install.sh` switches an existing checkout to `BASE` and checks the patch via `git apply --check`
+  before applying.
 
-**Честно**
+**Honestly**
 
-- Порог `0.45` и веса `0.4/0.3/0.3` по-прежнему не откалиброваны на размеченном наборе:
-  AUROC не измерен, `docs/CALIBRATION.md` описывает протокол, но не результат. Проценты читать как
-  «насколько ровно модель шла по этому тексту», не как вероятность правды.
+- The `0.45` threshold and the `0.4/0.3/0.3` weights are still not calibrated on a labelled set:
+  AUROC is not measured, `docs/CALIBRATION.md` describes the protocol but not the result. Read the percentages as
+  "how smoothly the model went through this text", not as the probability of truth.
 
 # 0.3.2 — 2026-11-19
 
-Desktop-приложение можно поставить отдельно от opencode: своё имя, свой каталог данных, без чужого
-автообновления.
+The desktop application can be installed separately from opencode: its own name, its own data directory, without someone
+else's auto-update.
 
-**Добавлено**
+**Added**
 
-- `OPENCODE_DESKTOP_APP` и `OPENCODE_DESKTOP_APP_ID` на сборке задают имя приложения, AppUserModelID,
-  каталог `userData`, имя установщика и заголовок окна. Значения запекаются в бандл через
-  `electron.vite.config.ts`, поэтому патчить готовый `out/main/index.js` не нужно.
-- Заголовок окна и вкладки больше не литерал `OpenCode`: он приходит из `packages/app/src/brand.ts`
-  (Electron берёт заголовок из `document.title`, а не из опции `BrowserWindow`).
-- Собранное так приложение не пишет `app-update.yml` — автообновление opencode его не перезапишет.
+- `OPENCODE_DESKTOP_APP` and `OPENCODE_DESKTOP_APP_ID` at build time set the application name, AppUserModelID,
+  the `userData` directory, the installer name and the window title. The values are baked into the bundle through
+  `electron.vite.config.ts`, so there is no need to patch the ready `out/main/index.js`.
+- The window and tab title is no longer the literal `OpenCode`: it comes from `packages/app/src/brand.ts`
+  (Electron takes the title from `document.title`, not from the `BrowserWindow` option).
+- An application built this way does not write `app-update.yml` — opencode auto-update will not overwrite it.
 
-**Проверено**
+**Verified**
 
-- Сборка `TruthProbe` из дерева `feat/truthprobe`: `dist/win-unpacked/TruthProbe.exe`,
-  `resources/opencode-cli.exe` (наш патченный CLI), `app-update.yml` отсутствует.
-- Запуск: 5 процессов `TruthProbe` + 1 `opencode-cli`, заголовок окна `TruthProbe`,
-  данные в `%APPDATA%\ai.truthprobe.desktop`.
-- Типизация: app (2 445 файлов), desktop (3 569, 2 проекта) — 0 ошибок.
-- Патч: 37 файлов, +2139/−34, 3 292 строки, семь коммитов поверх `007afb1`.
+- Building `TruthProbe` from the `feat/truthprobe` tree: `dist/win-unpacked/TruthProbe.exe`,
+  `resources/opencode-cli.exe` (our patched CLI), `app-update.yml` absent.
+- Launch: 5 `TruthProbe` processes + 1 `opencode-cli`, window title `TruthProbe`,
+  data in `%APPDATA%\ai.truthprobe.desktop`.
+- Typecheck: app (2 445 files), desktop (3 569, 2 projects) — 0 errors.
+- Patch: 37 files, +2139/−34, 3 292 lines, seven commits on top of `007afb1`.
 
 # 0.3.1 — 2026-11-19
 
-Спорные предложения видны и в desktop-приложении, не только в терминале.
+Doubtful sentences are visible in the desktop application too, not only in the terminal.
 
-**Добавлено**
+**Added**
 
-- Список `! #N NN%: <начало предложения>` под ответом в `@opencode/session-ui` — та же разметка,
-  что печатает TUI, поэтому desktop и веб показывают одно и то же. Логика маппинга вынесена в
-  `packages/session-ui/src/message/doubtful.ts` и покрыта 6 тестами (`doubtful.test.ts`): процент,
-  фильтр по `flag`, нумерация с единицы, обрезка до 96 символов, битые поля не ломают рендер.
+- The list `! #N NN%: <start of sentence>` under the answer in `@opencode/session-ui` — the same markup
+  the TUI prints, so desktop and web show the same thing. The mapping logic is moved out into
+  `packages/session-ui/src/message/doubtful.ts` and covered by 6 tests (`doubtful.test.ts`): the percentage,
+  filtering by `flag`, numbering from one, trimming to 96 characters, broken fields do not break the render.
 
-**Обновлено**
+**Updated**
 
-- Патч: **29 файлов, +2084/−27, 3 080 строк, шесть коммитов** поверх `007afb1`.
-- Типизация session-ui — 382 файла (было 380).
+- Patch: **29 files, +2084/−27, 3 080 lines, six commits** on top of `007afb1`.
+- session-ui typecheck — 382 files (was 380).
 
 # 0.3.0 — 2026-11-19
 
-Автопилот: ключи и провайдеры проверяются сами. Бейдж уверенности работает и в терминале, и в
-desktop-приложении.
+Autopilot: keys and providers are checked by themselves. The confidence badge works both in the terminal and in the
+desktop application.
 
-**Добавлено**
+**Added**
 
-- Плагин ядра `opencode.truthprobe` слушает `http.request`, где видны и модель, и авторизованный
-  URL, и отправляет одну проверочную посылку (`"ping"`, `max_tokens: 1`, `logprobs: true`,
-  `top_logprobs: 3`). Хук только кладёт событие в очередь — проверка идёт в отдельной fiber,
-  поэтому ответ модели её не ждёт.
-- Кэш вердиктов `<data>/truthprobe/capabilities.json`: `ok`/`ignored`/`rejected`/`unsupported` — 7 дней,
-  `auth` — час, `error` (429/5xx/сеть) — не кэшируется.
-- Автовключение: путь к кэшу ядро передаёт в пакет `ai` через `OPENCODE_TRUTHPROBE_CACHE`,
-  `truthprobeEnabled` читает его сам (fallback — стандартный каталог данных). Переменные
-  окружения больше не нужны.
-- Поддержка logprobs считается свойством провайдера: свежая запись `ok` любой модели этого
-  провайдера включает сбор, поэтому алиасы и варианты не гасят бейдж.
-- `OPENCODE_TRUTHPROBE_PROBE=off` отключает только автопроверку.
-- Desktop: чип `confidence NN%` (и `· partial`, `· N doubtful`) в футере ответа через
-  `@opencode/session-ui`; тот же компонент рисует и веб-интерфейс. Поле проброшено из
-  `timeline-next/tools/assistant-content.tsx` и `message/current-message.tsx`.
-- Установщики в две команды: `install.sh` (Linux/macOS) и `install.ps1` (Windows) — забирают
-  `sst/opencode` на `007afb1`, применяют патч, ставят зависимости, печатают версию.
-- `README.en.md` — полный английский README с переключателем языка.
-- 32 юнит-теста логики автопроверки (`packages/core/test/truthprobe-capability.test.ts`).
+- The core plugin `opencode.truthprobe` listens to `http.request`, where both the model and the authorised
+  URL are visible, and sends one test request (`"ping"`, `max_tokens: 1`, `logprobs: true`,
+  `top_logprobs: 3`). The hook only puts the event into a queue — the check runs in a separate fiber,
+  so the model's answer does not wait for it.
+- A verdict cache `<data>/truthprobe/capabilities.json`: `ok`/`ignored`/`rejected`/`unsupported` — 7 days,
+  `auth` — an hour, `error` (429/5xx/network) — not cached.
+- Auto-enabling: the core passes the cache path to the `ai` package via `OPENCODE_TRUTHPROBE_CACHE`,
+  `truthprobeEnabled` reads it itself (fallback — the standard data directory). Environment
+  variables are no longer needed.
+- logprobs support is treated as a provider property: a fresh `ok` record for any model of that
+  provider enables collection, so aliases and variants do not suppress the badge.
+- `OPENCODE_TRUTHPROBE_PROBE=off` disables only the auto-check.
+- Desktop: a `confidence NN%` chip (and `· partial`, `· N doubtful`) in the answer footer through
+  `@opencode/session-ui`; the same component draws the web interface too. The field is passed through from
+  `timeline-next/tools/assistant-content.tsx` and `message/current-message.tsx`.
+- Installers in two commands: `install.sh` (Linux/macOS) and `install.ps1` (Windows) — fetch
+  `sst/opencode` at `007afb1`, apply the patch, install dependencies, print the version.
+- `README.en.md` — a full English README with a language switcher.
+- 32 unit tests for the auto-check logic (`packages/core/test/truthprobe-capability.test.ts`).
 
-**Исправлено**
+**Fixed**
 
-- `Model.mergeCapabilities` терял `logprobs`: `capabilities.logprobs` из конфига не доезжал до
-  модели. Теперь пробрасывается.
+- `Model.mergeCapabilities` lost `logprobs`: `capabilities.logprobs` from the config did not reach the
+  model. Now it is passed through.
 
-**Проверено**
+**Verified**
 
-- Мок-провайдер, два прогона подряд без переменных окружения: RUN1 — проба уходит, кэш получает
-  `{"status":"ok"}`; RUN2 — **2 из 2** streaming-запросов с `logprobs: true, top_logprobs: 20`,
-  новых проб нет. `truthprobe` со статусом `ok` лежит в `session_part`.
-- Типизация: ai (357+322 файла) и core (2 030 файлов), session-ui (380), app (2 443),
-  desktop (3 567, 2 проекта), tui (1 942) — 0 ошибок.
-- Патч на чистом дереве (на момент 0.3.0): 27 файлов, +1961/−27, 2895 строк, применяется через `git am`
-  без конфликтов. В 0.3.1 к нему добавился список спорных предложений.
+- A mock provider, two runs in a row without environment variables: RUN1 — the probe goes out, the cache gets
+  `{"status":"ok"}`; RUN2 — **2 of 2** streaming requests with `logprobs: true, top_logprobs: 20`,
+  no new probes. A `truthprobe` with status `ok` sits in `session_part`.
+- Typecheck: ai (357+322 files) and core (2 030 files), session-ui (380), app (2 443),
+  desktop (3 567, 2 projects), tui (1 942) — 0 errors.
+- The patch on a clean tree (as of 0.3.0): 27 files, +1961/−27, 2895 lines, applies via `git am`
+  without conflicts. In 0.3.1 the doubtful sentence list was added to it.
 
 # 0.2.0 — 2026-11-19
 
-Проверяемость и упаковка.
+Verifiability and packaging.
 
-**Тесты**
+**Tests**
 
-- 45 юнит-тестов скоринга и сегментации (`packages/core/test/truthprobe.test.ts`).
-- 8 тестов протокола OpenAI (`packages/ai/test/truthprobe.test.ts`): гейт по capabilities/`OPENCODE_TRUTHPROBE`,
-  состав полей запроса, разбор `choices[i].logprobs → providerMetadata`.
-- Полные прогоны: core 7 661 тестов, ai 2 305, schema 95; типизация schema/ai/core/client/tui.
+- 45 unit tests for scoring and segmentation (`packages/core/test/truthprobe.test.ts`).
+- 8 OpenAI protocol tests (`packages/ai/test/truthprobe.test.ts`): the capabilities/`OPENCODE_TRUTHPROBE` gate,
+  the request field composition, parsing of `choices[i].logprobs → providerMetadata`.
+- Full runs: core 7 661 tests, ai 2 305, schema 95; typecheck schema/ai/core/client/tui.
 
-**Исправлено**
+**Fixed**
 
-- Токен, который начинается с пробела на границе предложений, больше не теряется:
-  привязка считается по пересечению диапазонов, а не по смещению начала.
-- CJK-предложения (`。！？`) режутся без обязательного пробела после терминатора.
-- Сокращение больше не склеивает предложения, если следующее слово начинается с заглавной буквы
-  (`etc. And more.` → два предложения).
+- A token that starts with a space at a sentence boundary is no longer lost:
+  the match is computed by the intersection of ranges, not by the start offset.
+- CJK sentences (`。！？`) are split without a mandatory space after the terminator.
+- An abbreviation no longer glues sentences together if the next word starts with a capital letter
+  (`etc. And more.` → two sentences).
 
-**Добавлено**
+**Added**
 
-- Экспорт `truthprobeBody` / `truthprobeEnabled` / `truthprobeFromDelta` для тестов.
-- Сборка под Windows: `dist/opencode-truthprobe-windows-x64.exe` (233 MB) проверена на живом моке.
-- `scripts/install-cross-deps.py` — ставит win32 optional-зависимости для кросс-сборки из Linux.
-- GitHub-обвязка: CI, лицензия, контрибьютинг, `scripts/build-*.sh`.
+- Export of `truthprobeBody` / `truthprobeEnabled` / `truthprobeFromDelta` for tests.
+- A Windows build: `dist/opencode-truthprobe-windows-x64.exe` (233 MB) verified on a live mock.
+- `scripts/install-cross-deps.py` — installs win32 optional dependencies for cross-building from Linux.
+- GitHub plumbing: CI, licence, contributing, `scripts/build-*.sh`.
 
 # 0.1.0 — 2026-11-18
 
-Первый рабочий патч.
+The first working patch.
 
-- Схема `Truthprobe.Info`, поле `truthprobe` в `session.text.ended` и в `AssistantText`.
-- Запрос `logprobs: true, top_logprobs: 20` для моделей с `capabilities.logprobs` или при `OPENCODE_TRUTHPROBE=1`.
-- Скоринг по первому токену (нормированная энтропия), по предложению и по ответу целиком.
-- TUI: бейдж перед ответом, блок уверенности с номерами спорных предложений после ответа.
-- Сквозной прогон на мок-провайдере, живой рендер в pty, сборка в один бинарь.
+- The `Truthprobe.Info` schema, the `truthprobe` field in `session.text.ended` and in `AssistantText`.
+- The request `logprobs: true, top_logprobs: 20` for models with `capabilities.logprobs` or with `OPENCODE_TRUTHPROBE=1`.
+- Scoring on the first token (normalised entropy), on the sentence and on the whole answer.
+- TUI: a badge before the answer, a confidence block with the numbers of doubtful sentences after the answer.
+- An end-to-end run on a mock provider, live rendering in a pty, a build into a single binary.

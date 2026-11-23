@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Обучение детекторов лжи на stdlib (numpy/sklearn в окружении нет).
+"""Trains lie detectors on the stdlib (numpy/sklearn are not available in the environment).
 
-Модели: логистическая регрессия, CART-дерево, случайный лес, мини-MLP.
-Валидация: GroupKFold по `qid` — один вопрос не может быть одновременно в train и test.
-Метрики: AUROC, ECE (15 бинов), Brier, accuracy@0.5.
+Models: logistic regression, CART tree, random forest, mini-MLP.
+Validation: GroupKFold by `qid` — one question cannot be in train and test at the same time.
+Metrics: AUROC, ECE (15 bins), Brier, accuracy@0.5.
 """
 from __future__ import annotations
 
@@ -66,7 +66,7 @@ def accuracy(pairs: list[tuple[float, int]], threshold: float = 0.5) -> float:
 
 
 def folds(rows: list[dict], k: int = 5, seed: int = 13) -> list[list[int]]:
-    """GroupKFold по qid: все ответы на один вопрос попадают в один фолд."""
+    """GroupKFold by qid: all answers to one question land in one fold."""
     groups = sorted({row["qid"] for row in rows})
     random.Random(seed).shuffle(groups)
     assignment = {qid: index % k for index, qid in enumerate(groups)}
@@ -245,9 +245,9 @@ class MLP:
 
 
 # ------------------------------------------------------------------- main
-# Признаки длины отличают «модель наврала длинно» от «модель ответила коротко».
-# На этом наборе они почти полностью объясняют высокий AUROC, поэтому модели
-# считаются дважды: с ними и без них. Честная оценка сигнала — вторая.
+# The length features tell "the model lied at length" from "the model answered briefly".
+# On this dataset they explain almost all of the high AUROC, so the models
+# are computed twice: with and without them. The honest estimate of the signal is the second one.
 LENGTH = {"n_tokens", "n_chars", "n_sentences", "newlines"}
 
 
@@ -281,7 +281,7 @@ def experiment(features: list[str], title: str) -> tuple[dict, list[dict]]:
     rows = load()
     X = matrix(rows, features)
     y = [row["y"] for row in rows]
-    print(f"\n## {title}: признаков {len(features)}, строк {len(rows)}, ложных {sum(y)}")
+    print(f"\n## {title}: features {len(features)}, rows {len(rows)}, lies {sum(y)}")
 
     buckets = folds(rows)
     results: dict[str, list[tuple[float, int]]] = {}
@@ -305,7 +305,7 @@ def experiment(features: list[str], title: str) -> tuple[dict, list[dict]]:
         collect("random forest", Forest().fit(Xtr, ytr).predict(Xte), test_idx)
         collect("mlp (10)", MLP().fit(Xtr, ytr).predict(Xte), test_idx)
 
-    print("| модель | AUROC | ECE | Brier | acc@0.5 | n |")
+    print("| model | AUROC | ECE | Brier | acc@0.5 | n |")
     print("| --- | --- | --- | --- | --- | --- |")
     summary = []
     for name, pairs in results.items():
@@ -319,7 +319,7 @@ def experiment(features: list[str], title: str) -> tuple[dict, list[dict]]:
 
 
 def single_feature(rows: list[dict], features: list[str]) -> None:
-    print("\n### Один признак против метки (AUROC, без обучения)")
+    print("\n### Single feature against the label (AUROC, no training)")
     single = []
     for name in features:
         pairs = [(float(rows[i][name]), rows[i]["y"]) for i in range(len(rows))]
@@ -331,27 +331,27 @@ def single_feature(rows: list[dict], features: list[str]) -> None:
 
 
 def per_run(rows: list[dict]) -> None:
-    print("\n### Сигнал уверенности внутри прогона (AUROC только по ответам этого прогона)")
+    print("\n### Confidence signal within a run (AUROC over the answers of this run only)")
     for run in sorted({row["run"] for row in rows}):
         subset = [row for row in rows if row["run"] == run]
         positives = sum(row["y"] for row in subset)
         negatives = len(subset) - positives
         value = auroc([(row["geo"], row["y"]) for row in subset])
-        print(f"- {run}: n={len(subset)} (верных {negatives}, ложных {positives}), "
+        print(f"- {run}: n={len(subset)} (truths {negatives}, lies {positives}), "
               f"AUROC(exp(meanLp)) = {'n/a' if value is None else round(value, 3)}")
 
 
 def main() -> None:
     rows = load()
-    print(f"строк {len(rows)}, ложных {sum(row['y'] for row in rows)}, "
-          f"вопросов {len({row['qid'] for row in rows})}")
-    experiment(FEATURES, "Все признаки")
+    print(f"rows {len(rows)}, lies {sum(row['y'] for row in rows)}, "
+          f"questions {len({row['qid'] for row in rows})}")
+    experiment(FEATURES, "All features")
     lean = [name for name in FEATURES if name not in LENGTH]
-    experiment(lean, "Без признаков длины")
+    experiment(lean, "Without length features")
     single_feature(rows, lean)
     per_run(rows)
 
-    # Финальная модель — по признакам без длины: они и есть сигнал, а не артефакт набора.
+    # The final model uses the features without length: those are the signal, not a dataset artifact.
     X = matrix(rows, lean)
     y = [row["y"] for row in rows]
     Xa, _ = standardize(X, X)
@@ -361,10 +361,10 @@ def main() -> None:
     named = {name: round(weight, 4) for name, weight in zip(lean, final.w)}
     MODEL.write_text(json.dumps({"features": lean, "weights": named, "bias": round(final.b, 4)}, indent=1),
                      encoding="utf-8")
-    print("\n### Логистические веса без длины (стандартизованные признаки)")
+    print("\n### Logistic weights without length (standardized features)")
     for name, weight in sorted(named.items(), key=lambda item: -abs(item[1]))[:10]:
         print(f"- {name}: {weight:+}")
-    print("\nзаписано:", MODEL)
+    print("\nwritten:", MODEL)
 
 
 if __name__ == "__main__":

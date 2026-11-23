@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Сколько встроенных моделей opencode живёт на каждом API-протоколе (важно для logprobs)."""
+"""How many built-in opencode models live on each API protocol (matters for logprobs)."""
 import collections
 import json
 
@@ -16,7 +16,7 @@ print("opencode models:", len(models))
 for api, n in by_api.most_common():
     print(f"  {api:20s} {n}")
 
-# chat-completions — единственное семейство, где logprobs вообще применимы
+# chat-completions — the only family where logprobs apply at all
 cc = [mid for mid, m in models.items() if "chat-completions" in (m.get("api") or {})]
 print("\nchat-completions models:", len(cc))
 for mid in sorted(cc):

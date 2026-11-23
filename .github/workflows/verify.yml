@@ -20,8 +20,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
         with:
-          # пин вместо latest: разыменование latest идёт через GitHub API, который
-          # отвечает 403 на анонимные запросы с общих раннеров (прогон 22 упал так)
+# pinned instead of latest: dereferencing latest goes through the GitHub API, which
+# answers 403 to anonymous requests from shared runners (run 22 failed that way)
           bun-version: 1.4.5
           github-token: ${{ secrets.GITHUB_TOKEN }}
       - run: bun test test
@@ -40,8 +40,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
         with:
-          # пин вместо latest: разыменование latest идёт через GitHub API, который
-          # отвечает 403 на анонимные запросы с общих раннеров (прогон 22 упал так)
+# pinned instead of latest: dereferencing latest goes through the GitHub API, which
+# answers 403 to anonymous requests from shared runners (run 22 failed that way)
           bun-version: 1.4.5
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -69,8 +69,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
         with:
-          # пин вместо latest: разыменование latest идёт через GitHub API, который
-          # отвечает 403 на анонимные запросы с общих раннеров (прогон 22 упал так)
+# pinned instead of latest: dereferencing latest goes through the GitHub API, which
+# answers 403 to anonymous requests from shared runners (run 22 failed that way)
           bun-version: 1.4.5
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -111,8 +111,8 @@ jobs:
           bun test test/truthprobe.test.ts
           bun test test/truthprobe-levels.test.ts test/truthprobe-scorer.test.ts
 
-      # Эти тесты раньше молча уходили в describe.skip: файл лежал в репозитории,
-      # где ../src не существует. Копируем его в дерево и требуем запуск.
+      # These tests used to silently end up in describe.skip: the file sat in a repository
+      # where ../src does not exist. We copy it into the tree and require it to run.
       - name: truthprobe protocol tests (ai layer)
         shell: bash
         env:
@@ -132,8 +132,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
         with:
-          # пин вместо latest: разыменование latest идёт через GitHub API, который
-          # отвечает 403 на анонимные запросы с общих раннеров (прогон 22 упал так)
+# pinned instead of latest: dereferencing latest goes through the GitHub API, which
+# answers 403 to anonymous requests from shared runners (run 22 failed that way)
           bun-version: 1.4.5
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -204,8 +204,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
         with:
-          # пин вместо latest: разыменование latest идёт через GitHub API, который
-          # отвечает 403 на анонимные запросы с общих раннеров (прогон 22 упал так)
+# pinned instead of latest: dereferencing latest goes through the GitHub API, which
+# answers 403 to anonymous requests from shared runners (run 22 failed that way)
           bun-version: 1.4.5
           github-token: ${{ secrets.GITHUB_TOKEN }}
 

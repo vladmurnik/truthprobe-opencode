@@ -1,9 +1,9 @@
 /**
- * TruthProbe — сегментация ответа на предложения.
+ * TruthProbe — segmentation of an answer into sentences.
  *
- * Задача не «идеальная лингвистика», а стабильные смещения: токены привязываются
- * к предложениям по символьным позициям, поэтому сегментатор обязан возвращать
- * корректные `start`/`end` в исходной строке и не включать блоки кода.
+ * The goal is not "perfect linguistics" but stable offsets: tokens are bound to
+ * sentences by character positions, so the segmenter must return correct
+ * `start`/`end` in the source string and must not include code blocks.
  */
 
 export interface Sentence {
@@ -15,7 +15,7 @@ export interface Sentence {
 
 const FENCE = /^\s*(```|~~~)/;
 
-/** Диапазоны [start, end) блоков кода, включая сами fences. */
+/** Ranges [start, end) of the code blocks, including the fences themselves. */
 export function codeRanges(text: string): Array<[number, number]> {
   const ranges: Array<[number, number]> = [];
   let offset = 0;
@@ -33,13 +33,15 @@ export function codeRanges(text: string): Array<[number, number]> {
     }
     offset = lineEnd + 1; // + "\n"
   }
-  if (open !== null) ranges.push([open, text.length]); // незакрытый fence (стрим ещё идёт)
+  if (open !== null) ranges.push([open, text.length]); // unclosed fence (the stream is still running)
   return ranges;
 }
 
 const TERMINATORS = new Set([".", "!", "?", "…", "。", "！", "？"]);
+// Russian abbreviations, written as escapes so the source stays ASCII-only.
 const ABBREVIATIONS = new Set([
-  "т", "е", "д", "п", "др", "см", "г", "гг", "в", "вв", "рис", "табл", "стр",
+  "\u0442", "\u0435", "\u0434", "\u043F", "\u0434\u0440", "\u0441\u043C", "\u0433", "\u0433\u0433",
+  "\u0432", "\u0432\u0432", "\u0440\u0438\u0441", "\u0442\u0430\u0431\u043B", "\u0441\u0442\u0440",
   "e.g", "i.e", "etc", "vs", "cf", "al", "no", "fig", "approx",
 ]);
 
@@ -48,23 +50,23 @@ function isExcluded(ranges: Array<[number, number]>, pos: number): boolean {
   return false;
 }
 
-/** Предыдущее «слово» перед позицией index (для отсечения сокращений). */
+/** The previous "word" before position index (used to reject abbreviations). */
 function wordBefore(text: string, index: number): string {
   let i = index - 1;
-  while (i >= 0 && /[A-Za-zА-Яа-яЁё.]/.test(text[i])) i--;
+  while (i >= 0 && /[A-Za-z\u0410-\u044F\u0401\u0451.]/.test(text[i])) i--;
   return text.slice(i + 1, index).replace(/^\.+|\.+$/g, "").toLowerCase();
 }
 
-/** Первое слово после позиции index (без учёта пробелов и переносов). */
+/** First word after position index (ignoring spaces and newlines). */
 function wordAfter(text: string, index: number): string {
   let i = index + 1;
   while (i < text.length && /[\s"'«»()\[\]]/.test(text[i])) i++;
   let end = i;
-  while (end < text.length && /[A-Za-zА-Яа-яЁё0-9]/.test(text[end])) end++;
+  while (end < text.length && /[A-Za-z\u0410-\u044F\u0401\u04510-9]/.test(text[end])) end++;
   return text.slice(i, end);
 }
 
-/** Сокращение ли это: проверяем и целое слово, и последний сегмент «т.е.» → «е». */
+/** Is this an abbreviation: check both the whole word and the last segment, "i.e." → "e". */
 function isAbbreviation(text: string, index: number): boolean {
   const word = wordBefore(text, index);
   if (ABBREVIATIONS.has(word)) return true;
@@ -72,18 +74,18 @@ function isAbbreviation(text: string, index: number): boolean {
   return last.length > 0 && ABBREVIATIONS.has(last);
 }
 
-/** Начинается ли после позиции новое предложение (слово с заглавной буквы). */
+/** Does a new sentence start after the position (a word starting with a capital letter)? */
 function startsSentence(text: string, index: number): boolean {
   const word = wordAfter(text, index);
-  return word.length > 0 && /^[A-ZА-ЯЁ]/.test(word);
+  return word.length > 0 && /^[A-Z\u0410-\u042F\u0401]/.test(word);
 }
 
 /**
- * Режет текст на предложения. Границы:
- *  - терминатор `. ! ? …` + пробел/конец строки;
- *  - пустая строка (абзац);
- *  - начало markdown-пункта списка;
- *  - блоки кода целиком выброшены.
+ * Cuts the text into sentences. Boundaries:
+ *  - a terminator `. ! ? …` followed by a space/end of line;
+ *  - an empty line (a paragraph);
+ *  - the start of a markdown list item;
+ *  - code blocks are thrown away entirely.
  */
 export function splitSentences(text: string): Sentence[] {
   const excluded = codeRanges(text);
@@ -104,7 +106,7 @@ export function splitSentences(text: string): Sentence[] {
 
   for (let i = 0; i < text.length; i++) {
     if (isExcluded(excluded, i)) {
-      // перепрыгиваем весь блок кода целиком
+      // jump over the whole code block at once
       const range = excluded.find(([a, b]) => i >= a && i < b)!;
       push(i, range[1]);
       i = range[1] - 1;
@@ -113,7 +115,7 @@ export function splitSentences(text: string): Sentence[] {
 
     const ch = text[i];
 
-    // пустая строка
+    // empty line
     if (ch === "\n") {
       let j = i + 1;
       while (j < text.length && (text[j] === " " || text[j] === "\t")) j++;
@@ -131,12 +133,12 @@ export function splitSentences(text: string): Sentence[] {
     const next = text[i + 1];
     const prev = text[i - 1];
     const atEnd = i + 1 >= text.length;
-    // В CJK пробелов между предложениями нет, терминатор достаточен сам по себе.
+    // In CJK there are no spaces between sentences, so the terminator is enough on its own.
     const boundaryAfter = cjk || atEnd || next === "\n" || /\s/.test(next);
     if (!boundaryAfter) continue;
-    // «3.14», «v1.2»
+    // "3.14", "v1.2"
     if (/\d/.test(prev ?? "") && /\d/.test(next ?? "")) continue;
-    // «т.е.», «e.g.» — если только дальше не начинается новое предложение.
+    // "i.e.", "e.g." — unless a new sentence starts right after.
     if (isAbbreviation(text, i) && !startsSentence(text, i)) continue;
 
     let end = i + 1;

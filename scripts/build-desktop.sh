@@ -1,26 +1,26 @@
 #!/usr/bin/env bash
-# Собирает desktop-приложение TruthProbe (Electron) из dev-дерева.
+# Builds the TruthProbe desktop app (Electron) from the dev tree.
 #
-#   bash scripts/build-desktop.sh                    # платформа по умолчанию для хоста
-#   bash scripts/build-desktop.sh --win              # Windows x64 (можно кросс-сборкой из WSL)
+#   bash scripts/build-desktop.sh                    # default platform for the host
+#   bash scripts/build-desktop.sh --win              # Windows x64 (cross-build from WSL works)
 #   bash scripts/build-desktop.sh --linux
 #   OPENCODE_REPO=~/src/opencode bash scripts/build-desktop.sh --win
 #
-# Что происходит:
-#   1. `packages/cli/script/build.ts --skip-install` собирает встроенный CLI;
-#   2. собранный CLI копируется в `packages/desktop/resources/` под именем
-#      `opencode-cli[.exe]` — именно оттуда electron-builder берёт бинарь
-#      (`extraResources` в electron-builder.config.ts). Без этого шага desktop
-#      молча упаковывает СТАРЫЙ CLI;
-#   3. `electron-vite build` собирает renderer/main;
-#   4. `electron-builder --dir` кладёт распакованное приложение в packages/desktop/dist.
+# What happens:
+#   1. `packages/cli/script/build.ts --skip-install` builds the bundled CLI;
+#   2. the built CLI is copied into `packages/desktop/resources/` under the name
+#      `opencode-cli[.exe]` — that is where electron-builder takes the binary from
+#      (`extraResources` in electron-builder.config.ts). Without this step the desktop app
+#      silently packages the OLD CLI;
+#   3. `electron-vite build` builds the renderer/main;
+#   4. `electron-builder --dir` puts the unpacked app into packages/desktop/dist.
 #
-# Результат: dist/win-unpacked/TruthProbe.exe (или linux-unpacked/truthprobe).
-# Брендинг берётся из OPENCODE_DESKTOP_APP / OPENCODE_DESKTOP_APP_ID — см. docs/DEVELOPMENT.md.
+# Result: dist/win-unpacked/TruthProbe.exe (or linux-unpacked/truthprobe).
+# Branding comes from OPENCODE_DESKTOP_APP / OPENCODE_DESKTOP_APP_ID — see docs/DEVELOPMENT.md.
 set -euo pipefail
 
-# Нативный bun лежит в ~/.bun/bin и часто не попадает в PATH неинтерактивного
-# `bash -lc`; без него сборка падает на preload'ах (`@opentui/solid/preload`).
+# The native bun lives in ~/.bun/bin and often does not make it into the PATH of a non-interactive
+# `bash -lc`; without it the build fails on the preloads (`@opentui/solid/preload`).
 if [ -x "$HOME/.bun/bin/bun" ]; then
   export PATH="$HOME/.bun/bin:$PATH"
 fi
@@ -48,26 +48,26 @@ if [ -z "$PLATFORM" ]; then
 fi
 
 [ -d "$DEV/packages/desktop" ] || {
-  echo "error: нет $DEV/packages/desktop — сначала bash scripts/dev-setup.sh" >&2
+  echo "error: no $DEV/packages/desktop — run bash scripts/dev-setup.sh first" >&2
   exit 1
 }
-command -v bun >/dev/null 2>&1 || { echo "error: нужен bun" >&2; exit 1; }
+command -v bun >/dev/null 2>&1 || { echo "error: bun is required" >&2; exit 1; }
 
 export OPENCODE_TARGET="$PLATFORM"
 export OPENCODE_CHANNEL=${OPENCODE_CHANNEL:-dev}
 export OPENCODE_DESKTOP_APP=${OPENCODE_DESKTOP_APP:-TruthProbe}
 export OPENCODE_DESKTOP_APP_ID=${OPENCODE_DESKTOP_APP_ID:-ai.truthprobe.desktop}
-# CompanyName и LegalCopyright в свойствах exe: форк не должен представляться OpenCode.
+# CompanyName and LegalCopyright in the exe properties: the fork must not present itself as OpenCode.
 export OPENCODE_DESKTOP_COMPANY=${OPENCODE_DESKTOP_COMPANY:-$OPENCODE_DESKTOP_APP}
-# Версия файла = версия продукта из package.json этого репозитория, иначе Windows
-# показывает версию оболочки (2.3.0), а тег релиза говорит совсем другое число.
+# The file version is the product version from this repository's package.json, otherwise Windows
+# shows the shell version (2.3.0) while the release tag says a completely different number.
 if [ -z "${OPENCODE_VERSION:-}" ] && [ -f "$ROOT/package.json" ]; then
   OPENCODE_VERSION=$(sed -n 's/^ *"version": *"\([^"]*\)".*/\1/p' "$ROOT/package.json" | head -1)
 fi
 [ -n "${OPENCODE_VERSION:-}" ] && export OPENCODE_VERSION
 
 
-echo "== платформа: $PLATFORM, приложение: $OPENCODE_DESKTOP_APP ($OPENCODE_DESKTOP_APP_ID)"
+echo "== platform: $PLATFORM, app: $OPENCODE_DESKTOP_APP ($OPENCODE_DESKTOP_APP_ID)"
 echo "== 1/4 cli"
 (cd "$DEV/packages/cli" && bun run script/build.ts --skip-install)
 
@@ -78,22 +78,22 @@ case "$PLATFORM" in
   windows-x64) SRC="$CLI_DIR/bin/opencode.exe"; DST="$STAGE/opencode-cli.exe" ;;
   *) SRC="$CLI_DIR/bin/opencode"; DST="$STAGE/opencode-cli" ;;
 esac
-[ -f "$SRC" ] || { echo "error: нет $SRC — сборка CLI не дала бинарь" >&2; exit 1; }
+[ -f "$SRC" ] || { echo "error: no $SRC — the CLI build produced no binary" >&2; exit 1; }
 mkdir -p "$STAGE"
 cp -f "$SRC" "$DST"
-# Штамп — `<версия CLI>+<sha256[:12]>`, и обе половины обязательны:
+# The stamp is `<CLI version>+<sha256[:12]>`, and both halves are mandatory:
 #
-#   * версия до плюса — ровно то, что CLI сообщает о себе и пишет в `service.json`.
-#     Desktop сравнивает её с той, которую передал сервису, и при расхождении
-#     останавливает сервис и запускает новый. Штамп целиком там не совпадёт
-#     никогда, поэтому приложение уходило в цикл перезапусков до таймаута 120 с;
-#   * отпечаток после плюса — ключ каталога `%APPDATA%\ai.truthprobe.desktop\cli\`.
-#     Без него пересобранный CLI не доезжает до пользователя: приложение
-#     переиспользует бинарь, распакованный в прошлый раз.
+#   * the version before the plus is exactly what the CLI reports about itself and writes into `service.json`.
+#     The desktop app compares it with the one it passed to the service and, on a mismatch,
+#     stops the service and starts a new one. The whole stamp will never match
+#     there, so the app went into a restart loop until the 120 s timeout;
+#   * the fingerprint after the plus is the key of the `%APPDATA%\ai.truthprobe.desktop\cli\` directory.
+#     Without it a rebuilt CLI never reaches the user: the app
+#     reuses the binary unpacked the last time.
 #
-# Версию спрашиваем у самого бинаря: файл версии рядом со сборкой бывает
-# сокращён (например `0.0.0-dev`), а `--version` печатает ровно ту строку, с
-# которой потом сверяется сервис.
+# We ask the binary itself for the version: the version file next to the build is sometimes
+# shortened (e.g. `0.0.0-dev`), while `--version` prints exactly the line
+# the service is later compared against.
 CLI_VERSION=""
 if "$DST" --version >/dev/null 2>&1; then
   CLI_VERSION=$("$DST" --version 2>/dev/null | tr -d '\r' | sed -n 's/.* v\([0-9][^ ]*\).*/\1/p' | head -1)
@@ -102,7 +102,7 @@ if [ -z "$CLI_VERSION" ] && [ -f "$CLI_DIR/opencode-cli.version" ]; then
   CLI_VERSION=$(tr -d '\r\n' <"$CLI_DIR/opencode-cli.version")
 fi
 if [ -z "$CLI_VERSION" ]; then
-  echo "error: не удалось узнать версию CLI ($DST --version и $CLI_DIR/opencode-cli.version пусты)" >&2
+  echo "error: could not determine the CLI version ($DST --version and $CLI_DIR/opencode-cli.version are empty)" >&2
   exit 1
 fi
 if command -v sha256sum >/dev/null 2>&1; then
@@ -111,7 +111,7 @@ else
   STAMP=$(shasum -a 256 "$DST" | cut -c1-12)
 fi
 printf '%s\n' "${CLI_VERSION}+${STAMP}" >"$STAGE/opencode-cli.version"
-echo "   $(basename "$DST"): $(wc -c <"$DST") bytes, версия $CLI_VERSION, штамп $(cat "$STAGE/opencode-cli.version")"
+echo "   $(basename "$DST"): $(wc -c <"$DST") bytes, version $CLI_VERSION, stamp $(cat "$STAGE/opencode-cli.version")"
 
 echo "== 3/4 electron-vite"
 (cd "$DEV/packages/desktop" && bun x electron-vite build)
@@ -122,8 +122,8 @@ case "$PLATFORM" in
   linux-x64) FLAGS="--linux --x64" ;;
   darwin-*) FLAGS="--mac" ;;
 esac
-# Готовая распаковка Electron (например, скачанная один раз в ~/el) экономит сеть:
-# electron-builder иначе тянет ~100 МБ перед каждой кросс-сборкой.
+# An already unpacked Electron (e.g. downloaded once into ~/el) saves network:
+# otherwise electron-builder pulls ~100 MB before every cross-build.
 EXTRA=""
 ELECTRON_DIST=${OPENCODE_ELECTRON_DIST:-$HOME/el}
 if [ -d "$ELECTRON_DIST" ]; then
@@ -131,10 +131,10 @@ if [ -d "$ELECTRON_DIST" ]; then
 fi
 (cd "$DEV/packages/desktop" && bun x electron-builder $FLAGS $EXTRA --publish never --dir --config electron-builder.config.ts)
 
-# electron-builder подписывает сам, если задан сертификат: WIN_CSC_LINK (путь/URL к .pfx)
-# и WIN_CSC_KEY_PASSWORD. Без них файл остаётся неподписанным, и это надо сказать вслух,
-# а не выдавать сборку за готовую к раздаче.
-echo "== подпись"
+# electron-builder signs by itself if a certificate is set: WIN_CSC_LINK (path/URL to a .pfx)
+# and WIN_CSC_KEY_PASSWORD. Without them the file stays unsigned, and that must be said out loud,
+# instead of passing the build off as ready for distribution.
+echo "== signing"
 BIN=$(ls "$DEV/packages/desktop/dist"/*-unpacked/*.exe 2>/dev/null | head -1)
 case "$BIN" in
   *.exe) ;;
@@ -142,15 +142,15 @@ case "$BIN" in
 esac
 if [ -n "$BIN" ]; then
   if [ -n "${WIN_CSC_LINK:-${CSC_LINK:-}}" ]; then
-    echo "   сертификат задан (${WIN_CSC_LINK:-$CSC_LINK}); проверьте статус подписи на Windows:"
+    echo "   certificate is set (${WIN_CSC_LINK:-$CSC_LINK}); check the signature status on Windows:"
     echo "   powershell -NoProfile -Command \"(Get-AuthenticodeSignature '$(wslpath -w "$BIN" 2>/dev/null || echo "$BIN")').Status\""
   else
-    echo "   ВНИМАНИЕ: WIN_CSC_LINK не задан — $BIN не подписан (NotSigned)."
-    echo "   Установщик покажет «неизвестный издатель»; см. docs/DEVELOPMENT.md, раздел «Подпись»."
+    echo "   WARNING: WIN_CSC_LINK is not set — $BIN is unsigned (NotSigned)."
+    echo "   The installer will show \"unknown publisher\"; see docs/DEVELOPMENT.md, the \"Signing\" section."
   fi
 fi
 
 
-echo "== готово"
+echo "== done"
 ls -la "$DEV/packages/desktop/dist"/*-unpacked/ 2>/dev/null | head -8 || \
-  echo "смотрите $DEV/packages/desktop/dist"
+  echo "see $DEV/packages/desktop/dist"

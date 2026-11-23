@@ -1,9 +1,9 @@
 import { afterEach, describe, expect, test } from "bun:test"
 
-// Файл живёт и в репозитории (`test/opencode-tree/`), и в дереве opencode
-// (`packages/ai/test/`), поэтому путь к исходникам пробуем по очереди.
-// Молчаливый `describe.skip` скрывал эти тесты от CI, поэтому при
-// TRUTHPROBE_REQUIRE_PROTOCOL_TESTS=1 отсутствие исходников — ошибка.
+// This file lives both in the repository (`test/opencode-tree/`) and in the opencode tree
+// (`packages/ai/test/`), so the path to the sources is tried in turn.
+// A silent `describe.skip` hid these tests from CI, so with
+// TRUTHPROBE_REQUIRE_PROTOCOL_TESTS=1 missing sources are an error.
 const candidates = [
   "../src/protocols/openai-chat.js",
   "../../src/protocols/openai-chat.js",
@@ -30,9 +30,9 @@ afterEach(() => {
 })
 
 suite("openai-chat.truthprobeEnabled", () => {
-  // README обещает: `OPENCODE_TRUTHPROBE=1` просит logprobs у всех chat-completions
-  // моделей, то есть явная переменная сильнее возможностей. Тест требовал обратного
-  // и держал CI красным.
+  // The README promises: `OPENCODE_TRUTHPROBE=1` asks for logprobs on every chat-completions
+  // model, that is, the explicit variable is stronger than capabilities. The test used to
+  // require the opposite and kept CI red.
   test("an explicit environment override wins over capabilities", () => {
     process.env.OPENCODE_TRUTHPROBE = "1"
     expect(truthprobeEnabled({ capabilities: { logprobs: false } })).toBe(true)

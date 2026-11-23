@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
-# Пересобирает patches/truthprobe-0001.patch из dev-дерева, где вы работаете.
+# Regenerates patches/truthprobe-0001.patch from the dev tree you work in.
 #
 #   bash scripts/make-patch.sh --from ~/src/opencode
 #   OPENCODE_REPO=~/src/opencode bash scripts/make-patch.sh
 #
-# Патч всегда нарезается как `BASE..HEAD`: так он применяется и через `git am`,
-# и через `git apply`, и остаётся набором отдельных коммитов, а не «одним diff».
+# The patch is always cut as `BASE..HEAD`: that way it applies both through `git am`
+# and through `git apply`, and stays a set of separate commits instead of "one diff".
 #
 #     BASE=007afb1b0c8a36dff93d7945909d4e976545ba95
 #
-# Скрипт ничего не коммитит: сначала закоммитьте изменения в dev-дереве.
+# The script commits nothing: commit your changes in the dev tree first.
 set -euo pipefail
 
 ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
@@ -27,28 +27,28 @@ while [ $# -gt 0 ]; do
   esac
 done
 
-[ -n "$DEV" ] || { echo "error: укажите dev-дерево: --from <path> или OPENCODE_REPO=<path>" >&2; exit 2; }
-[ -d "$DEV/.git" ] || { echo "error: $DEV — не git-репозиторий" >&2; exit 2; }
+[ -n "$DEV" ] || { echo "error: specify the dev tree: --from <path> or OPENCODE_REPO=<path>" >&2; exit 2; }
+[ -d "$DEV/.git" ] || { echo "error: $DEV is not a git repository" >&2; exit 2; }
 
 if [ -n "$(git -C "$DEV" status --porcelain)" ]; then
-  echo "error: в $DEV есть незакоммиченные изменения — сначала закоммитьте их" >&2
+  echo "error: $DEV has uncommitted changes — commit them first" >&2
   git -C "$DEV" status --short | head -10 >&2
   exit 1
 fi
 
 git -C "$DEV" cat-file -e "$BASE^{commit}" 2>/dev/null || {
-  echo "error: базы $BASE нет в $DEV (нужен полный клон sst/opencode)" >&2
+  echo "error: base $BASE is not in $DEV (a full sst/opencode clone is required)" >&2
   exit 1
 }
 
-# Гейт против посторонних файлов: патч должен трогать только `packages/**` и
-# `bun.lock`. Иначе в него уезжает артефакт вроде копии самого патча — так и
-# вышло в 0.13.8: 3 735 строк самого себя внутри коммита 10/27.
+# Guard against stray files: the patch must only touch `packages/**` and
+# `bun.lock`. Otherwise an artifact such as a copy of the patch itself sneaks in — that is
+# what happened in 0.13.8: 3 735 lines of itself inside commit 10/27.
 STRAY=$(git -C "$DEV" diff --name-only "$BASE..HEAD" | grep -v '^packages/' | grep -v '^bun\.lock$' || true)
 if [ -n "$STRAY" ]; then
-  echo "error: патч трогает пути вне packages/ и bun.lock:" >&2
+  echo "error: the patch touches paths outside packages/ and bun.lock:" >&2
   printf '  %s\n' $STRAY >&2
-  echo "уберите их из истории $BASE..HEAD и повторите" >&2
+  echo "remove them from the $BASE..HEAD history and try again" >&2
   exit 1
 fi
 
@@ -57,20 +57,20 @@ git -C "$DEV" format-patch "$BASE..HEAD" --stdout >"$OUT"
 
 COMMITS=$(git -C "$DEV" rev-list --count "$BASE..HEAD")
 BYTES=$(wc -c <"$OUT" | tr -d ' ')
-# `grep -c '^diff --git'` считает заголовки, а не файлы: файл, тронутый в двух
-# коммитах, даёт два `diff --git`. Считаем уникальные пути (b/<path>).
+# `grep -c '^diff --git'` counts headers, not files: a file touched in two
+# commits yields two `diff --git` entries. We count unique paths (b/<path>).
 FILES=$(grep '^diff --git ' "$OUT" | sed -e 's#^diff --git .* b/##' -e 's#^"##' -e 's#"$##' | sort -u | wc -l | tr -d ' ')
-# Закреплённая сумма в инсталляторах: без неё после каждой перегенерации патча
-# `install.sh --dry-run` и `install.ps1 -DryRun` падают на сверке, и CI краснеет.
+# The hash pinned in the installers: without it, after every patch regeneration
+# `install.sh --dry-run` and `install.ps1 -DryRun` fail the checksum match and CI goes red.
 SHA=$(sha256sum "$OUT" | cut -d' ' -f1)
 sed -i.bak -E "s/^PATCH_SHA256=\"[0-9a-f]+\"/PATCH_SHA256=\"$SHA\"/" "$ROOT/install.sh"
 rm -f "$ROOT/install.sh.bak"
 sed -i.bak "s/[0-9a-f]\{64\}/$SHA/g" "$ROOT/install.ps1"
 rm -f "$ROOT/install.ps1.bak"
 
-echo "готово: $OUT"
-echo "  sha256: $SHA (закреплён в install.sh и install.ps1)"
-echo "  коммитов: $COMMITS, файлов: $FILES, байт: $BYTES"
-echo "  база: $BASE"
+echo "done: $OUT"
+echo "  sha256: $SHA (pinned in install.sh and install.ps1)"
+echo "  commits: $COMMITS, files: $FILES, bytes: $BYTES"
+echo "  base: $BASE"
 echo
-echo "проверить локально:  make verify   (или bash scripts/dev-setup.sh --check)"
+echo "check locally:  make verify   (or bash scripts/dev-setup.sh --check)"

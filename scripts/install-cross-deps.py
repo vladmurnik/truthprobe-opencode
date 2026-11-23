@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Ставит windows-бинарные optional-зависимости в bun-хранилище (isolated linker).
+"""Installs the windows-binary optional dependencies into the bun store (isolated linker).
 
-Нужно для кросс-сборки opencode под Windows из Linux: bun не скачивает
-платформенные опциональные пакеты чужой ОС, а сборщик их требует.
+Needed for cross-building opencode for Windows from Linux: bun does not download the
+platform-specific optional packages of another OS, while the bundler requires them.
 """
 import json
 import os
@@ -20,7 +20,7 @@ WANT = sys.argv[1:] or ["win32"]
 
 
 def package_dirs():
-    """Все реальные пакеты в node_modules, включая scoped-каталоги @scope/name."""
+    """All real packages in node_modules, including scoped @scope/name directories."""
     roots = set()
     for candidate in ROOT.rglob("node_modules"):
         depth = len(candidate.relative_to(ROOT).parts)
@@ -72,7 +72,7 @@ def install(name: str, version: str, target: pathlib.Path) -> None:
 
 
 def node_modules_of(pkg: pathlib.Path) -> pathlib.Path:
-    """node_modules, внутри которого лежит пакет (учитывая @scope)."""
+    """The node_modules that contains the package (respecting @scope)."""
     parent = pkg.parent
     return parent.parent if parent.name.startswith("@") else parent
 

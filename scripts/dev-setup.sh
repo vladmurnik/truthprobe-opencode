@@ -1,18 +1,18 @@
 #!/usr/bin/env bash
-# Разворачивает пропатченное дерево opencode — то, в котором живёт TruthProbe.
+# Sets up the patched opencode tree — the one TruthProbe lives in.
 #
-#   bash scripts/dev-setup.sh                 # в .worktree/opencode
-#   bash scripts/dev-setup.sh --dir ~/src/tp  # в свой каталог
-#   bash scripts/dev-setup.sh --check         # только проверить, что патч ложится
-#   bash scripts/dev-setup.sh --skip-install  # без bun install (быстро, для чтения кода)
+#   bash scripts/dev-setup.sh                 # into .worktree/opencode
+#   bash scripts/dev-setup.sh --dir ~/src/tp  # into a custom directory
+#   bash scripts/dev-setup.sh --check         # only verify that the patch applies
+#   bash scripts/dev-setup.sh --skip-install  # no bun install (fast, for reading code)
 #
-# Что делает:
-#   1. клонирует sst/opencode на коммит, под который нарезан патч (BASE);
-#   2. применяет patches/truthprobe-0001.patch через `git am`;
-#   3. ставит зависимости (`bun install`);
-#   4. гоняет truthprobe-тесты, чтобы сразу знать, что дерево живое.
+# What it does:
+#   1. clones sst/opencode at the commit the patch is cut against (BASE);
+#   2. applies patches/truthprobe-0001.patch via `git am`;
+#   3. installs the dependencies (`bun install`);
+#   4. runs the truthprobe tests so you know right away that the tree is alive.
 #
-# Идемпотентен: повторный запуск на готовом дереве только проверяет состояние.
+# Idempotent: a repeated run on a ready tree only checks its state.
 set -euo pipefail
 
 ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
@@ -36,40 +36,40 @@ while [ $# -gt 0 ]; do
 done
 
 need() {
-  command -v "$1" >/dev/null 2>&1 || { echo "error: нужен $1" >&2; exit 1; }
+  command -v "$1" >/dev/null 2>&1 || { echo "error: $1 is required" >&2; exit 1; }
 }
 need git
-[ -f "$PATCH" ] || { echo "error: нет $PATCH" >&2; exit 1; }
+[ -f "$PATCH" ] || { echo "error: no $PATCH" >&2; exit 1; }
 
 export PATH="$HOME/.bun/bin:$PATH"
 
 if [ "$CHECK" = "1" ]; then
   TMP=$(mktemp -d)
   trap 'rm -rf "$TMP"' EXIT
-  echo "== проверяю патч на чистой базе $BASE"
+  echo "== checking the patch against a clean base $BASE"
   git clone -q --filter=blob:none --no-checkout "$UPSTREAM" "$TMP/opencode"
   git -C "$TMP/opencode" checkout -q "$BASE"
-  git -C "$TMP/opencode" apply --check "$PATCH" && echo "OK: патч ложится без конфликтов"
+  git -C "$TMP/opencode" apply --check "$PATCH" && echo "OK: the patch applies without conflicts"
   exit 0
 fi
 
 if [ -d "$DIR/.git" ]; then
-  echo "== дерево уже есть: $DIR"
+  echo "== tree already present: $DIR"
   if git -C "$DIR" apply --reverse --check "$PATCH" >/dev/null 2>&1; then
-    echo "== патч уже применён (обратный apply проходит), пропускаю git am"
+    echo "== patch already applied (the reverse apply succeeds), skipping git am"
   else
-    echo "== применяю патч к существующему дереву"
+    echo "== applying the patch to the existing tree"
     git -C "$DIR" -c user.name=TruthProbe -c user.email=dev@localhost am "$PATCH" || {
       git -C "$DIR" am --abort 2>/dev/null || true
       git -C "$DIR" apply "$PATCH"
     }
   fi
 else
-  echo "== клонирую $UPSTREAM → $DIR"
+  echo "== cloning $UPSTREAM → $DIR"
   mkdir -p "$(dirname "$DIR")"
   git clone --filter=blob:none --no-checkout "$UPSTREAM" "$DIR"
   git -C "$DIR" checkout -q "$BASE"
-  echo "== применяю $(basename "$PATCH")"
+  echo "== applying $(basename "$PATCH")"
   git -C "$DIR" -c user.name=TruthProbe -c user.email=dev@localhost am "$PATCH" || {
     git -C "$DIR" am --abort 2>/dev/null || true
     git -C "$DIR" apply "$PATCH"
@@ -77,23 +77,23 @@ else
 fi
 
 if [ "$SKIP_INSTALL" = "0" ]; then
-  command -v bun >/dev/null 2>&1 || { echo "error: нужен bun (https://bun.sh)" >&2; exit 1; }
+  command -v bun >/dev/null 2>&1 || { echo "error: bun is required (https://bun.sh)" >&2; exit 1; }
   echo "== bun install"
   (cd "$DIR" && bun install)
-  echo "== truthprobe-тесты"
+  echo "== truthprobe tests"
   (cd "$DIR" && bun test test/truthprobe | tail -5)
 else
-  echo "== зависимости не ставил (--skip-install)"
+  echo "== dependencies were not installed (--skip-install)"
 fi
 
 cat <<EOF
 
-готово. дерево: $DIR
+done. tree: $DIR
 
   cd "$DIR"
-  bun test test/truthprobe                              # юнит-тесты патча
-  bun run --cwd packages/cli src/index.ts run "..."     # запуск CLI из исходников
-  TRUTHPROBE_SCORER=linear:weights.json ...             # свои веса скорера
+  bun test test/truthprobe                              # unit tests of the patch
+  bun run --cwd packages/cli src/index.ts run "..."     # run the CLI from sources
+  TRUTHPROBE_SCORER=linear:weights.json ...             # custom scorer weights
 
-дальше: docs/DEVELOPMENT.md — карта «что где менять».
+next: docs/DEVELOPMENT.md — the map of "what to change and where".
 EOF

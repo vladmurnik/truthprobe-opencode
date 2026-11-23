@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Разбор встроенного snapshot реестра models.dev внутри opencode."""
+"""Inspects the built-in models.dev registry snapshot inside opencode."""
 import json
 import sys
 

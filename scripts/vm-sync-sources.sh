@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Синхронизирует эталонные исходники TruthProbe и тесты в дерево opencode.
+# Syncs the reference TruthProbe sources and tests into the opencode tree.
 set -eu
 PROJ=/mnt/c/Users/adik/Desktop/progects/opencode-truthprobe
 ROOT=/home/adik/src/opencode
@@ -10,10 +10,10 @@ for f in types sentences score; do
   tr -d '\015' < "$PROJ/src/truthprobe/$f.ts" > "$ROOT/packages/core/src/truthprobe/$f.ts"
 done
 
-# core-тест: тот же файл, только импорты указывают на packages/core/src
+# core test: the same file, only the imports point to packages/core/src
 tr -d '\015' < "$PROJ/test/score.test.ts" > "$ROOT/packages/core/test/truthprobe.test.ts"
 
-# ai-тест протокола
+# ai protocol test
 tr -d '\015' < "$PROJ/test/opencode-tree/protocol.test.ts" > "$ROOT/packages/ai/test/truthprobe.test.ts"
 
 python3 "$PROJ/patches/apply-test-exports.py"

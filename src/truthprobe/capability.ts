@@ -1,23 +1,23 @@
 /**
- * TruthProbe: определение того, отдаёт ли провайдер logprobs.
+ * TruthProbe: detecting whether a provider returns logprobs.
  *
- * Модуль чистый: ни сети, ни файлов. Всё, что можно проверить тестом без
- * поднятия opencode, живёт здесь. Плагин (plugin/truthprobe.ts) только
- * склеивает это с сетью и с каталогом моделей.
+ * The module is pure: no network, no files. Everything that a test can check
+ * without bringing up opencode lives here. The plugin (plugin/truthprobe.ts) only
+ * glues this to the network and to the model catalog.
  */
 
-/** Результат проверки одного провайдера/модели. */
+/** Result of checking one provider/model. */
 export type Status = "ok" | "ignored" | "rejected" | "auth" | "unsupported" | "error"
 
 export interface Entry {
   readonly status: Status
-  /** Когда проверяли, миллисекунды эпохи. */
+  /** When it was checked, epoch milliseconds. */
   readonly checkedAt: number
-  /** Происхождение эндпоинта: схема + хост, без пути и query. */
+  /** Origin of the endpoint: scheme + host, without path and query. */
   readonly endpoint?: string
-  /** Идентификатор модели, на которой проверяли. */
+  /** ID of the model that was checked. */
   readonly model?: string
-  /** Короткая причина (код ответа или текст ошибки, обрезанный). */
+  /** Short reason (response code or truncated error text). */
   readonly detail?: string
 }
 
@@ -30,7 +30,7 @@ export const FILE_VERSION = 1 as const
 
 const DAY = 24 * 60 * 60 * 1000
 
-/** Сколько живёт результат. `auth` перепроверяем быстро: ключ могли добавить. */
+/** How long a result lives. `auth` is re-checked quickly: a key may have been added. */
 export const ttl = (status: Status): number => {
   switch (status) {
     case "ok":
@@ -65,8 +65,8 @@ const isEntry = (value: unknown): value is Entry => {
 }
 
 /**
- * Разбор файла кэша. Битый файл или чужие поля не должны ломать запуск:
- * всё непонятное молча отбрасывается.
+ * Parsing the cache file. A broken file or foreign fields must not break startup:
+ * everything unintelligible is silently dropped.
  */
 export const parse = (raw: string | undefined | null): File => {
   if (!raw) return empty()
@@ -86,7 +86,7 @@ export const parse = (raw: string | undefined | null): File => {
   return { version: FILE_VERSION, entries: result }
 }
 
-/** Стабильная сериализация: одинаковый вход даёт одинаковый файл. */
+/** Stable serialisation: the same input gives the same file. */
 export const serialize = (file: File): string => {
   const entries = Object.keys(file.entries)
     .sort()
@@ -94,7 +94,7 @@ export const serialize = (file: File): string => {
   return `${JSON.stringify({ version: FILE_VERSION, entries: Object.fromEntries(entries) }, null, 2)}\n`
 }
 
-/** Запись результата без мутации входа. */
+/** Recording a result without mutating the input. */
 export const setEntry = (file: File, key: string, entry: Entry): File => ({
   version: FILE_VERSION,
   entries: { ...file.entries, [key]: entry },
@@ -102,7 +102,7 @@ export const setEntry = (file: File, key: string, entry: Entry): File => ({
 
 export const getEntry = (file: File, key: string): Entry | undefined => file.entries[key]
 
-/** Результат ещё актуален? `now` передаётся явно, чтобы тест не зависел от часов. */
+/** Is the result still current? `now` is passed explicitly so a test does not depend on the clock. */
 export const fresh = (entry: Entry | undefined, now: number): entry is Entry => {
   if (!entry) return false
   const limit = ttl(entry.status)
@@ -111,12 +111,12 @@ export const fresh = (entry: Entry | undefined, now: number): entry is Entry => 
   return age >= 0 && age < limit
 }
 
-/** Можно ли включать сбор logprobs по этому результату. */
+/** Can logprobs collection be enabled based on this result. */
 export const enabled = (entry: Entry | undefined, now: number) => fresh(entry, now) && entry.status === "ok"
 
 /**
- * Тело минимальной проверочной посылки. Фиксированный текст, один токен:
- * ни вопроса пользователя, ни его данных здесь нет и быть не может.
+ * Body of the minimal probe request. Fixed text, a single token:
+ * neither the user's question nor their data is here, and neither can be.
  */
 export const probeBody = (modelID: string, topK = 3) => ({
   model: modelID,
@@ -128,7 +128,7 @@ export const probeBody = (modelID: string, topK = 3) => ({
   top_logprobs: topK,
 })
 
-/** Хост эндпоинта без пути: в кэше не должно быть ни query, ни ключей. */
+/** Endpoint host without a path: the cache must contain neither query nor keys. */
 export const originOf = (url: string): string | undefined => {
   try {
     const parsed = new URL(url)
@@ -138,7 +138,7 @@ export const originOf = (url: string): string | undefined => {
   }
 }
 
-/** Идентификатор модели из уже собранного тела запроса; нужен, когда modelID — алиас. */
+/** Model ID from an already assembled request body; needed when modelID is an alias. */
 export const modelFromBody = (raw: string | undefined | null): string | undefined => {
   if (!raw) return undefined
   try {
@@ -155,16 +155,16 @@ export interface ProbeResponse {
 }
 
 /**
- * Классификация ответа проверки.
+ * Classification of the probe response.
  *
- * `ok` — в ответе реально есть токены logprobs в любом канале (`content` или
- *        `reasoning_content`/`reasoning_logprobs`): у reasoning-моделей при
- *        `max_tokens: 1` видимого текста ещё нет, а рассуждения уже посчитаны;
- * `ignored` — 200, но поля нет (шлюз молча вырезал);
- * `rejected` — провайдер ругается именно на logprobs;
- * `auth` — ключ не принят;
- * `unsupported` — эндпоинт не про chat-completions или поля не знает;
- * `error` — временная беда (429/5xx/сеть), результат не кэшируем.
+ * `ok` — the response really has logprob tokens in any channel (`content` or
+ *        `reasoning_content`/`reasoning_logprobs`): with reasoning models at
+ *        `max_tokens: 1` there is no visible text yet, but the reasoning is already computed;
+ * `ignored` — 200, but the field is absent (the gateway silently stripped it);
+ * `rejected` — the provider complains specifically about logprobs;
+ * `auth` — the key was not accepted;
+ * `unsupported` — the endpoint is not about chat-completions or does not know the field;
+ * `error` — a temporary problem (429/5xx/network), the result is not cached.
  */
 export const classify = (response: ProbeResponse): Status => {
   const { status, body } = response
@@ -191,7 +191,7 @@ export const classify = (response: ProbeResponse): Status => {
   return "unsupported"
 }
 
-/** Человеческая строка для лога и статуса в TUI. */
+/** Human-readable line for the log and the status in the TUI. */
 export const describe = (status: Status): string => {
   switch (status) {
     case "ok":
@@ -209,7 +209,7 @@ export const describe = (status: Status): string => {
   }
 }
 
-/** Строка бейджа: то, что печатает `opencode truthprobe status` и TUI. */
+/** Badge lines: what `opencode truthprobe status` and the TUI print. */
 export const summary = (entries: Readonly<Record<string, Entry>>, now: number): string[] =>
   Object.entries(entries)
     .sort(([a], [b]) => a.localeCompare(b))

@@ -1,19 +1,21 @@
-# Как внести изменение
+> Русская версия: [docs/ru/CONTRIBUTING.md](docs/ru/CONTRIBUTING.md)
 
-TruthProbe — это патч поверх [sst/opencode](https://github.com/sst/opencode), а не форк.
-Правки живут в пропатченном дереве, из него пересобирается `patches/truthprobe-0001.patch`,
-и уже этот файл является результатом репозитория.
+# How to make a change
 
-## Быстрый старт
+TruthProbe is a patch on top of [sst/opencode](https://github.com/sst/opencode), not a fork.
+The edits live in the patched tree, `patches/truthprobe-0001.patch` is rebuilt from it,
+and it is this file that is the result of the repository.
+
+## Quick start
 
 ```bash
 git clone https://github.com/vladmurnik/truthprobe-opencode
 cd truthprobe-opencode
-make setup          # клон opencode на BASE, git am патча, bun install, тесты
-make test           # юнит-тесты самого репозитория (~2 c, без клонирования)
-make preview        # мок-провайдер + один запрос через CLI, видно вердикт
-make data           # собрать новые калибровочные строки (нужен OpenAI-совместимый шлюз)
-make weights        # обучить веса на собранных строках → data/weights.json
+make setup          # clone of opencode at BASE, git am of the patch, bun install, tests
+make test           # unit tests of the repository itself (~2 s, without cloning)
+make preview        # mock provider + one request through the CLI, the verdict is visible
+make data           # collect new calibration rows (an OpenAI-compatible gateway is needed)
+make weights        # train the weights on the collected rows → data/weights.json
 ```
 
 Windows (PowerShell):
@@ -22,46 +24,60 @@ Windows (PowerShell):
 powershell -ExecutionPolicy Bypass -File scripts\dev-setup.ps1
 ```
 
-Нужны: `git`, [`bun`](https://bun.sh) ≥ 1.2, `python3` (для мок-провайдера и скриптов).
-Docker нужен только для FreeLLMAPI — см. `docs/FREELLMAPI.md`.
+Required: `git`, [`bun`](https://bun.sh) ≥ 1.2, `python3` (for the mock provider and the scripts).
+Docker is needed only for FreeLLMAPI — see `docs/FREELLMAPI.md`.
 
-## Цикл изменения
+## The change cycle
 
-1. **`make setup`** — появляется `.worktree/opencode` с применённым патчем.
-2. Правите код там (карта файлов — `docs/DEVELOPMENT.md`).
-3. **`make test`** — тесты репозитория; в дереве: `bun test test/truthprobe`.
-4. Коммитите в `.worktree/opencode` (один коммит = одна мысль, сообщение в стиле `feat(truthprobe): …`).
-5. **`make patch`** — пересобирает `patches/truthprobe-0001.patch` из `BASE..HEAD`.
-6. **`make verify`** — тесты + проверка, что патч ложится на чистую базу.
-7. Коммит в этом репозитории: патч + (если менялись) reference-копии в `src/truthprobe/`,
-   тесты в `test/`, документация.
+1. **`make setup`** — `.worktree/opencode` appears with the patch applied.
+2. You edit the code there (the file map is `docs/DEVELOPMENT.md`).
+3. **`make test`** — the tests of the repository; in the tree: `bun test test/truthprobe`.
+4. Commit in `.worktree/opencode` (one commit = one thought, the message in the `feat(truthprobe): …` style).
+5. **`make patch`** — rebuilds `patches/truthprobe-0001.patch` from `BASE..HEAD`.
+6. **`make verify`** — tests + a check that the patch applies to a clean base.
+7. Commit in this repository: the patch + (if they changed) the reference copies in `src/truthprobe/`,
+   the tests in `test/`, the documentation.
 
-`BASE` — коммит sst/opencode, на который нарезан патч (`007afb1b…`). Менять его можно,
-но тогда надо перегенерировать патч и прогнать `make verify` на новой базе.
+`BASE` is the sst/opencode commit the patch is cut against (`007afb1b…`). It can be changed,
+but then the patch must be regenerated and `make verify` run on the new base.
 
-## Правила, которые здесь не обсуждаются
+## Rules that are not up for discussion here
 
-- **Числа только измеренные.** Любая цифра в README/docs должна иметь команду, которой её получили.
-  Не измерено — так и пишем: «не проверено», с причиной.
-- **Никаких выдуманных метрик.** `AUROC`/`ECE` на синтетике — свойство синтетики; подписывайте это явно.
-- **Деградация вместо падения.** Нет `logprobs`, битый файл весов, чужая модель — скорер откатывается
-  на geometric и печатает одно предупреждение, но не ломает сессию.
-- **Тесты на поведение, а не на реализацию.** Проверяем «плохой ответ получает меньший score»,
-  а не «функция вызвана дважды».
-- **Патч остаётся `git am`-совместимым**: только коммиты, без merge-коммитов и без бинарников.
+- **Only measured numbers.** Any figure in the README/docs must have the command by which it was obtained.
+  Not measured — so we write exactly that: "not verified", with the reason.
+- **No invented metrics.** `AUROC`/`ECE` on synthetics — a property of the synthetics; label that explicitly.
+- **Degradation instead of a crash.** No `logprobs`, a broken weights file, someone else's model — the scorer falls back
+  to geometric and prints one warning, but does not break the session.
+- **Tests for behaviour, not implementation.** We check "a bad answer gets a lower score",
+  not "the function was called twice".
+- **The patch stays `git am`-compatible**: commits only, no merge commits and no binaries.
 
-## Перед pull request
+## Before a pull request
 
 ```bash
-make verify                       # тесты + патч ложится на чистую базу
-bun test test                     # тот же прогон, что в CI (job «repo tests»)
+make verify                       # tests + the patch applies to a clean base
+bun test test                     # the same run as in CI (the "repo tests" job)
 ```
 
-Если меняли математику скорера — приложите в описании PR пару строк «до/после» на фиксированных
-токенах: это дешевле, чем потом искать, почему изменились проценты.
+If you changed the scorer's maths — attach a couple of "before/after" lines on fixed
+tokens in the PR description: it is cheaper than later hunting for why the percentages changed.
 
-## Где спросить
+## Language
 
-- `docs/DEVELOPMENT.md` — карта «что где менять».
-- `docs/VALIDATION.md` — что и как измерялось, включая прогоны CI.
-- `docs/FREELLMAPI.md` — сбор калибровочных данных на многих моделях.
+Everything in this repository is written in English: code comments, user-facing strings,
+commit messages, documentation. Russian exists as an optional translation — `README.ru.md`
+and `docs/ru/*` — and a Russian copy must be updated together with the English original
+it mirrors.
+
+The only place where both languages meet inside one file is the banner at the top:
+`> Русская версия: …` in the English file, `> English version: …` in the Russian one.
+
+One intentional exception: `scripts/collect.py` keeps a Cyrillic range inside a tokenizer
+regex (`[a-zа-я0-9]+`), because the reference answers it splits are Russian. That is code,
+not text.
+
+## Where to ask
+
+- `docs/DEVELOPMENT.md` — the "what to change where" map.
+- `docs/VALIDATION.md` — what and how was measured, including the CI runs.
+- `docs/FREELLMAPI.md` — collecting calibration data on many models.

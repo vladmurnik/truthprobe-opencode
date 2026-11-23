@@ -1,73 +1,75 @@
-# Prior art: уверенность модели по первым токенам
+> Русская версия: [docs/ru/PRIOR-ART.md](ru/PRIOR-ART.md)
 
-Собрано 19.11.2026. Нужно, чтобы не изобретать метрику и не повторять чужие ошибки.
+# Prior art: model confidence from the first tokens
 
-## Прямо в тему
+Collected 19.11.2026. Needed so as not to reinvent the metric and not to repeat others' mistakes.
+
+## Directly on topic
 
 **The First Token Knows: Single-Decode Confidence for Hallucination Detection** —
 Mina Gabriel, Pei Wang. arXiv **2605.05166** (v1 06.05.2026, v2 14.11.2026),
 TRUST-AI 2026, CEUR Vol. 4254, pp. 55–63.
 
-- `φ_first = 1 − нормированная энтропия top-K распределения первого содержательного токена`.
-- PopQA + TriviaQA, три 7–8B instruct-модели: φ_first **догоняет или немного превосходит**
-  semantic self-consistency (1 greedy декод против 1 декода + 10 сэмплов + NLI-кластеризация).
-- φ_first умеренно-сильно коррелирует с semantic agreement; объединение даёт лишь небольшой
-  прирост AUROC.
-- Оговорка авторов: метод слаб на **high-confidence falsehoods** и **long-form generation**.
+- `φ_first = 1 − normalized entropy of the top-K distribution of the first content-bearing token`.
+- PopQA + TriviaQA, three 7–8B instruct models: φ_first **catches up with or slightly exceeds**
+  semantic self-consistency (1 greedy decode versus 1 decode + 10 samples + NLI clustering).
+- φ_first correlates moderately strongly with semantic agreement; combining them gives only a small
+  AUROC gain.
+- Caveat from the authors: the method is weak on **high-confidence falsehoods** and **long-form generation**.
 
-→ Берём формулу как есть (`φ_first`), но не как единственный сигнал.
+→ We take the formula as is (`φ_first`), but not as the only signal.
 
-## Калибровка: почему logprob ≠ правда
+## Calibration: why logprob ≠ truth
 
 **Just Ask for Calibration** — Tian et al., EMNLP 2023, arXiv **2305.14975**.
 
-- У RLHF-моделей (ChatGPT/GPT-4/Claude) **вербализованная** уверенность обычно
-  лучше откалибрована, чем условные вероятности; ECE падает примерно вдвое.
-- Вывод для нас: показывать «риск», а не «модель уверена на 94%».
+- For RLHF models (ChatGPT/GPT-4/Claude), **verbalized** confidence is usually
+  better calibrated than conditional probabilities; ECE drops roughly by half.
+- Implication for us: show "risk", not "the model is 94% confident".
 
 **Beyond Logprobs: A Multi-Signal Confidence Engine for LLM-Based Document Field Extraction** —
 Nitesh Kumar, arXiv **2606.24420** (IJCAI-ECAI 2026 workshop, oral).
 
-- Token-level logprobs, verbalized confidence и multi-sample self-consistency
-  «collapse toward all-positive behaviour at practical thresholds» — на рабочих порогах
-  не разделяют надёжное и ненадёжное.
-- Фьюжн с независимым источником (cross-call disagreement) → 0.928 ROC AUC,
-  −70% selective risk против `logprob-mean`.
-- Прямой вывод: **один logprob-сигнал в проде недостаточен**, нужен второй структурно иной сигнал.
+- Token-level logprobs, verbalized confidence and multi-sample self-consistency
+  "collapse toward all-positive behaviour at practical thresholds" — at working thresholds
+  they do not separate the reliable from the unreliable.
+- Fusion with an independent source (cross-call disagreement) → 0.928 ROC AUC,
+  −70% selective risk against `logprob-mean`.
+- Direct conclusion: **a single logprob signal in production is insufficient**, a second structurally different signal is needed.
 
 **Detecting AI Hallucinations in Finance (ECLIPSE)** — arXiv **2512.03107**.
 
-- Сравнение GPT-3.5-turbo vs Claude-3-Haiku: у Claude «lacks token-level log probabilities»,
-  AUC падает с 0.89 до 0.59 — прямое подтверждение провайдерского барьера.
+- Comparison of GPT-3.5-turbo vs Claude-3-Haiku: Claude "lacks token-level log probabilities",
+  AUC drops from 0.89 to 0.59 — a direct confirmation of the provider barrier.
 
-## Родственные методы (не в v1, но влияют на дизайн)
+## Related methods (not in v1, but they influence the design)
 
-- **Semantic Entropy Probes** — Kossen et al., arXiv **2406.15927**: аппроксимация semantic entropy
-  по hidden states одного прохода. Требует whitebox → только для локальных моделей/форка инференса.
-- **lm-polygraph** (`IINemo/lm-polygraph`, ★530, MIT) — самая полная батарея UE-методов
-  (logprob-based, semantic entropy, SEP) + бенчмарк. Референс реализаций.
+- **Semantic Entropy Probes** — Kossen et al., arXiv **2406.15927**: an approximation of semantic entropy
+  from the hidden states of a single pass. Requires whitebox → only for local models/a fork of inference.
+- **lm-polygraph** (`IINemo/lm-polygraph`, ★530, MIT) — the most complete battery of UE methods
+  (logprob-based, semantic entropy, SEP) + a benchmark. A reference for implementations.
 - **SelfCheckGPT** (`potsawee/selfcheckgpt`, ★635) — sampling-based black-box.
-- **llm-confidence-probe** (`prefersung`) — vLLM отдаёт token logprobs, агрегация
-  в sentence-level risk, подсветка подозрительных фраз. Ближайший UX-аналог L3.
-- **LLM-Hallucination-Detection-Script** (`Mattbusel`, ★19, Rust CLI) — «какие слова
-  ответа перепроверить», темы `logprobs`, `token-visualization`.
-- **rydz** (`mobarski`) — logprobs для классификации одним токеном (шаблон «1 запрос, 1 токен»).
+- **llm-confidence-probe** (`prefersung`) — vLLM returns token logprobs, aggregation
+  into sentence-level risk, highlighting of suspicious phrases. The closest UX analogue of L3.
+- **LLM-Hallucination-Detection-Script** (`Mattbusel`, ★19, Rust CLI) — "which words of the
+  answer to re-check", topics `logprobs`, `token-visualization`.
+- **rydz** (`mobarski`) — logprobs for classification with a single token (the "1 request, 1 token" pattern).
 
-## Что уже есть в экосистеме OpenCode
+## What already exists in the OpenCode ecosystem
 
-- Ничего с токен-логпробсами. Ближайшее — **DCGP** (`addicted2crypto/DCGP`, ★6):
-  «predicts entropy, blocks hallucinations», но энтропия там по здоровью контекста
-  (домены, гейты, anchors), слово `logprob` в README отсутствует.
-- `@tarquinen/opencode-dcp` — управление количеством контекста, ортогонально.
+- Nothing with token logprobs. The closest is **DCGP** (`addicted2crypto/DCGP`, ★6):
+  "predicts entropy, blocks hallucinations", but the entropy there is over context health
+  (domains, gates, anchors), the word `logprob` is absent from the README.
+- `@tarquinen/opencode-dcp` — control over the amount of context, orthogonal.
 
-## Проверенные факты про OpenCode (важно для архитектуры)
+## Verified facts about OpenCode (important for the architecture)
 
-- В дереве `sst/opencode@dev` (12 659 файлов) **нет ни одного совпадения по `logprob`**.
-- В `@opencode-ai/plugin` d.ts **нет** упоминаний logprobs; полный список хуков:
+- In the `sst/opencode@dev` tree (12 659 files) there is **not a single match for `logprob`**.
+- In the `@opencode-ai/plugin` d.ts there are **no** mentions of logprobs; the full list of hooks:
   `event`, `config`, `tool`, `auth`, `provider`, `chat.message`, `chat.params`, `chat.headers`,
   `permission.ask`, `command.execute.before`, `tool.execute.before`, `tool.execute.after`,
   `shell.env`, `experimental.chat.messages.transform`, `experimental.chat.system.transform`,
   `experimental.provider.small_model`, `experimental.session.compacting`,
   `experimental.compaction.autocontinue`, `experimental.text.complete`, `tool.definition`.
-- `chat.params` умеет менять `options: Record<string, any>` (можно попытаться добавить
-  `logprobs`), но парсер ответа их выбрасывает → фильтр на уровне ядра неизбежен.
+- `chat.params` can change `options: Record<string, any>` (one can try to add
+  `logprobs`), but the response parser throws them away → a filter at the core level is unavoidable.

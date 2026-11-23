@@ -1,18 +1,18 @@
 /**
- * TruthProbe — шкала уверенности.
+ * TruthProbe — confidence scale.
  *
- * Одно место, где score превращается в человекочитаемый уровень. Уровень едет
- * в парте рядом с числом, чтобы session-ui, TUI и REST говорили одно и то же.
+ * The single place where score turns into a human-readable level. The level travels
+ * in the payload next to the number so that session-ui, TUI and REST all say the same thing.
  *
- * Важно: score — уверенность модели в собственных токенах, а не вероятность
- * того, что ответ правдив. Детерминированный шлюз (logprob ≈ -0.001) даёт
- * "safe" на любом тексте, включая выдуманный.
+ * Important: score is the model's confidence in its own tokens, not the probability
+ * that the answer is true. A deterministic gateway (logprob ≈ -0.001) gives
+ * "safe" on any text, including a made-up one.
  */
 
-/** Уровень уверенности ответа или предложения. */
+/** Confidence level of an answer or a sentence. */
 export type ConfidenceLevel = "safe" | "likely" | "uncertain" | "risky" | "unreliable"
 
-/** Нижние границы уровней по score. Всё, что ниже последней границы, — unreliable. */
+/** Lower bounds of the levels by score. Anything below the last bound is unreliable. */
 export const LEVEL_BOUNDS = {
   safe: 0.9,
   likely: 0.75,
@@ -20,10 +20,10 @@ export const LEVEL_BOUNDS = {
   risky: 0.35,
 } as const
 
-/** Уровни от надёжного к ненадёжному — порядок для UI и документации. */
+/** Levels from reliable to unreliable — the order for the UI and the docs. */
 export const LEVEL_ORDER = ["safe", "likely", "uncertain", "risky", "unreliable"] as const
 
-/** Что уровень значит словами. */
+/** What a level means in words. */
 export const LEVEL_TEXT: Record<ConfidenceLevel, string> = {
   safe: "no visible hesitation",
   likely: "confident",
@@ -33,8 +33,8 @@ export const LEVEL_TEXT: Record<ConfidenceLevel, string> = {
 }
 
 /**
- * Переводит score в уровень. `null`/`NaN`/`undefined` — уровня нет (сигнала нет),
- * а не «самый плохой».
+ * Turns a score into a level. `null`/`NaN`/`undefined` — no level (no signal),
+ * rather than "the worst one".
  */
 export function levelOf(score: number | null | undefined): ConfidenceLevel | null {
   if (typeof score !== "number" || !Number.isFinite(score)) return null
@@ -45,7 +45,7 @@ export function levelOf(score: number | null | undefined): ConfidenceLevel | nul
   return "unreliable"
 }
 
-/** Уровень — повод подсветить строку: только `risky` и `unreliable`. */
+/** A level is a reason to highlight the line: only `risky` and `unreliable`. */
 export function isDoubtful(level: ConfidenceLevel | null | undefined): boolean {
   return level === "risky" || level === "unreliable"
 }

@@ -1,40 +1,42 @@
-# FreeLLMAPI как источник данных для калибровки
+> Русская версия: [docs/ru/FREELLMAPI.md](ru/FREELLMAPI.md)
 
-[FreeLLMAPI](https://github.com/tashfeenahmed/freellmapi) — один OpenAI-совместимый
-эндпоинт (`/v1`) поверх бесплатных тарифов десятков провайдеров. Для TruthProbe он
-интересен не как «ещё один шлюз», а как **фабрика размеченных данных**: много разных
-моделей через один `baseURL`, одинаковый формат `logprobs`, и есть роутер, который
-сам переключается на следующую модель при 429.
+# FreeLLMAPI as a data source for calibration
 
-## Что уже проверено (20.11.2026)
+[FreeLLMAPI](https://github.com/tashfeenahmed/freellmapi) — a single OpenAI-compatible
+endpoint (`/v1`) on top of the free tiers of dozens of providers. For TruthProbe it is
+interesting not as "yet another gateway", but as a **factory of labelled data**: many different
+models through one `baseURL`, the same `logprobs` format, and there is a router that
+switches to the next model on its own at 429.
 
-| Что | Как | Результат |
+## What has already been verified (20.11.2026)
+
+| What | How | Result |
 | --- | --- | --- |
-| Образ поднимается | `docker run ghcr.io/tashfeenahmed/freellmapi:latest` | сервер слушает `:3001`, статус `healthy` |
-| Первый запуск | `ENCRYPTION_KEY` + `FREEAPI_CONFIG_JSON` c admin-аккаунтом | БД создана, засеяно **25 моделей**, `POST /api/auth/login` → 200 |
-| Каталог моделей | `GET /api/models` с токеном | отдаёт `platform`, `modelId`, `rpmLimit`, `contextWindow`, `enabled` |
-| Инференс | `POST /v1/chat/completions` | **не проверен**: без ключей провайдеров все модели `enabled: false` |
-| Проброс `logprobs` | — | **не проверен**, ниже объяснено, почему это главный вопрос |
-| Массовый сбор на другом шлюзе (`127.0.0.1:8790/v1`) | `collect.py --all-models --auto-label`, 24 модели × 24 вопроса | **120 строк с признаками** на 7 моделях (4 модели — 24/24), 108 × `HTTP 403 premium credits`, 348 × «без logprobs», **негативов 0** (все ответы верные) |
+| The image comes up | `docker run ghcr.io/tashfeenahmed/freellmapi:latest` | the server listens on `:3001`, status `healthy` |
+| First launch | `ENCRYPTION_KEY` + `FREEAPI_CONFIG_JSON` with an admin account | the DB is created, **25 models** are seeded, `POST /api/auth/login` → 200 |
+| Model catalog | `GET /api/models` with a token | returns `platform`, `modelId`, `rpmLimit`, `contextWindow`, `enabled` |
+| Inference | `POST /v1/chat/completions` | **not verified**: without provider keys all models are `enabled: false` |
+| `logprobs` pass-through | — | **not verified**, below it is explained why this is the main question |
+| Bulk collection on another gateway (`127.0.0.1:8790/v1`) | `collect.py --all-models --auto-label`, 24 models × 24 questions | **120 rows with features** on 7 models (4 models — 24/24), 108 × `HTTP 403 premium credits`, 348 × "without logprobs", **0 negatives** (all answers correct) |
 
-Без ключей хотя бы одного провайдера (Groq, Google, Cerebras, OpenRouter…) роутер
-не может обслужить ни одного запроса. Ключи кладутся на странице **Keys** локального
-дашборда `http://127.0.0.1:3001`; там же в шапке лежит **unified key** вида
-`freellmapi-…` — это единственный токен, который видит клиент.
+Without keys for at least one provider (Groq, Google, Cerebras, OpenRouter…) the router
+cannot serve a single request. Keys are put on the **Keys** page of the local
+dashboard `http://127.0.0.1:3001`; the same header also holds the **unified key** of the form
+`freellmapi-…` — this is the only token that the client sees.
 
-### Почему сбор всё ещё не даёт калибровку
+### Why the collection still does not give calibration
 
-На прогоне 24×24 (576 запросов) получилось 120 строк с признаками и **ноль негативов**:
-все модели, которые вообще ответили, ответили верно. Плюс 108 запросов упёрлись в
-`HTTP 403 premium credits` (на этом шлюзе премиум-модели требуют кредитов), а 348
-вернулись без `logprobs`. Для обучения весов нужны обе метки, поэтому `calibrate.py --fit`
-честно отказывается работать на таком файле и говорит: «в наборе только один класс».
+On the 24×24 run (576 requests) there were 120 rows with features and **zero negatives**:
+all the models that answered at all answered correctly. Plus 108 requests ran into
+`HTTP 403 premium credits` (on this gateway premium models require credits), and 348
+came back without `logprobs`. Training the weights needs both labels, so `calibrate.py --fit`
+honestly refuses to work on such a file and says: "the set has only one class".
 
-Что даст негативы: заведомо слабые/маленькие модели, каверзные вопросы с проверяемым
-ответом, либо искусственно урезанный контекст — тогда часть ответов будет неверной, и
-признаки (`meanLp`, `minLp`, `phi`, `fracLow`) получат с чем сравниваться.
+What will give negatives: deliberately weak/small models, tricky questions with a verifiable
+answer, or an artificially truncated context — then part of the answers will be wrong, and
+the features (`meanLp`, `minLp`, `phi`, `fracLow`) will have something to compare against.
 
-## Поднять локально
+## Bringing it up locally
 
 ```bash
 KEY=$(head -c 32 /dev/urandom | od -An -tx1 | tr -d ' \n')
@@ -45,32 +47,32 @@ docker run -d --name freellmapi -p 3001:3001 \
   ghcr.io/tashfeenahmed/freellmapi:latest
 ```
 
-`ENCRYPTION_KEY` обязателен в `production`: без него сервер падает на старте с
+`ENCRYPTION_KEY` is mandatory in `production`: without it the server crashes at startup with
 `ENCRYPTION_KEY is required in production for API key encryption`.
-`FREEAPI_CONFIG_JSON` создаёт первый аккаунт, чтобы не ловить setup-код из логов.
+`FREEAPI_CONFIG_JSON` creates the first account, so as not to catch the setup code from the logs.
 
-## Проверить, доходят ли logprobs
+## Checking whether logprobs get through
 
 ```bash
 python3 scripts/probe-freellmapi.py --key freellmapi-xxxx
 python3 scripts/probe-freellmapi.py --key freellmapi-xxxx --model auto:fast --jsonl labeled.jsonl
 ```
 
-Скрипт делает `GET /v1/models`, затем `POST /v1/chat/completions` с
-`logprobs: true, top_logprobs: 3` и печатает вердикт:
+The script does `GET /v1/models`, then `POST /v1/chat/completions` with
+`logprobs: true, top_logprobs: 3` and prints the verdict:
 
-- `logprobs НЕ пришли` → для этой модели TruthProbe покажет `unavailable`, собирать
-  данные бессмысленно;
-- `logprobs доходят` → строка с `meanLp / minLp / phi / fracLow` дописывается в JSONL,
-  остаётся проставить `label` (правда/ложь) и накопить 200–500 строк.
-- Для набора сразу по нескольким моделям используйте `scripts/collect.py` (ниже) —
-  он считает признаки ровно так же, как рантайм, и умеет продолжать прерванный сбор.
+- `logprobs did not arrive` → for this model TruthProbe will show `unavailable`, collecting
+  data is pointless;
+- `logprobs arrive` → a row with `meanLp / minLp / phi / fracLow` is appended to the JSONL,
+  all that remains is to set `label` (truth/lie) and accumulate 200–500 rows.
+- To collect a set across several models at once, use `scripts/collect.py` (below) —
+  it computes the features exactly the same way as the runtime, and can continue an interrupted collection.
 
-FreeLLMAPI заявляет, что `logprobs` пробрасывается провайдеру, но бесплатные тарифы
-разных провайдеров относятся к параметру по-разному: часть просто игнорирует его,
-часть отвечает 400. Поэтому проверять надо **по каждой модели отдельно**, а не «вообще».
+FreeLLMAPI claims that `logprobs` is passed through to the provider, but the free tiers
+of different providers treat the parameter differently: some simply ignore it,
+some answer 400. Therefore it must be checked **for each model separately**, not "in general".
 
-## Подключение как провайдер в opencode
+## Connecting as a provider in opencode
 
 ```json
 {
@@ -88,22 +90,22 @@ FreeLLMAPI заявляет, что `logprobs` пробрасывается пр
 }
 ```
 
-Автопроверка TruthProbe сама дёрнет эндпоинт и запишет вердикт в
-`~/.local/share/opencode/truthprobe/capabilities.json`; при `status: ok` бейдж
-появится без всякой настройки.
+The TruthProbe auto-check will hit the endpoint itself and write the verdict into
+`~/.local/share/opencode/truthprobe/capabilities.json`; with `status: ok` the badge
+will appear with no configuration at all.
 
-## Отдельные веса на каждую модель
+## Separate weights for each model
 
-Причина, по которой это нужно: форма распределения логвероятностей у моделей разная.
-Один общий `sigmoid(bias + w·x)` систематически смещён для части моделей — у
-детерминированных шлюзов `logprob ≈ −0.001`, у «живых» моделей хвост длиннее.
+The reason this is needed: the shape of the log-probability distribution differs between models.
+One shared `sigmoid(bias + w·x)` is systematically biased for some models — deterministic
+gateways have `logprob ≈ −0.001`, "live" models have a longer tail.
 
 ```bash
 python3 scripts/calibrate.py labeled.jsonl --fit --by-model --out truthprobe-weights.json
 ```
 
-JSONL должен содержать поле `model` (скрипт `probe-freellmapi.py --jsonl` пишет туда
-`X-Routed-Via`, то есть `platform/model`). Выход — бандл:
+The JSONL must contain a `model` field (the `probe-freellmapi.py --jsonl` script writes
+`X-Routed-Via` there, that is, `platform/model`). The output is a bundle:
 
 ```json
 {
@@ -116,45 +118,45 @@ JSONL должен содержать поле `model` (скрипт `probe-free
 }
 ```
 
-Что делает **рантайм с 0.7.0**: `scoreAnswer` получает `providerID/modelID`
-(`publish-llm-event.ts` → `modelKey`), скорер `bundleScorer` берёт `models[<id>]`,
-а при его отсутствии — `global`. Битые или неполные записи моделей (например,
-`weights: null` у группы с малым числом строк) молча пропускаются, так что один
-сломанный ключ не ломает калибровку остальных. Проверить прямо:
+What **the runtime as of 0.7.0** does: `scoreAnswer` receives `providerID/modelID`
+(`publish-llm-event.ts` → `modelKey`), the `bundleScorer` scorer takes `models[<id>]`,
+and when it is absent — `global`. Broken or incomplete model entries (for example,
+`weights: null` for a group with few rows) are silently skipped, so one
+broken key does not break the calibration of the others. To check directly:
 
 ```bash
 TRUTHPROBE_SCORER=linear:truthprobe-weights.json bun run --cwd packages/cli src/index.ts
-# в stderr при загрузке: linear:truthprobe-weights.json(3 models)
+# in stderr on load: linear:truthprobe-weights.json(3 models)
 ```
 
-## Сбор набора: `scripts/collect.py`
+## Collecting a set: `scripts/collect.py`
 
-`collect.py` — то, чего не хватало между «пробой одной модели» и «обучением весов»:
-он гоняет список промптов по списку моделей и пишет готовые строки для
-`calibrate.py`. Признаки считаются **той же формулой, что в рантайме**:
-`meanLp` = среднее logprob, `minLp` = худший, `phi` = 1 − нормированная энтропия
-по `top_logprobs` первого токена, `fracLow` = доля токенов с `logprob < ln 0.5`.
+`collect.py` is what was missing between "probing one model" and "training the weights":
+it runs a list of prompts across a list of models and writes ready rows for
+`calibrate.py`. The features are computed **with the same formula as in the runtime**:
+`meanLp` = mean logprob, `minLp` = worst, `phi` = 1 − normalized entropy
+over `top_logprobs` of the first token, `fracLow` = share of tokens with `logprob < ln 0.5`.
 
 ```bash
-# промпты: txt (по строке) или JSONL {"prompt": "...", "label": 1}
+# prompts: txt (one per line) or JSONL {"prompt": "...", "label": 1}
 python3 scripts/collect.py --url http://127.0.0.1:3001/v1 --key $FREELLMAPI_KEY \
     --models auto,auto:fast,groq/llama-3.3-70b --prompts prompts.txt \
     --out data/rows.jsonl --resume --sleep 0.5 --limit 200
 ```
 
-- `--resume` пропускает пары (модель, промпт), уже лежащие в `--out` — сбор можно
-  прерывать и продолжать.
-- `--dry-run` печатает план без сети, `--limit` ограничивает число запросов
-  (удобно для бесплатных квот).
-- ответ без `logprobs` пишется строкой с `error`, но не попадает в обучение.
-- поле `model` берётся из `X-Routed-Via`, если роутер его прислал: тогда веса
-  привязываются к той модели, которая реально ответила, а не к `auto`.
+- `--resume` skips (model, prompt) pairs already lying in `--out` — collection can be
+  interrupted and resumed.
+- `--dry-run` prints the plan without the network, `--limit` caps the number of requests
+  (convenient for free quotas).
+- an answer without `logprobs` is written as a row with `error`, but does not go into training.
+- the `model` field is taken from `X-Routed-Via` if the router sent it: then the weights
+  are bound to the model that actually answered, not to `auto`.
 
-## Чего ждать от такого источника данных
+## What to expect from such a data source
 
-- **Плюс:** десятки моделей бесплатно, единый протокол, роутер сам обходит 429.
-- **Минус:** бесплатные тарифы нестабильны по латентности и лимитам; часть моделей
-  не отдаёт logprobs; «интеллект» эндпоинта падает к концу суток, когда у провайдеров
-  кончаются дневные квоты.
-- **Вывод:** как источник **размеченного набора** — годится; как продакшн-провайдер
-  для бейджа — только с честным `unavailable` там, где logprobs не пришли.
+- **Plus:** dozens of models for free, a single protocol, the router works around 429 by itself.
+- **Minus:** free tiers are unstable in latency and limits; some models
+  do not return logprobs; the "intelligence" of the endpoint degrades towards the end of the day, when the providers
+  run out of daily quotas.
+- **Conclusion:** as a source of a **labelled set** — it is suitable; as a production provider
+  for the badge — only with an honest `unavailable` where logprobs did not arrive.

@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
-"""Собирает один датасет из прогонов B и C: признаки из logprobs и текста ответа.
+"""Builds a single dataset from runs B and C: features from the logprobs and the answer text.
 
-Вход:  rows_raw2f.jsonl + rows_scored2.jsonl, rows_raw3f.jsonl + rows_scored3.jsonl
-Выход: dataset.jsonl  — одна строка на ответ, поле `y` = 1 для ложного.
+Input:  rows_raw2f.jsonl + rows_scored2.jsonl, rows_raw3f.jsonl + rows_scored3.jsonl
+Output: dataset.jsonl  — one row per answer, field `y` = 1 for a lie.
 
-Читаются уже восстановленные прогоны (`*f.jsonl`): `repair.py` возвращает текст ответов,
-который коллектор потерял, и переразмечает их. Запускать по порядку:
+The already repaired runs (`*f.jsonl`) are read: `repair.py` restores the answer text
+that the collector lost and relabels them. Run in this order:
 `repair.py` → `score_all.ts` → `dataset.py` → `eval.py`.
 
-Строки без токенов выбрасываются: без logprobs признаков нет. В прогоне B таких нет (0),
-в C — шесть (`error` от провайдера). Отказы модели выбрасываются отдельно: это другое поведение.
+Rows without tokens are dropped: no logprobs means no features. Run B has none of them (0),
+run C has six (`error` from the provider). Model refusals are dropped separately: that is different behaviour.
 """
 from __future__ import annotations
 
@@ -49,7 +49,7 @@ def percentile(values: list[float], q: float) -> float:
 
 
 def phi_of(token: dict) -> float | None:
-    """1 − H/ln K по top_logprobs; None, если альтернатив меньше двух."""
+    """1 - H/ln K over the top_logprobs; None if there are fewer than two alternatives."""
     top = [item for item in (token.get("top") or token.get("top_logprobs") or [])
            if isinstance(item.get("logprob"), (int, float)) and math.isfinite(item["logprob"])]
     if len(top) < 2:
@@ -130,7 +130,7 @@ def feats(answer: str, tokens: list[dict], scored: dict | None) -> dict | None:
 
 def main() -> None:
     def pick(key: str, default: str) -> pathlib.Path:
-        # относительный путь из окружения считается от HALLUC_DIR, иначе он уедет в текущий каталог
+        # a relative path from the environment is resolved against HALLUC_DIR, otherwise it lands in the current directory
         value = pathlib.Path(os.environ.get(key) or default)
         return value if value.is_absolute() else HERE / value
 
@@ -168,21 +168,21 @@ def main() -> None:
         false_dropped = sum(1 for r in raw
                             if not r.get("error") and (r.get("verdict") or "") == "wrong" and
                             feats(r.get("answer", ""), r.get("tokens") or [], scored.get((r.get("model"), r.get("qid"))) or {}) is None)
-        print(f"{run}: оставлено {kept}, выброшено без logprobs {dropped} (из них ложных {false_dropped})")
+        print(f"{run}: kept {kept}, dropped without logprobs {dropped} (of them lies {false_dropped})")
 
     with OUT.open("w", encoding="utf-8") as handle:
         for item in out:
             handle.write(json.dumps(item, ensure_ascii=False) + "\n")
     positives = sum(1 for i in out if i["y"] == 1)
-    print(f"\nвсего {len(out)} строк, ложных {positives}, верных {len(out) - positives}")
-    print(f"уникальных вопросов: {len({i['qid'] for i in out})}, моделей: {len({i['model'] for i in out})}")
+    print(f"\ntotal {len(out)} rows, lies {positives}, truths {len(out) - positives}")
+    print(f"unique questions: {len({i['qid'] for i in out})}, models: {len({i['model'] for i in out})}")
     by_cat: dict[str, list[int]] = {}
     for item in out:
         bucket = by_cat.setdefault(item["category"], [0, 0])
         bucket[1] += 1
         bucket[0] += item["y"]
-    print("по категориям (ложных/всего):", {k: f"{v[0]}/{v[1]}" for k, v in sorted(by_cat.items())})
-    print("записано:", OUT)
+    print("by category (lies/total):", {k: f"{v[0]}/{v[1]}" for k, v in sorted(by_cat.items())})
+    print("written:", OUT)
 
 
 if __name__ == "__main__":

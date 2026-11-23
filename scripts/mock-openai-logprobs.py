@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
-"""Мок OpenAI-совместимого стриминга с token logprobs — для сквозной проверки TruthProbe.
+"""Mock of OpenAI-compatible streaming with token logprobs — for end-to-end checks of TruthProbe.
 
-Запуск:
+Run:
     python3 scripts/mock-openai-logprobs.py 8899
 
-Проверка:
+Check:
     OPENCODE_TRUTHPROBE=1 \
     OPENCODE_CONFIG=$(pwd)/scripts/mock-opencode.json \
     bun run --cwd packages/cli src/index.ts run --model mock/mock-1 "What is the capital of France?"
 
-Сервер отдаёт два предложения: первое с высокими logprob (уверенное), второе с низкими
-(спорное). TruthProbe должен пометить второе как doubtful. Каждый полученный запрос
-пишется в /tmp/mock/requests.jsonl — по нему видно, что клиент реально отправил
-`logprobs: true` и `top_logprobs`.
+The server returns two sentences: the first with high logprobs (confident), the second with low
+(disputed). TruthProbe should mark the second one as doubtful. Every received request
+is written to /tmp/mock/requests.jsonl — it shows whether the client really sent
+`logprobs: true` and `top_logprobs`.
 """
 
 from __future__ import annotations
@@ -25,7 +25,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 _default_log = os.path.expanduser("~/mockwork/requests.jsonl")
 LOG = os.environ.get("MOCK_LOG") or _default_log
 
-# (токен, logprob, альтернативы). Первое предложение — уверенное, второе — сомнительное.
+# (token, logprob, alternatives). The first sentence is confident, the second is doubtful.
 ANSWER = [
     ("The", -0.05, [("The", -0.05), ("A", -3.1), ("This", -3.4)]),
     (" capital", -0.02, [(" capital", -0.02), (" largest", -4.0)]),
@@ -49,7 +49,7 @@ ANSWER = [
 class Handler(BaseHTTPRequestHandler):
     protocol_version = "HTTP/1.1"
 
-    def log_message(self, *args):  # тишина в консоли
+    def log_message(self, *args):  # silence on the console
         pass
 
     def do_GET(self):  # /v1/models
@@ -88,9 +88,9 @@ class Handler(BaseHTTPRequestHandler):
             )
             handle.close()
 
-        # TruthProbe проверяет поддержку logprobs одной нестримовой посылкой:
-        # отвечаем JSON, а не SSE. MOCK_MODE=ignored имитирует шлюз, который
-        # молча вырезает logprobs, MOCK_MODE=rejected — отказ на параметр.
+        # TruthProbe checks logprobs support with a single non-streaming request:
+        # we answer with JSON, not SSE. MOCK_MODE=ignored imitates a gateway that
+        # silently strips logprobs, MOCK_MODE=rejected — a rejection of the parameter.
         if os.environ.get("MOCK_MODE") == "rejected":
             payload = json.dumps({"error": {"message": "Unsupported parameter: logprobs"}}).encode()
             self.send_response(400)

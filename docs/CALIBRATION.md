@@ -1,95 +1,97 @@
-# Калибровка
+> Русская версия: [docs/ru/CALIBRATION.md](ru/CALIBRATION.md)
 
-**Статус: измерено на наборе «заказанной лжи», не на самопроизвольных галлюцинациях.**
+# Calibration
 
-Есть 626 строк: 544 правды и 82 негатива, причём негативы получены просьбой «соври». На них AUROC
-и ECE посчитаны и лежат в `docs/VALIDATION.md` §14–§15. Настоящих галлюцинаций в наборе нет: 1504
-запроса (47 вопросов × 4 модели × 4 сэмпла × две температуры, `T=0.8` и `T=1.0`) на четырёх моделях
-шлюза дали ноль негативов — модели либо отвечают
-верно, либо молчат. Поэтому числа ниже — про этот набор, а не универсальное свойство скорера.
+**Status: measured on the "ordered lies" set, not on spontaneous hallucinations.**
 
-Что измерено (626 строк, групповая кросс-валидация по `model + prompt` — почему именно так,
-см. `docs/VALIDATION.md` §17):
+There are 626 rows: 544 truths and 82 negatives, and the negatives were obtained by asking "lie". On them AUROC
+and ECE are computed and live in `docs/VALIDATION.md` §14–§15. There are no real hallucinations in the set: 1504
+requests (47 questions × 4 models × 4 samples × two temperatures, `T=0.8` and `T=1.0`) on four gateway models
+gave zero negatives — the models either answer
+correctly or stay silent. So the numbers below are about this set, not a universal property of the scorer.
 
-| Формула | AUROC | ECE |
+What was measured (626 rows, grouped cross-validation by `model + prompt` — why exactly this way,
+see `docs/VALIDATION.md` §17):
+
+| Formula | AUROC | ECE |
 | --- | --- | --- |
-| прежняя `0.4·geo + 0.3·worst + 0.3·φ` | 0.388 | 0.368 |
-| текущая по умолчанию `exp(meanLp)` | 0.597 | 0.098 |
-| обученные веса, out-of-fold | 0.800 | 0.275 |
+| the previous `0.4·geo + 0.3·worst + 0.3·φ` | 0.388 | 0.368 |
+| the current default `exp(meanLp)` | 0.597 | 0.098 |
+| learned weights, out-of-fold | 0.800 | 0.275 |
 
-Строк 626, но уникальных пар `(model, prompt, answer, label)` только **205**: один и тот же ответ
-встречается до четырёх раз (`sample 0..3`), а 34 вопроса переиспользуются всеми моделями. Фолды,
-нарезанные по строкам, оставляли 88.5% тестовых строк с побайтово тем же ответом в обучении —
-поэтому фолды режутся по группам `(model, prompt)`. На дедуплицированных 205 строках обученные
-веса дают **0.801**, встроенная формула — **0.640**.
+There are 626 rows, but only **205** unique `(model, prompt, answer, label)` pairs: the same answer
+occurs up to four times (`sample 0..3`), and 34 questions are reused by all models. Folds
+cut by rows left 88.5% of test rows with the byte-identically same answer in training —
+therefore folds are cut by groups `(model, prompt)`. On the deduplicated 205 rows the learned
+weights give **0.801**, the built-in formula — **0.640**.
 
-ECE у обученных весов (0.275) хуже, чем у встроенной формулы (0.098): сортировать ответы они
-помогают, но вероятности выдают смещённые. Поэтому по умолчанию включена `exp(meanLp)`.
+ECE of the learned weights (0.275) is worse than that of the built-in formula (0.098): they help
+to sort answers, but they give out biased probabilities. Therefore `exp(meanLp)` is enabled by default.
 
-На 739 заведомо верных ответах ECE падает с 0.493 до 0.160. Признак `digitDensity` даёт **+0.014**
-AUROC поверх полного набора признаков (ablation: 0.7858 без него против 0.7998 с ним, §17).
-Абляция чувствительна к разбиению на фолды: на других seed-ах тот же приём даёт +0.041 и +0.047,
-поэтому +0.014 — нижняя оценка вклада, а не точное значение.
-Per-model: `glm-5.3-flash` **0.840** на 198 строках (62 негатива); у `deepseek-v4.1-flash` 6
-негативов, у `particle` 10, у `deepseek-v4-flash` 4 — меньше порога 30, веса для них не выдаются.
+On 739 known-correct answers ECE drops from 0.493 to 0.160. The `digitDensity` feature gives **+0.014**
+AUROC on top of the full feature set (ablation: 0.7858 without it versus 0.7998 with it, §17).
+The ablation is sensitive to the fold split: on other seeds the same trick gives +0.041 and +0.047,
+so +0.014 is a lower estimate of the contribution, not an exact value.
+Per-model: `glm-5.3-flash` **0.840** on 198 rows (62 negatives); `deepseek-v4.1-flash` has 6
+negatives, `particle` 10, `deepseek-v4-flash` 4 — fewer than the threshold 30, weights are not issued for them.
 
-Проценты в UI всё равно читаются так: **насколько ровно модель шла по этому тексту**. Это не
-вероятность правды и не вероятность галлюцинации — уверенная ложь существует
-(`docs/PRIOR-ART.md`, ECLIPSE 2512.03107), и порогом её не лечат.
+Percentages in the UI are still read as: **how smoothly the model walked through this text**. This is not
+the probability of truth and not the probability of hallucination — confident lying exists
+(`docs/PRIOR-ART.md`, ECLIPSE 2512.03107), and a threshold does not cure it.
 
-## Чего не хватает, чтобы это стало полноценной калибровкой
+## What is missing for this to become a full-fledged calibration
 
-1. **Настоящие негативы.** 200–500 предложений из реальных ответов, где модель ошибается сама, а не
-   по просьбе. Метки `true` / `false` / `unverifiable` ставит человек по источникам; `unverifiable`
-   не выбрасывать, а считать отдельно — иначе метрика смещается в сторону проверяемых фактов.
-2. **Второй независимый набор.** Без него нельзя ни проверить веса, ни поставить CI-гейт по AUROC:
-   0.800 и 0.597 получены на одном наборе, и переобучение на нём не исключено.
-3. **Precision/recall при порогах.** Сколько ложных флагов на 100 верных предложений мы готовы
-   показывать — это политика, и её пока никто не выбирал.
-4. **Порог из данных.** `riskyThreshold = 0.45` и границы уровней `0.90 / 0.75 / 0.55 / 0.35`
-   по-прежнему выбраны по здравому смыслу, а не по размеченным данным.
+1. **Real negatives.** 200–500 sentences from real answers where the model errs on its own, not
+   on request. The labels `true` / `false` / `unverifiable` are set by a human from sources; `unverifiable`
+   is not to be thrown away but counted separately — otherwise the metric is biased toward verifiable facts.
+2. **A second independent set.** Without it one can neither validate the weights nor set up a CI gate on AUROC:
+   0.800 and 0.597 were obtained on one set, and overfitting on it is not ruled out.
+3. **Precision/recall at thresholds.** How many false flags per 100 correct sentences we are willing to
+   show — this is a policy, and so far nobody has chosen it.
+4. **A threshold from data.** `riskyThreshold = 0.45` and the level boundaries `0.90 / 0.75 / 0.55 / 0.35`
+   are still chosen by common sense, not from labelled data.
 
-## Инструмент
+## The tool
 
-`scripts/calibrate.py` считает AUROC и ECE по JSONL с полями `score`, `phi`, `meanLp`, `minLp`,
-`digitDensity`, `label`. Фолды строятся по группам `(model, prompt)`; побайтово одинаковые ответы
-схлопывает `scripts/measure-lies.py --dedupe` (у `calibrate.py` такого флага нет). Без размеченного
-файла он запускается только с `--demo`, который генерирует
-синтетику: `AUROC 1.000` там — свойство синтетики, а не качество скорера.
+`scripts/calibrate.py` computes AUROC and ECE over JSONL with the fields `score`, `phi`, `meanLp`, `minLp`,
+`digitDensity`, `label`. Folds are built by groups `(model, prompt)`; byte-identical answers
+are collapsed by `scripts/measure-lies.py --dedupe` (`calibrate.py` has no such flag). Without a labelled
+file it runs only with `--demo`, which generates
+synthetics: `AUROC 1.000` there is a property of the synthetics, not the quality of the scorer.
 
-Полный набор аргументов: `python3 scripts/calibrate.py <файл.jsonl> [--fit] [--by-model] [--out FILE]`
-или `python3 scripts/calibrate.py --demo`.
+The full set of arguments: `python3 scripts/calibrate.py <file.jsonl> [--fit] [--by-model] [--out FILE]`
+or `python3 scripts/calibrate.py --demo`.
 
-## Правила честности в UI
+## Honesty rules in the UI
 
-- `unavailable` показывается с причиной, а не скрывается.
-- `first-token confidence` назван первым токеном, а не «первым предложением».
-- `answer confidence` виден всегда, включая хорошие ответы.
-- README и этот файл прямо говорят, на каком наборе получены числа и чего в них нет.
+- `unavailable` is shown with the reason rather than hidden.
+- `first-token confidence` is named the first token, not the "first sentence".
+- `answer confidence` is always visible, including good answers.
+- README and this file directly state on which set the numbers were obtained and what is missing in them.
 
-## Обучение весов скорера
+## Training the scorer weights
 
 ```bash
 python3 scripts/calibrate.py labeled.jsonl --fit --out truthprobe-weights.json
 ```
 
-Печатает AUROC и ECE по out-of-fold предсказаниям (5 фолдов), затем веса линейной модели:
+It prints AUROC and ECE over out-of-fold predictions (5 folds), then the weights of the linear model:
 
 ```
 score = sigmoid(bias + w1·meanLp + w2·minLp + w3·meanPhi + w4·fracLow + w5·digitDensity)
 ```
 
-С `--by-model` веса считаются отдельно на каждую модель из поля `model` и пишутся бандлом
-`{"models": {"provider/model": {...}}}`; рантайм выбирает набор по `providerID/modelID`. Веса
-выдаются только если у модели хотя бы 30 примеров каждого класса; иначе в бандле стоит
-`"weights": null` и используется общий набор. Меньше — это уже не калибровка: на четырёх негативах
-вес `meanPhi` получался отрицательным и делал оценку хуже случайной.
+With `--by-model` the weights are computed separately for each model from the `model` field and written as a bundle
+`{"models": {"provider/model": {...}}}`; the runtime picks the set by `providerID/modelID`. Weights are
+issued only if the model has at least 30 examples of each class; otherwise the bundle has
+`"weights": null` and the global set is used. Fewer than that is no longer calibration: on four negatives
+the `meanPhi` weight came out negative and made the score worse than random.
 
-Поле `phi` в собранных до 22.11.2026 наборах — это **энтропия** (0 = уверенно), а рантайм считает
-уверенность (`1 − энтропия`). `calibrate.py` приводит старые строки к уверенности при загрузке,
-поэтому обученные веса и рантайм говорят на одном языке.
-Веса кладутся в JSON и включаются переменной `TRUTHPROBE_SCORER=linear:<путь>`.
-Классы сбалансированы при обучении, L2 = 1e-3.
+The `phi` field in sets collected before 22.11.2026 is **entropy** (0 = confident), while the runtime computes
+confidence (`1 − entropy`). `calibrate.py` brings old rows to confidence on load,
+so the learned weights and the runtime speak the same language.
+Weights go into JSON and are enabled by the variable `TRUTHPROBE_SCORER=linear:<path>`.
+Classes are balanced during training, L2 = 1e-3.
 
-Любая ошибка загрузки (нет файла, битый JSON, нечисловой коэффициент) не ломает оценку: печатается
-одно предупреждение и включается встроенная формула `exp(meanLp)`.
+Any load error (no file, broken JSON, non-numeric coefficient) does not break scoring: one warning is printed
+and the built-in formula `exp(meanLp)` is enabled.

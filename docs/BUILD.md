@@ -1,7 +1,10 @@
-# Сборка бинарей
+> Русская версия: [docs/ru/BUILD.md](ru/BUILD.md)
 
-Обычная сборка opencode компилирует всё в один исполняемый файл (`--single`), и патч переживает
-это без изменений: `truthprobe` доезжает до базы и до TUI так же, как в `bun run src/index.ts`.
+# Building binaries
+
+The regular opencode build compiles everything into a single executable (`--single`), and the patch
+survives that without changes: `truthprobe` reaches the database and the TUI the same way as in
+`bun run src/index.ts`.
 
 ## Linux x64
 
@@ -10,7 +13,7 @@ OPENCODE_REPO=~/src/opencode bash scripts/build-linux.sh
 # → dist/opencode-truthprobe-linux-x64
 ```
 
-Эквивалент вручную:
+The manual equivalent:
 
 ```bash
 cd packages/cli
@@ -18,7 +21,7 @@ OPENCODE_TARGET=linux-x64 OPENCODE_RELEASE=1 \
   bun run script/build.ts --single --skip-install --skip-web-ui
 ```
 
-Проверено: **216 MB**, ~13 s, бинарь отвечает на мок-провайдере и пишет `truthprobe` в базу.
+Verified: **216 MB**, ~13 s, the binary answers on the mock provider and writes `truthprobe` to the database.
 
 ## Windows x64
 
@@ -27,33 +30,33 @@ OPENCODE_REPO=~/src/opencode bash scripts/build-windows.sh
 # → dist/opencode-truthprobe-windows-x64.exe
 ```
 
-Проверено: **233 MB**, `sha256 396be271b40c96da602d208df35d27ec947b4716aa4b29de7a5afc9a15b1eb8d`
-(полная сумма той сборки, на которой сняты числа; сам бинарь не публикуется),
+Verified: **233 MB**, `sha256 396be271b40c96da602d208df35d27ec947b4716aa4b29de7a5afc9a15b1eb8d`
+(the full sum of the build on which the numbers were taken; the binary itself is not published),
 `opencode.exe --version` → `v0.0.0-feat-truthprobe-…`,
-ответ на мок-провайдере с `status: "ok", score: 0.417, first.score: 0.708, flagged: 1`.
+an answer on the mock provider with `status: "ok", score: 0.417, first.score: 0.708, flagged: 1`.
 
-### Если собираешь Windows-бинарь из Linux/WSL
+### If you build the Windows binary from Linux/WSL
 
-`bun install` на Linux не скачивает платформенные optional-зависимости чужой ОС, а сборщик их
-требует (`@opencode/pty-win32-x64`, `@opentui/core-win32-x64`, `@parcel/watcher-win32-x64`,
-`@ff-labs/fff-bin-win32-x64` и остальные). Скрипт решает это разом:
+`bun install` on Linux does not download the platform optional dependencies of the other OS, while the
+bundler requires them (`@opencode/pty-win32-x64`, `@opentui/core-win32-x64`, `@parcel/watcher-win32-x64`,
+`@ff-labs/fff-bin-win32-x64` and the rest). The script solves this all at once:
 
 ```bash
 OPENCODE_REPO=~/src/opencode python3 scripts/install-cross-deps.py win32
 ```
 
-Он читает `optionalDependencies` **всех** пакетов в bun-хранилище (включая scoped-каталоги),
-скачивает недостающие win32-пакеты с npm и распаковывает рядом с их родителем, как это делает
-сам bun. Идемпотентен: повторный запуск ничего не качает.
+It reads the `optionalDependencies` of **all** packages in the bun store (including scoped directories),
+downloads the missing win32 packages from npm and unpacks them next to their parent, the way
+bun itself does. It is idempotent: a repeated run downloads nothing.
 
-Подводные камни, на которые уже наступили:
+Pitfalls we have already stepped on:
 
-- `pkg.parent` у scoped-пакета — это каталог `@scope`, а не `node_modules`; распаковка
-  «рядом с родителем» без этой поправки создаёт `@scope/@scope/name`.
-- Часть зависимостей (`@parcel/watcher-win32-x64`) объявлена не в корневом `package.json`,
-  а внутри `.bun/@parcel+watcher@2.5.1/node_modules/@parcel/watcher`, поэтому обход должен быть
-  рекурсивным, а не по одному уровню.
+- `pkg.parent` of a scoped package is the `@scope` directory, not `node_modules`; unpacking
+  "next to the parent" without this correction creates `@scope/@scope/name`.
+- Some dependencies (`@parcel/watcher-win32-x64`) are declared not in the root `package.json`
+  but inside `.bun/@parcel+watcher@2.5.1/node_modules/@parcel/watcher`, so the traversal must be
+  recursive rather than one level deep.
 
-## Кросс-сборка macOS
+## Cross-compiling macOS
 
-Не проверялась. По аналогии: `install-cross-deps.py darwin` + `OPENCODE_TARGET=darwin-arm64`.
+Not verified. By analogy: `install-cross-deps.py darwin` + `OPENCODE_TARGET=darwin-arm64`.

@@ -1,7 +1,7 @@
 From 3ccda6cdf3320c8fbcfbb2c8656c34a2827932af Mon Sep 17 00:00:00 2001
 From: truthprobe <truthprobe@local>
 Date: Thu, 19 Nov 2026 00:59:59 +0300
-Subject: [PATCH 01/30] feat(truthprobe): score answers from token logprobs
+Subject: [PATCH 01/31] feat(truthprobe): score answers from token logprobs
 
 - schema: Truthprobe.Info, capabilities.logprobs, AssistantText.truthprobe, optional truthprobe on session.text.ended
 - ai/openai-chat: request logprobs/top_logprobs when enabled, parse choice-level logprobs into providerMetadata
@@ -1192,7 +1192,7 @@ index 6a844d7..f21811e 100644
 From a9db0dab3c3392b40e8c9366e3455be1f37b7dcf Mon Sep 17 00:00:00 2001
 From: adik <adik@local>
 Date: Thu, 19 Nov 2026 01:12:00 +0300
-Subject: [PATCH 02/30] fix(tui): apply truthprobe metadata from
+Subject: [PATCH 02/31] fix(tui): apply truthprobe metadata from
  session.text.ended events
 
 The solid client store only copied event.data.text into the in-memory
@@ -1222,7 +1222,7 @@ index 8b6d247..7368d0c 100644
 From 2870f64a9bcb19d1e1701d85101c5074646cdcac Mon Sep 17 00:00:00 2001
 From: adik <adik@local>
 Date: Thu, 19 Nov 2026 03:08:36 +0300
-Subject: [PATCH 03/30] test(truthprobe): cover segmentation, scoring and
+Subject: [PATCH 03/31] test(truthprobe): cover segmentation, scoring and
  protocol parsing
 
 - send logprobs from every chat-completions model that declares the capability
@@ -1985,7 +1985,7 @@ index eed85f3..5bde799 100755
 From f04342565c0963f466c9bae21dc1b0d9158bab44 Mon Sep 17 00:00:00 2001
 From: TruthProbe <truthprobe@local>
 Date: Thu, 19 Nov 2026 09:40:19 +0300
-Subject: [PATCH 04/30] feat(truthprobe): probe providers and enable logprobs
+Subject: [PATCH 04/31] feat(truthprobe): probe providers and enable logprobs
  automatically
 
 Adding a provider key no longer needs an environment variable.
@@ -2800,7 +2800,7 @@ index 0000000..e23e561
 From 3126939707e7c7c305f8b3c2a89d196dc1b5acd9 Mon Sep 17 00:00:00 2001
 From: adik <adik@local>
 Date: Thu, 19 Nov 2026 13:34:58 +0300
-Subject: [PATCH 05/30] feat(truthprobe): show confidence in the desktop
+Subject: [PATCH 05/31] feat(truthprobe): show confidence in the desktop
  session UI
 
 ---
@@ -2897,7 +2897,7 @@ index be526b4..659538f 100644
 From 335305a2e846ae50c7d31cec6a750b74a4d385a6 Mon Sep 17 00:00:00 2001
 From: TruthProbe <truthprobe@localhost>
 Date: Thu, 19 Nov 2026 13:44:43 +0300
-Subject: [PATCH 06/30] feat(truthprobe): list doubtful sentences in the
+Subject: [PATCH 06/31] feat(truthprobe): list doubtful sentences in the
  desktop footer
 
 ---
@@ -3082,7 +3082,7 @@ index b44a4df..2a7ef9d 100644
 From 6017d751fc1a7a9bf1eac92e2b40b161e0c48b49 Mon Sep 17 00:00:00 2001
 From: TruthProbe <truthprobe@localhost>
 Date: Thu, 19 Nov 2026 14:33:06 +0300
-Subject: [PATCH 07/30] feat(desktop): let a fork brand the desktop app
+Subject: [PATCH 07/31] feat(desktop): let a fork brand the desktop app
 
 A fork that ships its own Electron application sets OPENCODE_DESKTOP_APP and
 OPENCODE_DESKTOP_APP_ID before building. The window title, the AppUserModelID,
@@ -3294,7 +3294,7 @@ index 9688672..de655d5 100644
 From a478531b342afc1a07626aafcd1e085543cbaef2 Mon Sep 17 00:00:00 2001
 From: truthprobe <truthprobe@local>
 Date: Thu, 19 Nov 2026 19:21:40 +0300
-Subject: [PATCH 08/30] fix(truthprobe): keep logprobs that arrive without
+Subject: [PATCH 08/31] fix(truthprobe): keep logprobs that arrive without
  text, align tokens, always publish a verdict
 
 - ai: buffer token logprobs in parser state; gateways send them in a separate
@@ -3705,7 +3705,7 @@ index f21811e..edac0e3 100644
 From 5a335e31658d33202b76ac0fb58f795cb1db4e03 Mon Sep 17 00:00:00 2001
 From: truthprobe <truthprobe@local>
 Date: Thu, 19 Nov 2026 19:36:25 +0300
-Subject: [PATCH 09/30] fix(truthprobe): say so when tokens do not match the
+Subject: [PATCH 09/31] fix(truthprobe): say so when tokens do not match the
  answer text
 
 Dropping every token that cannot be found in the text silently produced
@@ -3737,7 +3737,7 @@ index e024f93..7d46333 100644
 From f0554536b5ff45535fa4a9b936aad0aa6e81c405 Mon Sep 17 00:00:00 2001
 From: adik <adik@users.noreply.github.com>
 Date: Thu, 19 Nov 2026 21:10:26 +0300
-Subject: [PATCH 10/30] feat(truthprobe): confidence levels and sentence
+Subject: [PATCH 10/31] feat(truthprobe): confidence levels and sentence
  highlights
 
 ---
@@ -4362,7 +4362,7 @@ index edac0e3..b94c95c 100644
 From 9ec1201af1ea5836177461de2cc11b34436cb8c0 Mon Sep 17 00:00:00 2001
 From: adik <adik@users.noreply.github.com>
 Date: Thu, 19 Nov 2026 21:13:56 +0300
-Subject: [PATCH 11/30] feat(truthprobe): pluggable scorer (geometric | linear
+Subject: [PATCH 11/31] feat(truthprobe): pluggable scorer (geometric | linear
  weights)
 
 ---
@@ -4744,7 +4744,7 @@ index 0000000..998bf44
 From c15925055c110d21b05b552ef0a51dc839e85f03 Mon Sep 17 00:00:00 2001
 From: adik <adik@users.noreply.github.com>
 Date: Thu, 19 Nov 2026 21:28:48 +0300
-Subject: [PATCH 12/30] fix(schema): accept null level so unavailable verdicts
+Subject: [PATCH 12/31] fix(schema): accept null level so unavailable verdicts
  decode
 
 ---
@@ -4802,7 +4802,7 @@ index 5d05c07..d6f7831 100644
 From a1322cb02fee7ea1ea5a438027d2fa3dcd10189f Mon Sep 17 00:00:00 2001
 From: TruthProbe <truthprobe@localhost>
 Date: Thu, 19 Nov 2026 21:58:03 +0300
-Subject: [PATCH 13/30] fix(truthprobe): make the patched tree typecheck clean
+Subject: [PATCH 13/31] fix(truthprobe): make the patched tree typecheck clean
 
 - schema: Level is a type alias over the Literals union, not an interface
 - core: DEFAULT_SCORE_OPTIONS omits the optional scorer field
@@ -4938,7 +4938,7 @@ index d6f7831..99b4171 100644
 From b569d694e558f29b12d7c9cdc79abf9313154e5a Mon Sep 17 00:00:00 2001
 From: TruthProbe <truthprobe@localhost>
 Date: Fri, 20 Nov 2026 07:54:47 +0300
-Subject: [PATCH 14/30] feat(truthprobe): per-model calibration weights
+Subject: [PATCH 14/31] feat(truthprobe): per-model calibration weights
 
 - core: WeightsBundle/parseWeightsBundle/bundleScorer/weightsFor read the
   {global, models} bundle written by calibrate.py --fit --by-model
@@ -5229,7 +5229,7 @@ index 0000000..57691fb
 From 0654f88a5f5277f101a3a67d658d52a6b7c14d02 Mon Sep 17 00:00:00 2001
 From: TruthProbe <truthprobe@localhost>
 Date: Fri, 20 Nov 2026 15:31:41 +0300
-Subject: [PATCH 15/30] feat(session-ui): one readable confidence verdict and a
+Subject: [PATCH 15/31] feat(session-ui): one readable confidence verdict and a
  doubtful list
 
 - session-ui: new confidence.tsx with ConfidenceMeter, ConfidenceLine and
@@ -5505,7 +5505,7 @@ index 29f537b..6043672 100644
 From a142026a4e0e051f757bf3a25ed08fce7c28f61f Mon Sep 17 00:00:00 2001
 From: vladmurnik <vladmurnik@users.noreply.github.com>
 Date: Fri, 20 Nov 2026 16:28:49 +0300
-Subject: [PATCH 16/30] feat(tui): fixed-width confidence meter and level label
+Subject: [PATCH 16/31] feat(tui): fixed-width confidence meter and level label
 
 ---
  .../tui/src/routes/session/message-parts.tsx  | 36 +++++++++++++------
@@ -5589,7 +5589,7 @@ index b94c95c..8c17cd8 100644
 From f97ddc9359f1cc6277f6a1b1edb40449dfddac32 Mon Sep 17 00:00:00 2001
 From: vladmurnik <vladmurnik@users.noreply.github.com>
 Date: Fri, 20 Nov 2026 18:15:27 +0300
-Subject: [PATCH 17/30] fix(truthprobe): drop phi and the worst token from the
+Subject: [PATCH 17/31] fix(truthprobe): drop phi and the worst token from the
  default score
 
 Measured on 626 rows (544 truthful, 82 deliberate lies): the old
@@ -5707,7 +5707,7 @@ index 998bf44..3e7db3f 100644
 From 193caada63701bb10fa69065c6b94b8bf0c0a8a2 Mon Sep 17 00:00:00 2001
 From: vladmurnik <vladmurnik@users.noreply.github.com>
 Date: Fri, 20 Nov 2026 20:23:10 +0300
-Subject: [PATCH 18/30] feat(truthprobe): carry digit density as a feature
+Subject: [PATCH 18/31] feat(truthprobe): carry digit density as a feature
 
 - core: ScorerFeatures.digitDensity and an optional LinearWeights.digitDensity,
   so old weight files keep loading with a zero weight
@@ -5890,7 +5890,7 @@ index 3e7db3f..e231a93 100644
 From 127e30f79b7622fc064dba01426201ab516f7780 Mon Sep 17 00:00:00 2001
 From: vladmurnik <vladmurnik@users.noreply.github.com>
 Date: Fri, 20 Nov 2026 20:50:16 +0300
-Subject: [PATCH 19/30] test(truthprobe): pin cyrillic, CJK, emoji and arabic
+Subject: [PATCH 19/31] test(truthprobe): pin cyrillic, CJK, emoji and arabic
  answers
 
 - core: one test file covering five scripts, offsets, sentence spans and the
@@ -6002,7 +6002,7 @@ index 0000000..92b6302
 From 5195c5a9b55ec11cdb5b122e5378a3b947c2e9a4 Mon Sep 17 00:00:00 2001
 From: vladmurnik <vladmurnik@users.noreply.github.com>
 Date: Sun, 22 Nov 2026 15:30:44 +0300
-Subject: [PATCH 20/30] fix(truthprobe): honour an explicit off switch and key
+Subject: [PATCH 20/31] fix(truthprobe): honour an explicit off switch and key
  the cache by model
 
 - OPENCODE_TRUTHPROBE=0|off|false now returns false before the capability cache
@@ -6141,7 +6141,7 @@ index e23e561..0e611e4 100644
 From b38c640a5a2cbc510c9ab1b4b966a8c55488d9b7 Mon Sep 17 00:00:00 2001
 From: vladmurnik <vladmurnik@users.noreply.github.com>
 Date: Sun, 22 Nov 2026 15:30:44 +0300
-Subject: [PATCH 21/30] fix(truthprobe): reject null weights and say when a
+Subject: [PATCH 21/31] fix(truthprobe): reject null weights and say when a
  model falls back
 
 - JSON null no longer becomes weight 0 through Number(null); it throws like NaN
@@ -6230,7 +6230,7 @@ index e231a93..d21b25e 100644
 From 8b25919b15da9ce07d09f90fcc03f649d73d050a Mon Sep 17 00:00:00 2001
 From: vladmurnik <vladmurnik@users.noreply.github.com>
 Date: Sun, 22 Nov 2026 15:30:44 +0300
-Subject: [PATCH 22/30] fix(truthprobe): keep the confidence badge when a step
+Subject: [PATCH 22/31] fix(truthprobe): keep the confidence badge when a step
  aborts
 
 - score whatever text arrived before the failure instead of dropping it
@@ -6268,7 +6268,7 @@ index 46cbf4f..6bc2c57 100644
 From c965d3e5a264bd8863c72b295006206af013f0e7 Mon Sep 17 00:00:00 2001
 From: vladmurnik <vladmurnik@users.noreply.github.com>
 Date: Sun, 22 Nov 2026 15:30:44 +0300
-Subject: [PATCH 23/30] fix(ui): always show the answer verdict and restore
+Subject: [PATCH 23/31] fix(ui): always show the answer verdict and restore
  levels from scores
 
 - TUI printed the answer line only when something was flagged; desktop always did
@@ -6450,7 +6450,7 @@ index 8c17cd8..0363da0 100644
 From 3b4978468fd4c6a2843972182796ade91a60eb75 Mon Sep 17 00:00:00 2001
 From: vladmurnik <vladmurnik@users.noreply.github.com>
 Date: Sun, 22 Nov 2026 15:30:44 +0300
-Subject: [PATCH 24/30] fix(truthprobe): measure entropy over the alternatives
+Subject: [PATCH 24/31] fix(truthprobe): measure entropy over the alternatives
  it normalises by
 
 - top_logprobs longer than top_k inflated H while still dividing by ln(top_k),
@@ -6536,7 +6536,7 @@ index 641ff03..855d26a 100755
 From 80f073b11fb1cab5fe1f78d2981b206c02b70c69 Mon Sep 17 00:00:00 2001
 From: vladmurnik <vladmurnik@users.noreply.github.com>
 Date: Sun, 22 Nov 2026 16:24:27 +0300
-Subject: [PATCH 25/30] fix(truthprobe): make the honesty switches actually
+Subject: [PATCH 25/31] fix(truthprobe): make the honesty switches actually
  switch
 
 - protocol: an explicit OPENCODE_TRUTHPROBE wins over capabilities.logprobs,
@@ -6803,7 +6803,7 @@ index 0363da0..ea90a1d 100644
 From c4dc285fafd49c7bcdb252af8fa25876f91b793e Mon Sep 17 00:00:00 2001
 From: vladmurnik <vladmurnik@users.noreply.github.com>
 Date: Mon, 23 Nov 2026 00:49:26 +0300
-Subject: [PATCH 26/30] fix(truthprobe): close the nine findings from the
+Subject: [PATCH 26/31] fix(truthprobe): close the nine findings from the
  external audit
 
 - digitDensity divides by code points, not UTF-16 units; a flag emoji or an
@@ -7159,7 +7159,7 @@ index ea90a1d..000ab12 100644
 From 1ef1e55f548aae548c22ceb26d02f0e51a01f77c Mon Sep 17 00:00:00 2001
 From: vladmurnik <vladmurnik@users.noreply.github.com>
 Date: Mon, 23 Nov 2026 13:10:03 +0300
-Subject: [PATCH 27/30] fix(desktop): keep the reported CLI version out of the
+Subject: [PATCH 27/31] fix(desktop): keep the reported CLI version out of the
  stage stamp
 
 A content hash appended to opencode-cli.version made the desktop expect
@@ -7390,7 +7390,7 @@ index 5f1ceed..4391ae7 100644
 From 90e894d350a661ee1c41bfd6ef744dd27a4052ed Mon Sep 17 00:00:00 2001
 From: vladmurnik <vladmurnik@users.noreply.github.com>
 Date: Mon, 23 Nov 2026 13:58:55 +0300
-Subject: [PATCH 28/30] fix(desktop): cut a trailing stamp separator out of the
+Subject: [PATCH 28/31] fix(desktop): cut a trailing stamp separator out of the
  version
 
 splitStamp('2.0.32+') returned the whole string as the version, so the service
@@ -7470,7 +7470,7 @@ index 78cb61e..7286429 100644
 From 27acd4340c5585680ac9e17df1bd9f05959f1d14 Mon Sep 17 00:00:00 2001
 From: vladmurnik <vladmurnik@users.noreply.github.com>
 Date: Mon, 23 Nov 2026 14:28:18 +0300
-Subject: [PATCH 29/30] test(desktop): cover the stamped stage directory in
+Subject: [PATCH 29/31] test(desktop): cover the stamped stage directory in
  cleanStages
 
 cleanStages was only exercised with plain version directories (2.0.18, 2.0.20),
@@ -7541,7 +7541,7 @@ index f9b0533..3d6cf98 100644
 From 1784470188b978891c787754888158fa95261cd5 Mon Sep 17 00:00:00 2001
 From: vladmurnik <vladmurnik@users.noreply.github.com>
 Date: Mon, 23 Nov 2026 14:47:40 +0300
-Subject: [PATCH 30/30] fix(desktop): stop presenting the fork as OpenCode in
+Subject: [PATCH 30/31] fix(desktop): stop presenting the fork as OpenCode in
  the exe metadata
 
 ---
@@ -7578,6 +7578,2842 @@ index 38f901b..4a1ba52 100644
    }
  }
  
+-- 
+2.53.0
+
+
+From d54ac9f947492f386a9e87f9ccf6bd4c48ce9c8a Mon Sep 17 00:00:00 2001
+From: vladmurnik <vladmurnik@users.noreply.github.com>
+Date: Mon, 23 Nov 2026 18:31:54 +0300
+Subject: [PATCH 31/31] refactor(truthprobe): write every comment, message and
+ test name in English
+
+---
+ packages/ai/src/protocols/openai-chat.ts      |  44 ++---
+ .../ai/src/protocols/truthprobe-capability.ts |  26 +--
+ packages/ai/test/truthprobe.test.ts           |   4 +-
+ packages/core/src/plugin/truthprobe.ts        |  42 ++---
+ .../src/session/runner/publish-llm-event.ts   |  26 +--
+ packages/core/src/truthprobe/capability.ts    |  62 +++----
+ packages/core/src/truthprobe/levels.ts        |  26 +--
+ packages/core/src/truthprobe/score.ts         | 114 ++++++-------
+ packages/core/src/truthprobe/scorer.ts        |  74 ++++-----
+ packages/core/src/truthprobe/sentences.ts     |  47 +++---
+ packages/core/src/truthprobe/types.ts         |  86 +++++-----
+ .../core/test/truthprobe-capability.test.ts   |  76 ++++-----
+ packages/core/test/truthprobe-levels.test.ts  |  22 +--
+ .../test/truthprobe-scorer-bundle.test.ts     |  36 ++--
+ packages/core/test/truthprobe-scorer.test.ts  |  36 ++--
+ packages/core/test/truthprobe-unicode.test.ts |  24 +--
+ packages/core/test/truthprobe.test.ts         | 154 +++++++++---------
+ .../src/main/service/cli-version.test.ts      |  14 +-
+ .../desktop/src/main/service/cli-version.ts   |  20 +--
+ .../desktop/src/main/service/desktop-cli.ts   |   6 +-
+ .../desktop/src/main/service/sidecar-probe.ts |   4 +-
+ packages/schema/src/session-message.ts        |   2 +-
+ packages/schema/src/truthprobe.ts             |  22 +--
+ .../session-ui/src/message/confidence.tsx     |  24 +--
+ .../session-ui/src/message/doubtful.test.ts   |  18 +-
+ packages/session-ui/src/message/doubtful.ts   |  18 +-
+ .../src/message/message-content.tsx           |  14 +-
+ .../tui/src/routes/session/message-parts.tsx  |   8 +-
+ 28 files changed, 524 insertions(+), 525 deletions(-)
+
+diff --git a/packages/ai/src/protocols/openai-chat.ts b/packages/ai/src/protocols/openai-chat.ts
+index 84910f4..c3791a0 100644
+--- a/packages/ai/src/protocols/openai-chat.ts
++++ b/packages/ai/src/protocols/openai-chat.ts
+@@ -40,21 +40,21 @@ const ADAPTER = "openai-chat"
+ const RESERVED_REASONING_FIELDS = new Set(["role", "content", "refusal", "tool_calls"])
+ export const DEFAULT_BASE_URL = "https://api.openai.com/v1"
+ export const PATH = "/chat/completions"
+-/** Сколько альтернатив просим в top_logprobs для TruthProbe. */
++/** How many alternatives we ask for in top_logprobs for TruthProbe. */
+ export const TRUTHPROBE_TOP_K = 20
+ 
+ /**
+- * TruthProbe включён, если:
+- *   1) переменная OPENCODE_TRUTHPROBE задана явно (1/on/true — включён, 0/off/false — выключен,
+- *      регистр и пробелы не важны);
+- *   2) иначе — модель объявила `capabilities.logprobs` (true или false);
+- *   3) иначе — автопроверка уже подтвердила, что провайдер отдаёт logprobs
+- *      (кэш `truthprobe/capabilities.json`, путь приходит из ядра).
++ * TruthProbe is enabled if:
++ *   1) the OPENCODE_TRUTHPROBE variable is set explicitly (1/on/true — enabled, 0/off/false — disabled,
++ *      case and whitespace do not matter);
++ *   2) otherwise — the model declared `capabilities.logprobs` (true or false);
++ *   3) otherwise — the automatic probe already confirmed that the provider returns logprobs
++ *      (cache `truthprobe/capabilities.json`, the path comes from the core).
+  *
+- * Порядок именно такой: `TruthprobePlugin.enable()` после удачного пробинга сам пишет
+- * `capabilities.logprobs = true` в каталог моделей. Если проверять каталог раньше env,
+- * то один успешный пробинг делает `OPENCODE_TRUTHPROBE=off` недействительным и
+- * `logprobs: true` продолжает уходить в запрос — ровно тот баг, который флаг должен снимать.
++ * The order is exactly this: after a successful probe `TruthprobePlugin.enable()` itself writes
++ * `capabilities.logprobs = true` to the model catalog. If the catalog were checked before env,
++ * then a single successful probe would make `OPENCODE_TRUTHPROBE=off` ineffective and
++ * `logprobs: true` would keep going into the request — exactly the bug the flag is meant to remove.
+  */
+ export const truthprobeEnabled = (model: {
+   id?: string
+@@ -70,8 +70,8 @@ export const truthprobeEnabled = (model: {
+ }
+ 
+ /**
+- * Поля запроса, которые включает TruthProbe. Отдельная функция, чтобы
+- * поведение «просим logprobs» покрывалось тестом без сборки всего тела.
++ * Request fields that TruthProbe turns on. A separate function so the
++ * "ask for logprobs" behaviour is covered by a test without building the whole body.
+  */
+ export const truthprobeBody = (model: {
+   id?: string
+@@ -441,7 +441,7 @@ export interface ParserState {
+   readonly latestToolIndex?: number
+   readonly nextToolIndex: number
+   readonly requireFinishReason: boolean
+-  /** Токены logprobs, пришедшие чанком без текста (шлюзы вроде freepi). */
++  /** logprob tokens that arrived in a chunk without text (gateways like freepi). */
+   readonly pendingTruthprobe: TruthprobeToken[]
+ }
+ 
+@@ -936,7 +936,7 @@ export interface TruthprobeToken {
+   top?: Array<{ token: string; logprob: number }>
+ }
+ 
+-/** Приводит logprobs дельты к компактному виду для providerMetadata. */
++/** Converts a delta's logprobs into the compact shape for providerMetadata. */
+ export const truthprobeFromDelta = (
+   logprobs: { content?: OpenAIChatLogprobs["content"] } | null | undefined,
+ ): TruthprobeToken[] | undefined => {
+@@ -993,7 +993,7 @@ export const fromRequest = Effect.fn("OpenAIChat.fromRequest")(function* (
+       : { max_tokens: request.maxTokens }),
+     temperature: request.temperature,
+     top_p: request.topP,
+-    // TruthProbe: только для моделей, у которых провайдер отдаёт logprobs.
++    // TruthProbe: only for models whose provider returns logprobs.
+     ...truthprobeBody(request.model),
+     frequency_penalty: request.frequencyPenalty,
+     presence_penalty: request.presencePenalty,
+@@ -1239,8 +1239,8 @@ const step = (state: ParserState, event: OpenAIChatEvent) =>
+         }
+       : state.finishReason
+     const delta = choice?.delta
+-    // Некоторые шлюзы присылают logprobs отдельным чанком с пустой дельтой:
+-    // копим их и отдаём вместе со следующей текстовой или reasoning-дельтой.
++    // Some gateways send logprobs in a separate chunk with an empty delta:
++    // accumulate them and emit them with the next text or reasoning delta.
+     const chunkTruthprobe = truthprobeFromDelta(choice?.logprobs ?? delta?.logprobs)
+     if (chunkTruthprobe) state.pendingTruthprobe.push(...chunkTruthprobe)
+     const toolDeltas = delta?.tool_calls ?? []
+@@ -1282,8 +1282,8 @@ const step = (state: ParserState, event: OpenAIChatEvent) =>
+       ? (detailText(detailDelta, reasoningTextObserved) ?? reasoning?.text)
+       : reasoning?.text
+     if (text !== undefined) {
+-      // Привязка токен→текст приблизительная: внутренние токены (например
+-      // "</think>") не имеют видимого текста, поэтому scoreAnswer помечает ответ partial.
++      // The token→text binding is approximate: internal tokens (e.g.
++      // "</think>") have no visible text, so scoreAnswer marks the answer partial.
+       const buffered = state.pendingTruthprobe.length ? state.pendingTruthprobe.splice(0) : undefined
+       lifecycle = Lifecycle.reasoningDelta(
+         lifecycle,
+@@ -1464,8 +1464,8 @@ export const finishEvents = Effect.fnUntraced(function* (state: ParserState) {
+     state.reasoningDetailsObserved ? [...state.reasoningDetails] : undefined,
+     state.reasoningOpaque,
+   )
+-  // Хвостовые токены (последний чанк с logprobs приходит уже без текста) —
+-  // отдаём пустой текстовой дельтой, чтобы они не потерялись при скоринге.
++  // Trailing tokens (the last chunk with logprobs arrives already without text) —
++  // emit them as an empty text delta so they are not lost during scoring.
+   const leftover = state.pendingTruthprobe.splice(0)
+   const withLeftover =
+     leftover.length > 0 && state.lifecycle.text.has("text-0")
+diff --git a/packages/ai/src/protocols/truthprobe-capability.ts b/packages/ai/src/protocols/truthprobe-capability.ts
+index 292b299..c116696 100644
+--- a/packages/ai/src/protocols/truthprobe-capability.ts
++++ b/packages/ai/src/protocols/truthprobe-capability.ts
+@@ -1,12 +1,12 @@
+ /**
+- * TruthProbe: чтение вердикта «провайдер отдаёт logprobs» из кэша.
++ * TruthProbe: reading the "provider returns logprobs" verdict from the cache.
+  *
+- * Путь к файлу кэша сообщает ядро (переменная OPENCODE_TRUTHPROBE_CACHE,
+- * её ставит плагин opencode.truthprobe). Если переменной нет, пакет ai просто
+- * не знает о кэше и работает по явному `capabilities.logprobs`.
++ * The path to the cache file is reported by the core (the OPENCODE_TRUTHPROBE_CACHE
++ * variable, set by the opencode.truthprobe plugin). If the variable is absent, the ai
++ * package simply does not know about the cache and works from the explicit `capabilities.logprobs`.
+  *
+- * Модуль не делает сетевых запросов и не зависит от каталога моделей: только
+- * чтение файла с коротким TTL в памяти, чтобы не трогать диск на каждый токен.
++ * The module makes no network requests and does not depend on the model catalog: only
++ * file reads with a short in-memory TTL, so the disk is not touched on every token.
+  */
+ 
+ import fs from "node:fs"
+@@ -26,7 +26,7 @@ const READ_INTERVAL_MS = 2_000
+ 
+ let snapshot: { at: number; path: string; entries: Record<string, Entry> } | undefined
+ 
+-/** Путь к кэшу: ядро передаёт его переменной, иначе берём стандартный каталог данных. */
++/** Path to the cache: the core passes it via the variable, otherwise the default data directory is used. */
+ const cachePath = (): string | undefined => {
+   const explicit = typeof process === "undefined" ? undefined : process.env?.OPENCODE_TRUTHPROBE_CACHE
+   if (explicit) return explicit
+@@ -56,7 +56,7 @@ const readEntries = (): Record<string, Entry> => {
+   return entries
+ }
+ 
+-/** Сколько живёт вердикт. Повторяет правило ядра: auth перепроверяем быстро. */
++/** How long the verdict lives. Mirrors the core rule: auth is re-checked quickly. */
+ const ttl = (status: string) => (status === "auth" ? AUTH_TTL : DEFAULT_TTL)
+ 
+ const fresh = (entry: Entry | undefined, now: number): boolean => {
+@@ -66,18 +66,18 @@ const fresh = (entry: Entry | undefined, now: number): boolean => {
+ }
+ 
+ /**
+- * `true` — именно эта модель подтверждённо отдаёт logprobs.
++ * `true` — this exact model is confirmed to return logprobs.
+  *
+- * Ключ строго `provider/model`: поддержка logprobs у шлюза бывает разной даже внутри
+- * одного провайдера, и запись «ok» для одной модели не должна включать поле запроса
+- * другой — иначе та ответит 400 на весь запрос. Просроченные записи не считаются.
++ * The key is strictly `provider/model`: a gateway's logprobs support can differ even within
++ * one provider, and an "ok" record for one model must not enable the request field
++ * for another — otherwise that one answers 400 to the whole request. Expired records do not count.
+  */
+ export const supported = (providerID: string | undefined, modelID: string | undefined): boolean => {
+   if (!providerID || !modelID) return false
+   return fresh(readEntries()[`${providerID}/${modelID}`], Date.now())
+ }
+ 
+-/** Сброс кэша в памяти — для тестов. */
++/** Clears the in-memory cache — for tests. */
+ export const reset = () => {
+   snapshot = undefined
+ }
+diff --git a/packages/ai/test/truthprobe.test.ts b/packages/ai/test/truthprobe.test.ts
+index cb051f7..cec4acd 100644
+--- a/packages/ai/test/truthprobe.test.ts
++++ b/packages/ai/test/truthprobe.test.ts
+@@ -15,8 +15,8 @@ afterEach(() => {
+ 
+ describe("openai-chat.truthprobeEnabled", () => {
+   test("an explicit environment flag wins over the catalog", () => {
+-    // Плагин сам пишет capabilities.logprobs = true после удачного пробинга, поэтому
+-    // выключатель обязан перекрывать каталог, иначе `off` перестаёт работать.
++    // The plugin itself writes capabilities.logprobs = true after a successful probe, so
++    // the switch must override the catalog, otherwise `off` stops working.
+     process.env.OPENCODE_TRUTHPROBE = "1"
+     expect(truthprobeEnabled({ capabilities: { logprobs: false } })).toBe(true)
+     process.env.OPENCODE_TRUTHPROBE = "OFF"
+diff --git a/packages/core/src/plugin/truthprobe.ts b/packages/core/src/plugin/truthprobe.ts
+index e857765..9d02e33 100644
+--- a/packages/core/src/plugin/truthprobe.ts
++++ b/packages/core/src/plugin/truthprobe.ts
+@@ -1,18 +1,18 @@
+ /**
+- * TruthProbe: проверка провайдеров и автоматическое включение сбора logprobs.
++ * TruthProbe: probing providers and automatically enabling logprob collection.
+  *
+- * Плагин слушает `http.request` — единственное место, где видны и модель, и
+- * готовый URL с авторизацией. Запрос уходит своим чередом: хук только кладёт
+- * событие в очередь, а проверка выполняется в отдельной fiber, поэтому ответ
+- * модели никогда не ждёт проверки.
++ * The plugin listens on `http.request` — the only place where both the model and
++ * the finished URL with authorization are visible. The request proceeds on its own: the hook only puts an
++ * event on the queue, and the probe runs in a separate fiber, so the model response
++ * never waits for the probe.
+  *
+- * Проверка — одна посылка на один токен с фиксированным текстом "ping".
+- * Данные пользователя в ней не участвуют. Вердикт кладётся в
+- * `<data>/truthprobe/capabilities.json` и, если провайдер отдаёт logprobs,
+- * включает `capabilities.logprobs` у модели: со следующего запроса протокол
+- * сам просит logprobs, и бейдж уверенности появляется без переменных окружения.
++ * A probe is one request for one token with the fixed text "ping".
++ * No user data is involved in it. The verdict is written to
++ * `<data>/truthprobe/capabilities.json` and, if the provider returns logprobs,
++ * enables `capabilities.logprobs` on the model: from the next request the protocol
++ * asks for logprobs itself, and the confidence badge appears without environment variables.
+  *
+- * Отключить проверку: OPENCODE_TRUTHPROBE_PROBE=off.
++ * To disable probing: OPENCODE_TRUTHPROBE_PROBE=off.
+  */
+ import { define } from "@opencode/plugin/effect/plugin"
+ import { Effect, Queue, Stream } from "effect"
+@@ -25,7 +25,7 @@ import type { PluginInternal } from "./internal.js"
+ 
+ const PROBE_TIMEOUT_MS = 15_000
+ const CHAT_PATH = "/chat/completions"
+-/** Столько же альтернатив, сколько просит боевой запрос (TRUTHPROBE_TOP_K). */
++/** As many alternatives as the real request asks for (TRUTHPROBE_TOP_K). */
+ const PROBE_TOP_K = 20
+ 
+ type HttpRequest = SessionHooks["http.request"]
+@@ -45,7 +45,7 @@ export const TruthprobePlugin = define({
+     const directory = path.join(global.data, "truthprobe")
+     const file = path.join(directory, "capabilities.json")
+ 
+-    // Протокол в пакете ai читает тот же файл: путь передаём один раз на процесс.
++    // The protocol in the ai package reads the same file: the path is passed once per process.
+     process.env.OPENCODE_TRUTHPROBE_CACHE ??= file
+ 
+     let state = Capability.parse(read())
+@@ -67,11 +67,11 @@ export const TruthprobePlugin = define({
+         fs.writeFileSync(temporary, Capability.serialize(next))
+         fs.renameSync(temporary, file)
+       } catch {
+-        // кэш — оптимизация: без него просто проверим ещё раз
++        // The cache is an optimization: without it we simply probe again
+       }
+     }
+ 
+-    /** Включает logprobs у модели, если пользователь не выставил флаг явно. */
++    /** Enables logprobs on the model unless the user set the flag explicitly. */
+     const enable = Effect.fn("TruthprobePlugin.enable")(function* (providerID: string, modelID: string) {
+       const key = Capability.keyOf(providerID, modelID)
+       if (enabled.has(key)) return
+@@ -91,8 +91,8 @@ export const TruthprobePlugin = define({
+       const raw = yield* Effect.promise(() => event.request.clone().text()).pipe(
+         Effect.orElseSucceed(() => undefined as string | undefined),
+       )
+-      // Ключ и включение — по той модели, которую реально проверяли: тело запроса может
+-      // нести алиас, и тогда вердикт одного имени приклеивался к другому.
++      // Key and enablement follow the model that was actually probed: the request body may
++      // carry an alias, and then the verdict for one name stuck to another.
+       const modelID = Capability.modelFromBody(raw) ?? event.model.id
+       const key = Capability.keyOf(providerID, modelID)
+       const headers = new Headers(event.request.headers)
+@@ -114,7 +114,7 @@ export const TruthprobePlugin = define({
+       }
+       const status = Capability.classify(response)
+       if (status === "error") {
+-        // 429/5xx: не кэшируем, попробуем на следующем запросе
++        // 429/5xx: do not cache, try again on the next request
+         yield* Effect.logDebug("truthprobe: probe inconclusive", { providerID, modelID, code: response.status })
+         return
+       }
+@@ -130,10 +130,10 @@ export const TruthprobePlugin = define({
+       if (status === "ok") yield* enable(providerID, modelID)
+     })
+ 
+-    // Выключено пользователем: не трогаем ни каталог моделей, ни сеть.
++    // Disabled by the user: touch neither the model catalog nor the network.
+     if (disabled()) return
+ 
+-    // Известные «да» включаем сразу: бейдж работает с первого же ответа.
++    // Known "yes" entries are enabled right away: the badge works from the very first answer.
+     const now = Date.now()
+     for (const [key, entry] of Object.entries(state.entries)) {
+       if (!Capability.enabled(entry, now)) continue
+@@ -143,7 +143,7 @@ export const TruthprobePlugin = define({
+     }
+ 
+ 
+-    // Очередь + одна fiber: хук не ждёт сети, проверки идут строго по одной.
++    // Queue + one fiber: the hook does not wait for the network, probes run strictly one at a time.
+     const queue = yield* Queue.unbounded<HttpRequest>()
+     yield* Stream.fromQueue(queue).pipe(
+       Stream.runForEach((event) => {
+diff --git a/packages/core/src/session/runner/publish-llm-event.ts b/packages/core/src/session/runner/publish-llm-event.ts
+index f8fcdbd..e6cdea0 100644
+--- a/packages/core/src/session/runner/publish-llm-event.ts
++++ b/packages/core/src/session/runner/publish-llm-event.ts
+@@ -122,7 +122,7 @@ export const createLLMEventPublisher = (bus: Pick<Bus.Interface, "publish">, inp
+     return { metadata: { ...tool.progress, ...metadata } }
+   }
+   const assistantMessageID = input.assistantMessageID
+-  /** ключ весов в бандле калибровки: `providerID/modelID` */
++  /** weight key in the calibration bundle: `providerID/modelID` */
+   const modelKey = `${input.model.providerID}/${input.model.id}`
+   let stepStarted = false
+   let providerFailed = false
+@@ -273,11 +273,11 @@ export const createLLMEventPublisher = (bus: Pick<Bus.Interface, "publish">, inp
+         }),
+       true,
+     )
+-  // TruthProbe: logprobs каждой текстовой дельты приходят в providerMetadata.
++  // TruthProbe: each text delta's logprobs arrive in providerMetadata.
+   const truthprobeTokens = new Map<string, TokenLogprob[]>()
+   const truthprobeText = new Map<string, string>()
+-  // Reasoning-модели (и шлюзы вроде freepi) отдают logprobs на reasoning-чанках,
+-  // а видимый текст идёт уже без них. Копим отдельно, чтобы не потерять цифры.
++  // Reasoning models (and gateways like freepi) return logprobs on reasoning chunks,
++  // while the visible text already arrives without them. Accumulate separately so the numbers are not lost.
+   const truthprobeReasoningTokens = new Map<string, TokenLogprob[]>()
+   const truthprobeReasoningText = new Map<string, string>()
+   let lastReasoningScore: ReturnType<typeof scoreAnswer> | undefined
+@@ -438,8 +438,8 @@ export const createLLMEventPublisher = (bus: Pick<Bus.Interface, "publish">, inp
+   })
+ 
+   const failAssistant = Effect.fnUntraced(function* (error: SessionError.Error) {
+-    // Ответ мог оборваться до `text-end`: сохраняем уверенность по тому, что успело
+-    // прийти, иначе плашка исчезает ровно в самом важном случае — обрыве стрима.
++    // The answer may have been cut off before `text-end`: keep the confidence from what did
++    // arrive, otherwise the badge disappears exactly in the most important case — a broken stream.
+     for (const [id, value] of truthprobeText) {
+       if (!value || scoredText.has(id)) continue
+       scoredText.set(id, scoreAnswer(value, truthprobeTokens.get(id) ?? [], {}, modelKey))
+@@ -512,19 +512,19 @@ export const createLLMEventPublisher = (bus: Pick<Bus.Interface, "publish">, inp
+         const value = event.text ?? truthprobeText.get(event.id) ?? ""
+         truthprobeTokens.delete(event.id)
+         truthprobeText.delete(event.id)
+-        // Поле ставим всегда: при отсутствии logprobs scoreAnswer вернёт
+-        // status "unavailable" с причиной, и UI скажет об этом вслух вместо тишины.
++        // Always set the field: without logprobs scoreAnswer returns
++        // status "unavailable" with a reason, and the UI says so out loud instead of staying silent.
+         if (value.length > 0) {
+           const scored = scoreAnswer(value, tokens ?? [], {}, modelKey)
+-          // У reasoning-моделей logprobs приходят на скрытых рассуждениях: показываем
+-          // уверенность по ним, но без списка предложений — их в ответе нет.
+-          // Оценку забираем один раз: иначе она приклеится к любому следующему блоку текста.
++          // Reasoning models return logprobs on hidden reasoning: show
++          // confidence from them, but without a sentence list — there are none in the answer.
++          // Take the score once: otherwise it would stick to any following text block.
+           const reasoningScore = lastReasoningScore
+           lastReasoningScore = undefined
+           if (scored.status === "unavailable" && reasoningScore && reasoningScore.status === "ok")
+             scoredText.set(event.id, {
+-              // `partial`, а не `ok`: число посчитано по скрытым рассуждениям, а не по
+-              // видимому ответу. UI обязан сказать это вслух.
++              // `partial`, not `ok`: the number is computed from hidden reasoning, not from
++              // the visible answer. The UI must say so out loud.
+               status: "partial",
+               score: reasoningScore.score,
+               risk: reasoningScore.risk,
+diff --git a/packages/core/src/truthprobe/capability.ts b/packages/core/src/truthprobe/capability.ts
+index 329fb5e..7d743e2 100644
+--- a/packages/core/src/truthprobe/capability.ts
++++ b/packages/core/src/truthprobe/capability.ts
+@@ -1,23 +1,23 @@
+ /**
+- * TruthProbe: определение того, отдаёт ли провайдер logprobs.
++ * TruthProbe: detecting whether a provider returns logprobs.
+  *
+- * Модуль чистый: ни сети, ни файлов. Всё, что можно проверить тестом без
+- * поднятия opencode, живёт здесь. Плагин (plugin/truthprobe.ts) только
+- * склеивает это с сетью и с каталогом моделей.
++ * The module is pure: no network, no files. Everything that a test can verify
++ * without booting opencode lives here. The plugin (plugin/truthprobe.ts) only
++ * glues this to the network and to the model catalog.
+  */
+ 
+-/** Результат проверки одного провайдера/модели. */
++/** Result of checking one provider/model. */
+ export type Status = "ok" | "ignored" | "rejected" | "auth" | "unsupported" | "error"
+ 
+ export interface Entry {
+   readonly status: Status
+-  /** Когда проверяли, миллисекунды эпохи. */
++  /** When it was checked, epoch milliseconds. */
+   readonly checkedAt: number
+-  /** Происхождение эндпоинта: схема + хост, без пути и query. */
++  /** Origin of the endpoint: scheme + host, without path or query. */
+   readonly endpoint?: string
+-  /** Идентификатор модели, на которой проверяли. */
++  /** Identifier of the model the check was run on. */
+   readonly model?: string
+-  /** Короткая причина (код ответа или текст ошибки, обрезанный). */
++  /** Short reason (response code or truncated error text). */
+   readonly detail?: string
+ }
+ 
+@@ -30,7 +30,7 @@ export const FILE_VERSION = 1 as const
+ 
+ const DAY = 24 * 60 * 60 * 1000
+ 
+-/** Сколько живёт результат. `auth` перепроверяем быстро: ключ могли добавить. */
++/** How long a result lives. `auth` is re-checked quickly: a key may have been added. */
+ export const ttl = (status: Status): number => {
+   switch (status) {
+     case "ok":
+@@ -65,8 +65,8 @@ const isEntry = (value: unknown): value is Entry => {
+ }
+ 
+ /**
+- * Разбор файла кэша. Битый файл или чужие поля не должны ломать запуск:
+- * всё непонятное молча отбрасывается.
++ * Parsing the cache file. A corrupt file or foreign fields must not break startup:
++ * everything unrecognized is silently dropped.
+  */
+ export const parse = (raw: string | undefined | null): File => {
+   if (!raw) return empty()
+@@ -86,7 +86,7 @@ export const parse = (raw: string | undefined | null): File => {
+   return { version: FILE_VERSION, entries: result }
+ }
+ 
+-/** Стабильная сериализация: одинаковый вход даёт одинаковый файл. */
++/** Stable serialization: the same input yields the same file. */
+ export const serialize = (file: File): string => {
+   const entries = Object.keys(file.entries)
+     .sort()
+@@ -94,7 +94,7 @@ export const serialize = (file: File): string => {
+   return `${JSON.stringify({ version: FILE_VERSION, entries: Object.fromEntries(entries) }, null, 2)}\n`
+ }
+ 
+-/** Запись результата без мутации входа. */
++/** Writes a result without mutating the input. */
+ export const setEntry = (file: File, key: string, entry: Entry): File => ({
+   version: FILE_VERSION,
+   entries: { ...file.entries, [key]: entry },
+@@ -102,7 +102,7 @@ export const setEntry = (file: File, key: string, entry: Entry): File => ({
+ 
+ export const getEntry = (file: File, key: string): Entry | undefined => file.entries[key]
+ 
+-/** Результат ещё актуален? `now` передаётся явно, чтобы тест не зависел от часов. */
++/** Is the result still current? `now` is passed explicitly so tests do not depend on the clock. */
+ export const fresh = (entry: Entry | undefined, now: number): entry is Entry => {
+   if (!entry) return false
+   const limit = ttl(entry.status)
+@@ -111,12 +111,12 @@ export const fresh = (entry: Entry | undefined, now: number): entry is Entry =>
+   return age >= 0 && age < limit
+ }
+ 
+-/** Можно ли включать сбор logprobs по этому результату. */
++/** Whether logprob collection can be enabled based on this result. */
+ export const enabled = (entry: Entry | undefined, now: number) => fresh(entry, now) && entry.status === "ok"
+ 
+ /**
+- * Тело минимальной проверочной посылки. Фиксированный текст, один токен:
+- * ни вопроса пользователя, ни его данных здесь нет и быть не может.
++ * Body of the minimal probe request. Fixed text, one token:
++ * neither the user's question nor their data is here, and never can be.
+  */
+ export const probeBody = (modelID: string, topK = 3) => ({
+   model: modelID,
+@@ -128,7 +128,7 @@ export const probeBody = (modelID: string, topK = 3) => ({
+   top_logprobs: topK,
+ })
+ 
+-/** Хост эндпоинта без пути: в кэше не должно быть ни query, ни ключей. */
++/** Endpoint host without the path: the cache must contain neither query nor keys. */
+ export const originOf = (url: string): string | undefined => {
+   try {
+     const parsed = new URL(url)
+@@ -138,7 +138,7 @@ export const originOf = (url: string): string | undefined => {
+   }
+ }
+ 
+-/** Идентификатор модели из уже собранного тела запроса; нужен, когда modelID — алиас. */
++/** Model identifier from an already captured request body; needed when modelID is an alias. */
+ export const modelFromBody = (raw: string | undefined | null): string | undefined => {
+   if (!raw) return undefined
+   try {
+@@ -155,16 +155,16 @@ export interface ProbeResponse {
+ }
+ 
+ /**
+- * Классификация ответа проверки.
++ * Classification of the probe response.
+  *
+- * `ok` — в ответе реально есть токены logprobs в любом канале (`content` или
+- *        `reasoning_content`/`reasoning_logprobs`): у reasoning-моделей при
+- *        `max_tokens: 1` видимого текста ещё нет, а рассуждения уже посчитаны;
+- * `ignored` — 200, но поля нет (шлюз молча вырезал);
+- * `rejected` — провайдер ругается именно на logprobs;
+- * `auth` — ключ не принят;
+- * `unsupported` — эндпоинт не про chat-completions или поля не знает;
+- * `error` — временная беда (429/5xx/сеть), результат не кэшируем.
++ * `ok` — the response really contains logprob tokens in any channel (`content` or
++ *        `reasoning_content`/`reasoning_logprobs`): reasoning models have no visible
++ *        text at `max_tokens: 1` yet, but the reasoning is already computed;
++ * `ignored` — 200, but the field is absent (the gateway silently stripped it);
++ * `rejected` — the provider specifically complains about logprobs;
++ * `auth` — the key was not accepted;
++ * `unsupported` — the endpoint is not chat-completions or does not know the field;
++ * `error` — a temporary failure (429/5xx/network), the result is not cached.
+  */
+ export const classify = (response: ProbeResponse): Status => {
+   const { status, body } = response
+@@ -191,7 +191,7 @@ export const classify = (response: ProbeResponse): Status => {
+   return "unsupported"
+ }
+ 
+-/** Человеческая строка для лога и статуса в TUI. */
++/** A human-readable line for the log and the TUI status. */
+ export const describe = (status: Status): string => {
+   switch (status) {
+     case "ok":
+@@ -209,7 +209,7 @@ export const describe = (status: Status): string => {
+   }
+ }
+ 
+-/** Строка бейджа: то, что печатает `opencode truthprobe status` и TUI. */
++/** Badge line: what `opencode truthprobe status` and the TUI print. */
+ export const summary = (entries: Readonly<Record<string, Entry>>, now: number): string[] =>
+   Object.entries(entries)
+     .sort(([a], [b]) => a.localeCompare(b))
+diff --git a/packages/core/src/truthprobe/levels.ts b/packages/core/src/truthprobe/levels.ts
+index 2f2b72b..8cf55f5 100644
+--- a/packages/core/src/truthprobe/levels.ts
++++ b/packages/core/src/truthprobe/levels.ts
+@@ -1,18 +1,18 @@
+ /**
+- * TruthProbe — шкала уверенности.
++ * TruthProbe — confidence scale.
+  *
+- * Одно место, где score превращается в человекочитаемый уровень. Уровень едет
+- * в парте рядом с числом, чтобы session-ui, TUI и REST говорили одно и то же.
++ * The single place where a score becomes a human-readable level. The level travels
++ * in the payload next to the number, so session-ui, TUI and REST all say the same thing.
+  *
+- * Важно: score — уверенность модели в собственных токенах, а не вероятность
+- * того, что ответ правдив. Детерминированный шлюз (logprob ≈ -0.001) даёт
+- * "safe" на любом тексте, включая выдуманный.
++ * Note: score is the model's confidence in its own tokens, not the probability
++ * that the answer is true. A deterministic gateway (logprob ≈ -0.001) yields
++ * "safe" on any text, including a made-up one.
+  */
+ 
+-/** Уровень уверенности ответа или предложения. */
++/** Confidence level of an answer or a sentence. */
+ export type ConfidenceLevel = "safe" | "likely" | "uncertain" | "risky" | "unreliable"
+ 
+-/** Нижние границы уровней по score. Всё, что ниже последней границы, — unreliable. */
++/** Lower bounds of the levels by score. Anything below the last bound is unreliable. */
+ export const LEVEL_BOUNDS = {
+   safe: 0.9,
+   likely: 0.75,
+@@ -20,10 +20,10 @@ export const LEVEL_BOUNDS = {
+   risky: 0.35,
+ } as const
+ 
+-/** Уровни от надёжного к ненадёжному — порядок для UI и документации. */
++/** Levels from reliable to unreliable — the order for the UI and documentation. */
+ export const LEVEL_ORDER = ["safe", "likely", "uncertain", "risky", "unreliable"] as const
+ 
+-/** Что уровень значит словами. */
++/** What each level means in words. */
+ export const LEVEL_TEXT: Record<ConfidenceLevel, string> = {
+   safe: "no visible hesitation",
+   likely: "confident",
+@@ -33,8 +33,8 @@ export const LEVEL_TEXT: Record<ConfidenceLevel, string> = {
+ }
+ 
+ /**
+- * Переводит score в уровень. `null`/`NaN`/`undefined` — уровня нет (сигнала нет),
+- * а не «самый плохой».
++ * Turns a score into a level. `null`/`NaN`/`undefined` means there is no level
++ * (no signal), not "the worst one".
+  */
+ export function levelOf(score: number | null | undefined): ConfidenceLevel | null {
+   if (typeof score !== "number" || !Number.isFinite(score)) return null
+@@ -45,7 +45,7 @@ export function levelOf(score: number | null | undefined): ConfidenceLevel | nul
+   return "unreliable"
+ }
+ 
+-/** Уровень — повод подсветить строку: только `risky` и `unreliable`. */
++/** A level worth highlighting a line for: only `risky` and `unreliable`. */
+ export function isDoubtful(level: ConfidenceLevel | null | undefined): boolean {
+   return level === "risky" || level === "unreliable"
+ }
+diff --git a/packages/core/src/truthprobe/score.ts b/packages/core/src/truthprobe/score.ts
+index dedc15a..c5e9f8f 100644
+--- a/packages/core/src/truthprobe/score.ts
++++ b/packages/core/src/truthprobe/score.ts
+@@ -1,10 +1,10 @@
+ /**
+- * TruthProbe — скоринг уверенности по token logprobs.
++ * TruthProbe — scoring confidence from token logprobs.
+  *
+- * Все функции чистые, кроме необязательной загрузки сменного скорера из
+- * `TRUTHPROBE_SCORER` (см. scorer.ts): математика одна и та же, состояние не
+- * копится. Это позволяет покрыть всю математику юнит-тестами на записанных
+- * фикстурах и использовать модуль и в ядре OpenCode, и в офлайн-калибровке (T8).
++ * All functions are pure, except for the optional loading of a pluggable scorer from
++ * `TRUTHPROBE_SCORER` (see scorer.ts): the math is the same, no state
++ * accumulates. This lets the whole math be covered by unit tests on recorded
++ * fixtures and lets the module be used both in the OpenCode core and in offline calibration (T8).
+  */
+ 
+ import { levelOf } from "./levels";
+@@ -20,30 +20,30 @@ import {
+ 
+ const PUNCT_ONLY = /^[\s\p{P}\p{S}]+$/u;
+ 
+-/** Токен несёт смысл: не пробелы, не чистая пунктуация/символы. */
++/** A token carries meaning: not whitespace, not pure punctuation/symbols. */
+ export function isContentToken(token: string, minChars = 2): boolean {
+   if (!token) return false;
+   if (!/\S/.test(token)) return false;
+   if (PUNCT_ONLY.test(token)) return false;
+   const visible = token.replace(/\s/g, "")
+   if (visible.length >= minChars) return true
+-  // Иероглиф/канa/хангыль — самостоятельное слово в один символ, его нельзя терять.
++  // A single ideograph/kana/hangul character is a word on its own and must not be lost.
+   return /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uac00-\ud7af]/.test(visible);
+ }
+ 
+ /**
+- * Нормированная энтропия распределения на первом токене.
++ * Normalised entropy of the distribution over the first token.
+  *
+- * q_i = exp(lp_i) / Σ exp(lp_j) по доступному top-K; H = -Σ q_i ln q_i / ln K.
+- * Если top-K нет (провайдер не вернул) — деградируем к 1 - p(token),
+- * то есть φ = p(token).
++ * q_i = exp(lp_i) / Σ exp(lp_j) over the available top-K; H = -Σ q_i ln q_i / ln K.
++ * If there is no top-K (the provider returned none), degrade to 1 - p(token),
++ * i.e. φ = p(token).
+  */
+ export function normalizedEntropy(t: TokenLogprob, topK = 20): number {
+   const top = (t.top ?? []).filter((x) => Number.isFinite(x.logprob));
+   if (top.length < 2) return clamp01(1 - Math.exp(t.logprob));
+ 
+-  // Энтропия и нормировка считаются по одному набору: если взять все альтернативы,
+-  // а делить на ln(topK), H выходит за 1 и φ насыщается нулём на длинных top-K.
++  // Entropy and normalisation use the same set: taking all alternatives
++  // while dividing by ln(topK) pushes H above 1 and saturates φ to zero on long top-K.
+   const k = Math.max(2, Math.min(topK, top.length));
+   const probs = top.slice(0, k).map((x) => Math.exp(x.logprob));
+   const sum = probs.reduce((a, b) => a + b, 0);
+@@ -57,7 +57,7 @@ export function normalizedEntropy(t: TokenLogprob, topK = 20): number {
+   return clamp01(h / Math.log(k));
+ }
+ 
+-/** φ = уверенность по первому токену, 0..1. */
++/** φ = confidence from the first token, 0..1. */
+ export function phi(t: TokenLogprob, topK = 20): number {
+   return clamp01(1 - normalizedEntropy(t, topK));
+ }
+@@ -72,7 +72,7 @@ interface TokenWithOffset extends TokenLogprob {
+   end: number;
+ }
+ 
+-/** Привязывает токены к символьным смещениям исходного текста. */
++/** Binds tokens to character offsets in the source text. */
+ export function tokensWithOffsets(tokens: TokenLogprob[]): TokenWithOffset[] {
+   const out: TokenWithOffset[] = [];
+   let pos = 0;
+@@ -85,12 +85,12 @@ export function tokensWithOffsets(tokens: TokenLogprob[]): TokenWithOffset[] {
+ }
+ 
+ /**
+- * Привязка токенов к тексту с терпимостью к «внутренним» токенам.
++ * Binds tokens to the text, tolerating "internal" tokens.
+  *
+- * Провайдеры (и reasoning-модели особенно) отдают токены, у которых нет
+- * видимого текста: `</think>`, служебные маркеры, обрезанные пробелы. Слепая
+- * конкатенация ломает смещения, поэтому каждый токен либо находится в тексте
+- * рядом с текущей позицией, либо пропускается.
++ * Providers (reasoning models especially) emit tokens with no visible text:
++ * `</think>`, service markers, trimmed spaces. Blind concatenation breaks the
++ * offsets, so each token is either found in the text near the current position
++ * or skipped.
+  */
+ export function alignTokens(text: string, tokens: TokenLogprob[]): TokenWithOffset[] {
+   const out: TokenWithOffset[] = [];
+@@ -103,7 +103,7 @@ export function alignTokens(text: string, tokens: TokenLogprob[]): TokenWithOffs
+       pos += tok.length;
+       continue;
+     }
+-    // Токен мог потерять ведущий пробел/перенос: ищем его в пределах окна.
++    // The token may have lost a leading space/newline: look for it within a window.
+     const at = text.indexOf(tok, pos);
+     if (at >= 0 && at - pos <= 8) {
+       out.push({ ...t, start: at, end: at + tok.length });
+@@ -119,17 +119,17 @@ export function alignTokens(text: string, tokens: TokenLogprob[]): TokenWithOffs
+         continue;
+       }
+     }
+-    // Внутренний токен без видимого текста — пропускаем, не ломая смещения.
++    // An internal token without visible text — skip it without breaking the offsets.
+   }
+   return out;
+ }
+ 
+ /**
+- * Предложение, которому принадлежит диапазон токена.
++ * The sentence the token's range belongs to.
+  *
+- * Токен может начинаться с пробела, который сегментатор уже «съел» как
+- * хвост предыдущего предложения (например « Плохо» сразу после точки),
+- * поэтому проверяем пересечение диапазонов, а не только начало токена.
++ * A token may start with a space that the segmenter already consumed as the
++ * tail of the previous sentence (for example " bad" right after a period),
++ * so we check the overlap of the ranges, not just the token's start.
+  */
+ function sentenceAt(sentences: Sentence[], start: number, end: number): Sentence | null {
+   for (const s of sentences) {
+@@ -140,14 +140,14 @@ function sentenceAt(sentences: Sentence[], start: number, end: number): Sentence
+ }
+ 
+ /**
+- * Доля символов, являющихся цифрами. Тот же признак считается в `scripts/collect.py`
+- * по тексту ответа; в развилке «текст vs logprobs» это единственный текстовый сигнал,
+- * который дал измеримый прирост (§15 VALIDATION).
++ * Fraction of characters that are digits. The same feature is computed in
++ * `scripts/collect.py` from the answer text; in the "text vs logprobs" split it is
++ * the only text signal that gave a measurable gain (§15 VALIDATION).
+  */
+ export function digitDensity(text: string): number {
+   if (!text) return 0;
+-  // Числитель и знаменатель считаем в code points: `text.length` меряет UTF-16
+-  // единицы, и на эмодзи или астральной CJK доля цифр занижалась.
++  // Numerator and denominator are counted in code points: `text.length` measures UTF-16
++  // units, and the digit fraction was understated on emoji or astral CJK.
+   let digits = 0;
+   let chars = 0;
+   for (const ch of text) {
+@@ -163,8 +163,8 @@ function geometricMean(lps: number[]): number {
+ }
+ 
+ /**
+- * Минимум без `Math.min(...values)`: разворот длинного массива в аргументы падает
+- * с `RangeError` на очень длинных ответах, а вызывается это синхронно в публикации.
++ * A minimum without `Math.min(...values)`: spreading a long array into arguments crashes
++ * with `RangeError` on very long answers, and this runs synchronously during publication.
+  */
+ function minOf(values: number[]): number {
+   if (values.length === 0) return 0;
+@@ -173,20 +173,20 @@ function minOf(values: number[]): number {
+   return min;
+ }
+ 
+-/** Ключ псевдопредложения, в которое складываются токены при дрейфе смещений. */
++/** Key of the pseudo-sentence that collects tokens when the offsets drift. */
+ const DRIFT_BUCKET = -1;
+ 
+ /**
+- * Считает уверенность по всему ответу.
++ * Computes confidence for the whole answer.
+  *
+- * @param text  финальный текст ответа (тот же, чьи токены пришли в `tokens`)
+- * @param tokens logprobs по токенам в порядке генерации
++ * @param text  the final answer text (the same one whose tokens arrived in `tokens`)
++ * @param tokens logprobs per token in generation order
+  */
+ export function scoreAnswer(
+   text: string,
+   tokens: TokenLogprob[],
+   options: ScoreOptions = {},
+-  /** `providerID/modelID` — чтобы сменный скорер мог взять веса именно этой модели. */
++  /** `providerID/modelID` — so a pluggable scorer can use this model's weights. */
+   model?: string,
+ ): AnswerScore {
+   const opt = { ...DEFAULT_SCORE_OPTIONS, ...envScoreOptions(), ...options };
+@@ -208,8 +208,8 @@ export function scoreAnswer(
+   const withOffsets = alignTokens(text, tokens);
+   const sentences = splitSentences(text);
+ 
+-  // Дрейф смещений: хвост ответа не покрыт токенами — привязка к предложениям
+-  // ненадёжна, сигнализируем partial.
++  // Offset drift: the tail of the answer is not covered by tokens, so binding to
++  // sentences is unreliable and we signal partial.
+   const totalLen = withOffsets.length ? withOffsets[withOffsets.length - 1].end : 0;
+   const offsetDrift = totalLen < text.length - 2;
+ 
+@@ -228,8 +228,8 @@ export function scoreAnswer(
+       first: null,
+       sentences: [],
+       flagged: 0,
+-      // Токены пришли, но ни один не нашёлся в тексте ответа: числа по такому
+-      // потоку были бы выдумкой, честнее сказать «не могу сопоставить».
++      // Tokens arrived but none was found in the answer text: numbers from such a
++      // stream would be invented, so it is more honest to say "cannot match".
+       reason: withOffsets.length ? "no content tokens" : "tokens do not match the answer text",
+     };
+   }
+@@ -241,12 +241,12 @@ export function scoreAnswer(
+     token: firstToken.token,
+   };
+ 
+-  // Группировка по предложениям (если дрейф — всё в одно «предложение»).
++  // Grouping by sentence (under drift, everything goes into one "sentence").
+   const buckets = new Map<number, TokenWithOffset[]>();
+   if (offsetDrift) {
+-    // Смещения уехали: привязать токены к предложениям нельзя, но пустой список
+-    // предложений снаружи читается как «спорных нет». Держим всё в одном
+-    // псевдопредложении с реальным диапазоном текста, чтобы оценка осталась видимой.
++    // The offsets have drifted: tokens cannot be bound to sentences, but an empty
++    // sentence list reads outside as "nothing is disputed". Keep everything in one
++    // pseudo-sentence with the real text range so the score stays visible.
+     buckets.set(DRIFT_BUCKET, content);
+   } else {
+     for (const t of content) {
+@@ -265,11 +265,11 @@ export function scoreAnswer(
+     const lps = arr.map((t) => t.logprob);
+     const geo = geometricMean(lps);
+     const startPhi = phi(arr[0], opt.topK);
+-    // Встроенная оценка — только геометрическое среднее: замер (docs/VALIDATION.md §14)
+-    // показал, что вес худшего токена и φ делают её хуже случайного.
++    // The built-in score is only the geometric mean: the measurement (docs/VALIDATION.md §14)
++    // showed that the worst-token weight and φ make it worse than random.
+     const features = featuresOf({
+-      // Сырой средний logprob: `log(max(geo, 1e-9))` схлопывал всё ниже 1e-9
+-      // в одно значение −20.7, и линейная модель теряла разрешение на плохих ответах.
++      // Raw mean logprob: `log(max(geo, 1e-9))` collapsed everything below 1e-9
++      // into a single value of −20.7, and the linear model lost resolution on bad answers.
+       meanLp: lps.reduce((a, b) => a + b, 0) / lps.length,
+       minLp: minOf(lps),
+       meanPhi: startPhi,
+@@ -292,8 +292,8 @@ export function scoreAnswer(
+       minLp: minOf(lps),
+       phi: startPhi,
+       tokens: arr.length,
+-      // Строгое сравнение: ровно на границе (score 0.55, risk 0.45) уровень ещё
+-      // `uncertain`, и помечать предложение спорным нельзя.
++      // Strict comparison: exactly at the boundary (score 0.55, risk 0.45) the level is
++      // still `uncertain`, and the sentence must not be marked as disputed.
+       flag: risk > opt.riskyThreshold,
+       level: levelOf(score) ?? "unreliable",
+     });
+@@ -330,9 +330,9 @@ export function scoreAnswer(
+ }
+ 
+ /**
+- * Пороги можно переопределить окружением, не дожидаясь конфига в opencode.jsonc.
+- * Некорректное значение молча игнорируется: сломанная переменная не должна
+- * менять числа.
++ * Thresholds can be overridden by the environment without waiting for a config in opencode.jsonc.
++ * An invalid value is silently ignored: a broken variable must not
++ * change the numbers.
+  */
+ export function envScoreOptions(env: Record<string, string | undefined> = process.env): ScoreOptions {
+   const num = (name: string) => {
+@@ -342,7 +342,7 @@ export function envScoreOptions(env: Record<string, string | undefined> = proces
+     return Number.isFinite(value) && value >= 0 && value <= 1 ? value : undefined;
+   };
+   const risky = num("TRUTHPROBE_RISKY_THRESHOLD");
+-  // `TRUTHPROBE_SHAKY_THRESHOLD` убран: переменная разбиралась, но ни один скорер
+-  // и ни один UI её не читал, поэтому она только обещала несуществующую настройку.
++  // `TRUTHPROBE_SHAKY_THRESHOLD` was removed: the variable was parsed, but no scorer
++  // and no UI ever read it, so it only promised a setting that did not exist.
+   return risky === undefined ? {} : { riskyThreshold: risky };
+ }
+diff --git a/packages/core/src/truthprobe/scorer.ts b/packages/core/src/truthprobe/scorer.ts
+index a796fa5..8b01a33 100644
+--- a/packages/core/src/truthprobe/scorer.ts
++++ b/packages/core/src/truthprobe/scorer.ts
+@@ -1,23 +1,23 @@
+ /**
+- * TruthProbe — сменный скорер.
++ * TruthProbe — the pluggable scorer.
+  *
+- * По умолчанию оценка — геометрическое среднее вероятностей содержательных
+- * токенов (`exp(meanLp)`). Раньше здесь была эвристика 0.4·гео + 0.3·худший токен
+- * + 0.3·уверенность первого токена; замер на 626 строках (544 правды и 82
+- * заказанной лжи, docs/VALIDATION.md §14) показал, что она даёт AUROC 0.388 —
+- * хуже случайного, причём виноват именно φ (сама по себе AUROC 0.199, то есть
+- * антикоррелирует с правильностью). Без φ та же величина даёт 0.597 при ECE
+- * 0.098 против 0.368, а на 739 заведомо верных ответах ECE падает с 0.493 до 0.160.
+- * φ и minLp остаются в признаках — их может использовать обученная модель.
++ * By default the score is the geometric mean of the probabilities of content
++ * tokens (`exp(meanLp)`). This used to be a heuristic 0.4·geo + 0.3·worst token
++ * + 0.3·first-token confidence; the measurement on 626 lines (544 true and 82
++ * commissioned lies, docs/VALIDATION.md §14) showed that it gives AUROC 0.388 —
++ * worse than random, and φ is the culprit (AUROC 0.199 on its own, i.e. it
++ * anticorrelates with correctness). Without φ the same quantity gives 0.597 at ECE
++ * 0.098 versus 0.368, and on 739 known-correct answers ECE drops from 0.493 to 0.160.
++ * φ and minLp remain among the features — a trained model can use them.
+  *
+- * Скорер сменный, менять его можно, не пересобирая патч:
++ * The scorer is pluggable, so it can be changed without rebuilding the patch:
+  *
+- *   TRUTHPROBE_SCORER=geometric                 # встроенный (по умолчанию)
+- *   TRUTHPROBE_SCORER=linear:/path/weights.json # линейная модель, веса из JSON
++ *   TRUTHPROBE_SCORER=geometric                 # built-in (default)
++ *   TRUTHPROBE_SCORER=linear:/path/weights.json # linear model, weights from JSON
+  *
+- * Веса готовит `scripts/calibrate.py --fit` на размеченном наборе предложений.
+- * Любая ошибка загрузки (нет файла, битый JSON, нечисловые веса) не ломает
+- * оценку: печатается одно предупреждение в stderr и включается geometric.
++ * Weights are produced by `scripts/calibrate.py --fit` on a labelled set of sentences.
++ * Any loading error (missing file, broken JSON, non-numeric weights) does not break the
++ * score: a single warning is printed to stderr and geometric is used.
+  */
+ 
+ import { readFileSync } from "node:fs"
+@@ -31,12 +31,12 @@ function clamp01(x: number): number {
+   return Math.min(1, Math.max(0, x))
+ }
+ 
+-/** Встроенный скорер: геометрическое среднее вероятностей содержательных токенов. */
++/** Built-in scorer: the geometric mean of the probabilities of content tokens. */
+ export function geometricScorer(): Scorer {
+   return {
+     name: "geometric",
+     score(input) {
+-      // clamp01 сам отдаёт 0 на NaN/Infinity, поэтому битые признаки не ломают оценку.
++      // clamp01 itself returns 0 on NaN/Infinity, so broken features do not break the score.
+       return clamp01(Math.exp(input.features.meanLp))
+     },
+   }
+@@ -47,7 +47,7 @@ function sigmoid(x: number): number {  if (x >= 0) return 1 / (1 + Math.exp(-x))
+   return e / (1 + e)
+ }
+ 
+-/** Линейная модель: score = sigmoid(bias + Σ w·x), признаки из FEATURE_NAMES. */
++/** Linear model: score = sigmoid(bias + Σ w·x), with features from FEATURE_NAMES. */
+ export function linearScorer(weights: LinearWeights, name = "linear"): Scorer {
+   return {
+     name,
+@@ -75,7 +75,7 @@ export function linearScorer(weights: LinearWeights, name = "linear"): Scorer {
+   }
+ }
+ 
+-/** Достаёт признаки из чисел токенов (энтропию первого токена считает вызывающий). */
++/** Extracts features from the token numbers (the first-token entropy is computed by the caller). */
+ export function featuresOf(args: {
+   meanLp: number
+   minLp: number
+@@ -98,13 +98,13 @@ export function parseLinearWeights(raw: unknown): LinearWeights {
+   const obj = raw as Record<string, unknown> | null
+   const src = (obj?.weights ?? obj) as Record<string, unknown> | null
+   if (!src) throw new Error("weights object is missing")
+-  // `Number(null) === 0`, поэтому JSON-`null` надо отсекать до преобразования:
+-  // иначе молчаливо обнулённый коэффициент даёт «валидные» веса с другим смыслом.
++  // `Number(null) === 0`, so a JSON `null` must be rejected before conversion:
++  // otherwise a silently zeroed coefficient yields "valid" weights with a different meaning.
+   const num = (key: string, value: unknown) => {
+     if (value === null) throw new Error(`weight "${key}" is null`)
+     if (value === undefined) throw new Error(`weight "${key}" is missing`)
+-    // `Number("") === 0`, `Number([]) === 0`, `Number(true) === 1`: без проверки типа
+-    // мусор в файле весов молча превращается в валидный коэффициент.
++    // `Number("") === 0`, `Number([]) === 0`, `Number(true) === 1`: without a type check
++    // garbage in the weights file silently becomes a valid coefficient.
+     if (typeof value !== "number") throw new Error(`weight "${key}" is not a number`)
+     if (!Number.isFinite(value)) throw new Error(`weight "${key}" is not a number`)
+     return value
+@@ -124,9 +124,9 @@ export function parseLinearWeights(raw: unknown): LinearWeights {
+ }
+ 
+ /**
+- * Набор весов: общие плюс отдельные на модель. Так выглядит бандл, который пишет
+- * `scripts/calibrate.py --fit --by-model`; плоский JSON (просто `bias/meanLp/...`)
+- * тоже принимается — он становится `global`.
++ * A weight bundle: shared weights plus per-model ones. This is the shape written by
++ * `scripts/calibrate.py --fit --by-model`; a flat JSON (just `bias/meanLp/...`)
++ * is also accepted — it becomes `global`.
+  */
+ export interface WeightsBundle {
+   global: LinearWeights
+@@ -134,9 +134,9 @@ export interface WeightsBundle {
+ }
+ 
+ /**
+- * Читает и плоские веса, и бандл `{version, features, global, models}`.
+- * Битые записи моделей пропускаются молча: одна испорченная модель не должна
+- * отключать калибровку для всех остальных.
++ * Reads both flat weights and a `{version, features, global, models}` bundle.
++ * Broken model records are skipped silently: one corrupt model must not
++ * disable calibration for all the others.
+  */
+ export function parseWeightsBundle(raw: unknown): WeightsBundle {
+   const obj = raw as Record<string, unknown> | null
+@@ -160,8 +160,8 @@ export function parseWeightsBundle(raw: unknown): WeightsBundle {
+ }
+ 
+ /**
+- * Скорер с весами на модель: `models[providerID/modelID]`, иначе `global`.
+- * Так калибровка, снятая на конкретной модели, не разбавляется чужими числами.
++ * A scorer with per-model weights: `models[providerID/modelID]`, otherwise `global`.
++ * This way calibration taken on a specific model is not diluted by foreign numbers.
+  */
+ export function bundleScorer(bundle: WeightsBundle, name = "linear"): Scorer {
+   const fallback = linearScorer(bundle.global, name)
+@@ -172,9 +172,9 @@ export function bundleScorer(bundle: WeightsBundle, name = "linear"): Scorer {
+     name,
+     score(input) {
+       const scorer = input.model ? perModel.get(input.model) : undefined
+-      // Ключи калибровки — routed-имя модели; у алиасов и `auto` оно не совпадает с
+-      // запрошенным id. Молчаливая подмена на global — это неправда о точности, поэтому
+-      // про каждую такую модель говорим один раз.
++      // Calibration keys are the routed model name; for aliases and `auto` it does not match
++      // the requested id. A silent fallback to global is a lie about accuracy, so we
++      // mention each such model once.
+       if (!scorer && input.model && perModel.size > 0 && !warned.has(input.model)) {
+         warned.add(input.model)
+         process.stderr.write(`truthprobe: no per-model weights for "${input.model}"; using global\n`)
+@@ -184,7 +184,7 @@ export function bundleScorer(bundle: WeightsBundle, name = "linear"): Scorer {
+   }
+ }
+ 
+-/** Веса, которые реально будут применены к модели (для диагностики и тестов). */
++/** The weights that will actually be applied to the model (for diagnostics and tests). */
+ export function weightsFor(bundle: WeightsBundle, model?: string): LinearWeights {
+   return (model ? bundle.models[model] : undefined) ?? bundle.global
+ }
+@@ -192,8 +192,8 @@ export function weightsFor(bundle: WeightsBundle, model?: string): LinearWeights
+ let cached: { spec: string; scorer: Scorer } | null = null
+ 
+ /**
+- * Скорер из переменной окружения. null — «использовать встроенную формулу»
+- * (её применяет score.ts), чтобы поведение по умолчанию не менялось.
++ * A scorer from the environment variable. null means "use the built-in formula"
++ * (score.ts applies it), so the default behaviour does not change.
+  */
+ export function scorerFromEnv(
+   env: Record<string, string | undefined> = process.env,
+diff --git a/packages/core/src/truthprobe/sentences.ts b/packages/core/src/truthprobe/sentences.ts
+index 00f735c..2c64724 100644
+--- a/packages/core/src/truthprobe/sentences.ts
++++ b/packages/core/src/truthprobe/sentences.ts
+@@ -1,9 +1,9 @@
+ /**
+- * TruthProbe — сегментация ответа на предложения.
++ * TruthProbe — splitting an answer into sentences.
+  *
+- * Задача не «идеальная лингвистика», а стабильные смещения: токены привязываются
+- * к предложениям по символьным позициям, поэтому сегментатор обязан возвращать
+- * корректные `start`/`end` в исходной строке и не включать блоки кода.
++ * The goal is not "perfect linguistics" but stable offsets: tokens are bound to
++ * sentences by character positions, so the segmenter must return correct
++ * `start`/`end` into the source string and must not include code blocks.
+  */
+ 
+ export interface Sentence {
+@@ -15,7 +15,7 @@ export interface Sentence {
+ 
+ const FENCE = /^\s*(```|~~~)/;
+ 
+-/** Диапазоны [start, end) блоков кода, включая сами fences. */
++/** [start, end) ranges of code blocks, including the fences themselves. */
+ export function codeRanges(text: string): Array<[number, number]> {
+   const ranges: Array<[number, number]> = [];
+   let offset = 0;
+@@ -33,13 +33,12 @@ export function codeRanges(text: string): Array<[number, number]> {
+     }
+     offset = lineEnd + 1; // + "\n"
+   }
+-  if (open !== null) ranges.push([open, text.length]); // незакрытый fence (стрим ещё идёт)
++  if (open !== null) ranges.push([open, text.length]); // unclosed fence (stream still running)
+   return ranges;
+ }
+ 
+ const TERMINATORS = new Set([".", "!", "?", "…", "。", "！", "？"]);
+ const ABBREVIATIONS = new Set([
+-  "т", "е", "д", "п", "др", "см", "г", "гг", "в", "вв", "рис", "табл", "стр",
+   "e.g", "i.e", "etc", "vs", "cf", "al", "no", "fig", "approx",
+ ]);
+ 
+@@ -48,23 +47,23 @@ function isExcluded(ranges: Array<[number, number]>, pos: number): boolean {
+   return false;
+ }
+ 
+-/** Предыдущее «слово» перед позицией index (для отсечения сокращений). */
++/** The previous "word" before position index (to rule out abbreviations). */
+ function wordBefore(text: string, index: number): string {
+   let i = index - 1;
+-  while (i >= 0 && /[A-Za-zА-Яа-яЁё.]/.test(text[i])) i--;
++  while (i >= 0 && /[A-Za-z.]/.test(text[i])) i--;
+   return text.slice(i + 1, index).replace(/^\.+|\.+$/g, "").toLowerCase();
+ }
+ 
+-/** Первое слово после позиции index (без учёта пробелов и переносов). */
++/** The first word after position index (ignoring spaces and line breaks). */
+ function wordAfter(text: string, index: number): string {
+   let i = index + 1;
+   while (i < text.length && /[\s"'«»()\[\]]/.test(text[i])) i++;
+   let end = i;
+-  while (end < text.length && /[A-Za-zА-Яа-яЁё0-9]/.test(text[end])) end++;
++  while (end < text.length && /[A-Za-z0-9]/.test(text[end])) end++;
+   return text.slice(i, end);
+ }
+ 
+-/** Сокращение ли это: проверяем и целое слово, и последний сегмент «т.е.» → «е». */
++/** Whether this is an abbreviation: check both the whole word and the last segment "e.g." → "g". */
+ function isAbbreviation(text: string, index: number): boolean {
+   const word = wordBefore(text, index);
+   if (ABBREVIATIONS.has(word)) return true;
+@@ -72,18 +71,18 @@ function isAbbreviation(text: string, index: number): boolean {
+   return last.length > 0 && ABBREVIATIONS.has(last);
+ }
+ 
+-/** Начинается ли после позиции новое предложение (слово с заглавной буквы). */
++/** Whether a new sentence starts after the position (a word with a capital letter). */
+ function startsSentence(text: string, index: number): boolean {
+   const word = wordAfter(text, index);
+-  return word.length > 0 && /^[A-ZА-ЯЁ]/.test(word);
++  return word.length > 0 && /^[A-Z]/.test(word);
+ }
+ 
+ /**
+- * Режет текст на предложения. Границы:
+- *  - терминатор `. ! ? …` + пробел/конец строки;
+- *  - пустая строка (абзац);
+- *  - начало markdown-пункта списка;
+- *  - блоки кода целиком выброшены.
++ * Cuts text into sentences. Boundaries:
++ *  - a terminator `. ! ? …` + space/end of line;
++ *  - an empty line (a paragraph);
++ *  - the start of a markdown list item;
++ *  - code blocks are dropped entirely.
+  */
+ export function splitSentences(text: string): Sentence[] {
+   const excluded = codeRanges(text);
+@@ -104,7 +103,7 @@ export function splitSentences(text: string): Sentence[] {
+ 
+   for (let i = 0; i < text.length; i++) {
+     if (isExcluded(excluded, i)) {
+-      // перепрыгиваем весь блок кода целиком
++      // skip the whole code block at once
+       const range = excluded.find(([a, b]) => i >= a && i < b)!;
+       push(i, range[1]);
+       i = range[1] - 1;
+@@ -113,7 +112,7 @@ export function splitSentences(text: string): Sentence[] {
+ 
+     const ch = text[i];
+ 
+-    // пустая строка
++    // an empty line
+     if (ch === "\n") {
+       let j = i + 1;
+       while (j < text.length && (text[j] === " " || text[j] === "\t")) j++;
+@@ -131,12 +130,12 @@ export function splitSentences(text: string): Sentence[] {
+     const next = text[i + 1];
+     const prev = text[i - 1];
+     const atEnd = i + 1 >= text.length;
+-    // В CJK пробелов между предложениями нет, терминатор достаточен сам по себе.
++    // In CJK there are no spaces between sentences, so the terminator is enough on its own.
+     const boundaryAfter = cjk || atEnd || next === "\n" || /\s/.test(next);
+     if (!boundaryAfter) continue;
+-    // «3.14», «v1.2»
++    // "3.14", "v1.2"
+     if (/\d/.test(prev ?? "") && /\d/.test(next ?? "")) continue;
+-    // «т.е.», «e.g.» — если только дальше не начинается новое предложение.
++    // "e.g.", "i.e." — unless a new sentence starts right after.
+     if (isAbbreviation(text, i) && !startsSentence(text, i)) continue;
+ 
+     let end = i + 1;
+diff --git a/packages/core/src/truthprobe/types.ts b/packages/core/src/truthprobe/types.ts
+index 33e4927..7f67350 100644
+--- a/packages/core/src/truthprobe/types.ts
++++ b/packages/core/src/truthprobe/types.ts
+@@ -1,127 +1,127 @@
+ /**
+- * TruthProbe — типы данных.
++ * TruthProbe — data types.
+  *
+- * Всё, что здесь описано, — контракт между слоем провайдера (который собирает
+- * logprobs из стрима), слоем скоринга (чистые функции) и UI/плагинами.
++ * Everything described here is the contract between the provider layer (which
++ * collects logprobs from the stream), the scoring layer (pure functions), and the UI/plugins.
+  */
+ 
+ import type { ConfidenceLevel } from "./levels.js"
+ 
+-/** Один альтернативный токен из `top_logprobs`. */
++/** One alternative token from `top_logprobs`. */
+ export interface TopLogprob {
+   token: string;
+   logprob: number;
+ }
+ 
+-/** Один сгенерированный токен с вероятностью (и, опционально, top-K). */
++/** One generated token with its probability (and, optionally, the top-K). */
+ export interface TokenLogprob {
+   token: string;
+   logprob: number;
+   top?: TopLogprob[];
+ }
+ 
+-/** Оценка одного предложения. */
++/** Score of a single sentence. */
+ export interface SentenceScore {
+-  /** Порядковый номер предложения в ответе, с нуля. */
++  /** Zero-based index of the sentence in the answer. */
+   i: number;
+-  /** Смещение начала в исходном тексте (включительно). */
++  /** Start offset in the source text (inclusive). */
+   start: number;
+-  /** Смещение конца (исключительно). */
++  /** End offset (exclusive). */
+   end: number;
+-  /** Исходный текст предложения. */
++  /** Source text of the sentence. */
+   text: string;
+-  /** 0..1, выше — увереннее. */
++  /** 0..1, higher is more confident. */
+   score: number;
+   /** 1 - score. */
+   risk: number;
+-  /** Геометрическое среднее вероятностей содержательных токенов. */
++  /** Geometric mean of the probabilities of content tokens. */
+   meanLp: number;
+-  /** Минимальный logprob среди содержательных токенов (худший токен). */
++  /** Minimum logprob among content tokens (the worst token). */
+   minLp: number;
+-  /** Уверенность по первому содержательному токену предложения. */
++  /** Confidence from the sentence's first content token. */
+   phi: number;
+-  /** Сколько содержательных токенов попало в предложение. */
++  /** How many content tokens fell into the sentence. */
+   tokens: number;
+   /** score < 1 - riskyThreshold. */
+   flag: boolean;
+-  /** Уровень уверенности по score: safe | likely | uncertain | risky | unreliable. */
++  /** Confidence level for the score: safe | likely | uncertain | risky | unreliable. */
+   level: ConfidenceLevel;
+ }
+ 
+-/** Итог по всему ответу. */
++/** Result for the whole answer. */
+ export interface AnswerScore {
+   status: "ok" | "partial" | "unavailable";
+-  /** 0..1 или null, если сигнала нет. */
++  /** 0..1, or null when there is no signal. */
+   score: number | null;
+   risk: number | null;
+-  /** Уровень уверенности по score; null, если сигнала нет. */
++  /** Confidence level for the score; null when there is no signal. */
+   level: ConfidenceLevel | null;
+-  /** Уверенность по первому содержательному токену всего ответа. */
++  /** Confidence from the first content token of the whole answer. */
+   first: { score: number; entropy: number; token: string } | null;
+   sentences: SentenceScore[];
+-  /** Количество предложений с flag = true. */
++  /** Number of sentences with flag = true. */
+   flagged: number;
+-  /** Причина недоступности (для UI). */
++  /** Reason for unavailability (for the UI). */
+   reason?: string;
+ }
+ 
+ export interface ScoreOptions {
+-  /** Размер top-K, по которому считалась энтропия. */
++  /** Top-K size used to compute entropy. */
+   topK?: number;
+-  /** Порог риска для подсветки. */
++  /** Risk threshold for highlighting. */
+   riskyThreshold?: number;
+-  /** Минимальная длина содержательного токена, чтобы считать его значимым. */
++  /** Minimum length of a content token for it to count as significant. */
+   minTokenChars?: number;
+-  /** Доля веса whole-answer, отданная глобальному геом. среднему. */
++  /** Share of the whole-answer weight given to the global geometric mean. */
+   globalWeight?: number;
+-  /** Скорер: null/undefined — встроенная формула (см. scorer.ts). */
++  /** Scorer: null/undefined means the built-in formula (see scorer.ts). */
+   scorer?: Scorer | null;
+ }
+ 
+-/** Признаки, которые скорер получает по набору токенов. */
++/** Features the scorer receives for a set of tokens. */
+ export interface ScorerFeatures {
+-  /** ln геометрического среднего вероятностей. */
++  /** ln of the geometric mean of the probabilities. */
+   meanLp: number;
+-  /** ln вероятности худшего токена. */
++  /** ln of the worst token's probability. */
+   minLp: number;
+-  /** Средняя уверенность первого токена по top-K. */
++  /** Mean confidence of the first token over top-K. */
+   meanPhi: number;
+-  /** Доля токенов с вероятностью ниже 0.5. */
++  /** Fraction of tokens with probability below 0.5. */
+   fracLow: number;
+   /**
+-   * Доля символов текста, которые являются цифрами (0..1).
+-   * Единственный текстовый признак, который измерен на реальных данных: в наборе
+-   * заказанной лжи ответы короче и почти без цифр, поэтому признак добавляет AUROC
+-   * (0.774 → 0.808 в обученной модели), но в оценку по умолчанию он не входит.
++   * Fraction of text characters that are digits (0..1).
++   * The only text feature measured on real data: in the commissioned-lie set
++   * answers are shorter and almost digit-free, so the feature raises AUROC
++   * (0.774 → 0.808 in the trained model), but it is not part of the default score.
+    */
+   digitDensity: number;
+-  /** Сколько токенов участвовало. */
++  /** How many tokens were involved. */
+   tokens: number;
+ }
+ 
+ export interface ScorerInput {
+   features: ScorerFeatures;
+-  /** Текст, к которому относятся токены (для моделей, смотрящих на текст). */
++  /** Text the tokens refer to (for models that look at text). */
+   text: string;
+-  /** Модель, сгенерировавшая ответ (`providerID/modelID`); для весов «на модель». */
++  /** Model that generated the answer (`providerID/modelID`); for per-model weights. */
+   model?: string;
+ }
+ 
+ export interface Scorer {
+-  /** Имя для логов и диагностики. */
++  /** Name for logs and diagnostics. */
+   name: string;
+-  /** 0..1, выше — увереннее. */
++  /** 0..1, higher is more confident. */
+   score(input: ScorerInput): number;
+ }
+ 
+-/** Веса линейной модели; готовит `scripts/calibrate.py --fit`. */
++/** Linear model weights; produced by `scripts/calibrate.py --fit`. */
+ export interface LinearWeights {
+   bias: number;
+   meanLp: number;
+   minLp: number;
+   meanPhi: number;
+   fracLow: number;
+-  /** Необязательный текстовый вес: старые файлы весов читаются как 0. */
++  /** Optional text weight: older weight files are read as 0. */
+   digitDensity?: number;
+ }
+ 
+diff --git a/packages/core/test/truthprobe-capability.test.ts b/packages/core/test/truthprobe-capability.test.ts
+index 0e611e4..12f334d 100644
+--- a/packages/core/test/truthprobe-capability.test.ts
++++ b/packages/core/test/truthprobe-capability.test.ts
+@@ -5,62 +5,62 @@ const NOW = 1_800_000_000_000
+ const DAY = 24 * 60 * 60 * 1000
+ 
+ describe("ttl", () => {
+-  test("ok/ignored/rejected/unsupported Р¶РёРІСѓС‚ РЅРµРґРµР»СЋ", () => {
++  test("ok/ignored/rejected/unsupported live for a week", () => {
+     expect(Capability.ttl("ok")).toBe(7 * DAY)
+     expect(Capability.ttl("ignored")).toBe(7 * DAY)
+     expect(Capability.ttl("rejected")).toBe(7 * DAY)
+     expect(Capability.ttl("unsupported")).toBe(7 * DAY)
+   })
+-  test("auth РїРµСЂРµРїСЂРѕРІРµСЂСЏРµРј С‡РµСЂРµР· С‡Р°СЃ", () => {
++  test("auth is re-checked after an hour", () => {
+     expect(Capability.ttl("auth")).toBe(60 * 60 * 1000)
+   })
+-  test("error РЅРµ РєСЌС€РёСЂСѓРµС‚СЃСЏ РІРѕРІСЃРµ", () => {
++  test("error is not cached at all", () => {
+     expect(Capability.ttl("error")).toBe(0)
+   })
+ })
+ 
+ describe("fresh", () => {
+-  test("СЃРІРµР¶Р°СЏ Р·Р°РїРёСЃСЊ Р¶РёРІС‘С‚", () => {
++  test("a fresh record lives", () => {
+     expect(Capability.fresh({ status: "ok", checkedAt: NOW - DAY }, NOW)).toBe(true)
+   })
+-  test("РїСЂРѕСЃСЂРѕС‡РµРЅРЅР°СЏ вЂ” РЅРµС‚", () => {
++  test("an expired one is not fresh", () => {
+     expect(Capability.fresh({ status: "ok", checkedAt: NOW - 8 * DAY }, NOW)).toBe(false)
+   })
+-  test("СЂРѕРІРЅРѕ РЅР° РіСЂР°РЅРёС†Рµ вЂ” СѓР¶Рµ РЅРµС‚", () => {
++  test("exactly at the boundary is already not fresh", () => {
+     expect(Capability.fresh({ status: "ok", checkedAt: NOW - 7 * DAY }, NOW)).toBe(false)
+   })
+-  test("error РЅРµ Р±С‹РІР°РµС‚ СЃРІРµР¶РёРј", () => {
++  test("error is never fresh", () => {
+     expect(Capability.fresh({ status: "error", checkedAt: NOW }, NOW)).toBe(false)
+   })
+-  test("undefined вЂ” РЅРµ СЃРІРµР¶РёР№", () => {
++  test("undefined is not fresh", () => {
+     expect(Capability.fresh(undefined, NOW)).toBe(false)
+   })
+-  test("Р·Р°РїРёСЃСЊ РёР· Р±СѓРґСѓС‰РµРіРѕ РЅРµ СЃС‡РёС‚Р°РµС‚СЃСЏ СЃРІРµР¶РµР№", () => {
++  test("a record from the future does not count as fresh", () => {
+     expect(Capability.fresh({ status: "ok", checkedAt: NOW + DAY }, NOW)).toBe(false)
+   })
+ })
+ 
+ describe("enabled", () => {
+-  test("С‚РѕР»СЊРєРѕ ok РІРєР»СЋС‡Р°РµС‚ СЃР±РѕСЂ", () => {
++  test("only ok enables collection", () => {
+     expect(Capability.enabled({ status: "ok", checkedAt: NOW }, NOW)).toBe(true)
+     for (const status of ["ignored", "rejected", "auth", "unsupported", "error"] as const) {
+       expect(Capability.enabled({ status, checkedAt: NOW }, NOW)).toBe(false)
+     }
+   })
+-  test("СЃС‚Р°СЂС‹Р№ ok РЅРµ РІРєР»СЋС‡Р°РµС‚", () => {
++  test("an old ok does not enable", () => {
+     expect(Capability.enabled({ status: "ok", checkedAt: NOW - 30 * DAY }, NOW)).toBe(false)
+   })
+ })
+ 
+ describe("parse/serialize", () => {
+-  test("РїСѓСЃС‚РѕР№ Рё Р±РёС‚С‹Р№ РІС…РѕРґ РґР°СЋС‚ РїСѓСЃС‚РѕР№ С„Р°Р№Р»", () => {
++  test("empty and broken input give an empty file", () => {
+     expect(Capability.parse(undefined)).toEqual(Capability.empty())
+     expect(Capability.parse("")).toEqual(Capability.empty())
+-    expect(Capability.parse("{РЅРµ json")).toEqual(Capability.empty())
++    expect(Capability.parse("{not json")).toEqual(Capability.empty())
+     expect(Capability.parse("null")).toEqual(Capability.empty())
+     expect(Capability.parse('{"entries":null}')).toEqual(Capability.empty())
+   })
+-  test("С‡СѓР¶РёРµ Рё РЅРµРїРѕР»РЅС‹Рµ Р·Р°РїРёСЃРё РѕС‚Р±СЂР°СЃС‹РІР°СЋС‚СЃСЏ", () => {
++  test("foreign and incomplete records are dropped", () => {
+     const file = Capability.parse(
+       JSON.stringify({
+         entries: {
+@@ -73,13 +73,13 @@ describe("parse/serialize", () => {
+     )
+     expect(Object.keys(file.entries)).toEqual(["p/m"])
+   })
+-  test("roundtrip СЃРѕС…СЂР°РЅСЏРµС‚ Р·Р°РїРёСЃСЊ Рё РІРµСЂСЃРёСЋ", () => {
++  test("roundtrip preserves the record and the version", () => {
+     const entry = { status: "ok" as const, checkedAt: NOW, endpoint: "https://x.test", model: "m" }
+     const file = Capability.setEntry(Capability.empty(), "p/m", entry)
+     expect(Capability.parse(Capability.serialize(file))).toEqual(file)
+     expect(file.version).toBe(1)
+   })
+-  test("СЃРµСЂРёР°Р»РёР·Р°С†РёСЏ СЃС‚Р°Р±РёР»СЊРЅР° Рё СЃРѕСЂС‚РёСЂСѓРµС‚ РєР»СЋС‡Рё", () => {
++  test("serialization is stable and sorts keys", () => {
+     let file = Capability.empty()
+     file = Capability.setEntry(file, "z/z", { status: "ok", checkedAt: 1 })
+     file = Capability.setEntry(file, "a/a", { status: "ignored", checkedAt: 2 })
+@@ -87,7 +87,7 @@ describe("parse/serialize", () => {
+     expect(text.indexOf('"a/a"')).toBeLessThan(text.indexOf('"z/z"'))
+     expect(Capability.serialize(file)).toBe(text)
+   })
+-  test("setEntry РЅРµ РјСѓС‚РёСЂСѓРµС‚ РІС…РѕРґ", () => {
++  test("setEntry does not mutate the input", () => {
+     const file = Capability.empty()
+     const next = Capability.setEntry(file, "p/m", { status: "ok", checkedAt: NOW })
+     expect(file.entries).toEqual({})
+@@ -96,7 +96,7 @@ describe("parse/serialize", () => {
+ })
+ 
+ describe("probeBody", () => {
+-  test("РѕРґРёРЅ С‚РѕРєРµРЅ, С„РёРєСЃРёСЂРѕРІР°РЅРЅС‹Р№ С‚РµРєСЃС‚, logprobs РІРєР»СЋС‡РµРЅС‹", () => {
++  test("one token, fixed text, logprobs enabled", () => {
+     const body = Capability.probeBody("glm-5-free")
+     expect(body.model).toBe("glm-5-free")
+     expect(body.messages).toEqual([{ role: "user", content: "ping" }])
+@@ -105,27 +105,27 @@ describe("probeBody", () => {
+     expect(body.logprobs).toBe(true)
+     expect(body.top_logprobs).toBe(3)
+   })
+-  test("topK РЅР°СЃС‚СЂР°РёРІР°РµС‚СЃСЏ", () => {
++  test("topK is configurable", () => {
+     expect(Capability.probeBody("m", 1).top_logprobs).toBe(1)
+   })
+ })
+ 
+ describe("originOf", () => {
+-  test("РѕС‚Р±СЂР°СЃС‹РІР°РµС‚ РїСѓС‚СЊ Рё query", () => {
++  test("drops the path and the query", () => {
+     expect(Capability.originOf("https://opencode.ai/inference/v1/chat/completions?x=1")).toBe(
+       "https://opencode.ai",
+     )
+   })
+-  test("РјСѓСЃРѕСЂ вЂ” undefined", () => {
++  test("garbage is undefined", () => {
+     expect(Capability.originOf("not a url")).toBeUndefined()
+   })
+ })
+ 
+ describe("modelFromBody", () => {
+-  test("РґРѕСЃС‚Р°С‘С‚ РјРѕРґРµР»СЊ", () => {
++  test("extracts the model", () => {
+     expect(Capability.modelFromBody('{"model":"gpt-5","messages":[]}')).toBe("gpt-5")
+   })
+-  test("Р±РµР· РјРѕРґРµР»Рё вЂ” undefined", () => {
++  test("without a model — undefined", () => {
+     expect(Capability.modelFromBody('{"messages":[]}')).toBeUndefined()
+     expect(Capability.modelFromBody('{"model":42}')).toBeUndefined()
+     expect(Capability.modelFromBody("")).toBeUndefined()
+@@ -137,45 +137,45 @@ describe("classify", () => {
+   const okBody = JSON.stringify({
+     choices: [{ logprobs: { content: [{ token: "Pa", logprob: -0.1, top_logprobs: [] }] } }],
+   })
+-  test("200 СЃ logprobs вЂ” ok", () => {
++  test("200 with logprobs — ok", () => {
+     expect(Capability.classify({ status: 200, body: okBody })).toBe("ok")
+   })
+-  test("200 Р±РµР· logprobs вЂ” ignored", () => {
++  test("200 without logprobs — ignored", () => {
+     expect(Capability.classify({ status: 200, body: '{"choices":[{}]}' })).toBe("ignored")
+     expect(Capability.classify({ status: 200, body: '{"choices":[{"logprobs":null}]}' })).toBe("ignored")
+     expect(Capability.classify({ status: 200, body: '{"choices":[{"logprobs":{"content":[]}}]}' })).toBe("ignored")
+-    expect(Capability.classify({ status: 200, body: "РЅРµ json" })).toBe("ignored")
++    expect(Capability.classify({ status: 200, body: "not json" })).toBe("ignored")
+   })
+-  test("401/403 вЂ” auth", () => {
++  test("401/403 — auth", () => {
+     expect(Capability.classify({ status: 401, body: "" })).toBe("auth")
+     expect(Capability.classify({ status: 403, body: "" })).toBe("auth")
+   })
+-  test("429 Рё 5xx вЂ” РІСЂРµРјРµРЅРЅР°СЏ РѕС€РёР±РєР°, РЅРµ РєСЌС€РёСЂСѓРµРј", () => {
++  test("429 and 5xx — a temporary failure, not cached", () => {
+     expect(Capability.classify({ status: 429, body: "" })).toBe("error")
+     expect(Capability.classify({ status: 500, body: "" })).toBe("error")
+     expect(Capability.classify({ status: 503, body: "" })).toBe("error")
+   })
+-  test("400 СЃ СѓРїРѕРјРёРЅР°РЅРёРµРј logprobs вЂ” rejected", () => {
++  test("400 mentioning logprobs — rejected", () => {
+     expect(
+       Capability.classify({ status: 400, body: '{"error":{"message":"Unsupported parameter: logprobs"}}' }),
+     ).toBe("rejected")
+   })
+-  test("400 РїРѕ РґСЂСѓРіРѕР№ РїСЂРёС‡РёРЅРµ вЂ” unsupported, Р° РЅРµ rejected", () => {
++  test("400 for another reason — unsupported, not rejected", () => {
+     expect(Capability.classify({ status: 400, body: '{"error":{"message":"bad temperature"}}' })).toBe("unsupported")
+   })
+-  test("404/405 вЂ” СЌРЅРґРїРѕРёРЅС‚ РЅРµ С‚РѕС‚", () => {
++  test("404/405 — the wrong endpoint", () => {
+     expect(Capability.classify({ status: 404, body: "" })).toBe("unsupported")
+     expect(Capability.classify({ status: 405, body: "" })).toBe("unsupported")
+   })
+ })
+ 
+ describe("describe/summary", () => {
+-  test("РєР°Р¶РґС‹Р№ СЃС‚Р°С‚СѓСЃ РёРјРµРµС‚ С‚РµРєСЃС‚", () => {
++  test("every status has text", () => {
+     for (const status of ["ok", "ignored", "rejected", "auth", "unsupported", "error"] as const) {
+       expect(Capability.describe(status).length).toBeGreaterThan(0)
+     }
+   })
+-  test("summary СЃРѕСЂС‚РёСЂСѓРµС‚ Рё РїРѕРјРµС‡Р°РµС‚ РїСЂРѕСЃСЂРѕС‡РµРЅРЅС‹Рµ", () => {
++  test("summary sorts and marks expired entries", () => {
+     let file = Capability.empty()
+     file = Capability.setEntry(file, "z/z", { status: "ok", checkedAt: NOW })
+     file = Capability.setEntry(file, "a/a", { status: "rejected", checkedAt: NOW - 30 * DAY })
+@@ -185,25 +185,25 @@ describe("describe/summary", () => {
+     expect(lines[1]).toContain("z/z: ok")
+     expect(lines[1]).not.toContain("(stale)")
+   })
+-  test("keyOf СЃРєР»РµРёРІР°РµС‚ РїСЂРѕРІР°Р№РґРµСЂР° Рё РјРѕРґРµР»СЊ", () => {
++  test("keyOf glues provider and model", () => {
+     expect(Capability.keyOf("opencode", "glm-5-free")).toBe("opencode/glm-5-free")
+   })
+ })
+ 
+-describe("classify — токены в любом канале", () => {
++describe("classify — tokens in any channel", () => {
+   const response = (payload: unknown) => ({ status: 200, body: JSON.stringify(payload) })
+ 
+-  test("reasoning-токены при пустом content — это ok", () => {
++  test("reasoning tokens with empty content are ok", () => {
+     const body = { choices: [{ logprobs: { content: [], reasoning_content: [{ token: "a", logprob: -0.1 }] } }] }
+     expect(Capability.classify(response(body))).toBe("ok")
+   })
+ 
+-  test("отдельный reasoning_logprobs — тоже ok", () => {
++  test("a separate reasoning_logprobs is also ok", () => {
+     const body = { choices: [{ reasoning_logprobs: { content: [{ token: "a", logprob: -0.2 }] } }] }
+     expect(Capability.classify(response(body))).toBe("ok")
+   })
+ 
+-  test("пустые каналы остаются ignored", () => {
++  test("empty channels stay ignored", () => {
+     const body = { choices: [{ logprobs: { content: [] } }] }
+     expect(Capability.classify(response(body))).toBe("ignored")
+   })
+diff --git a/packages/core/test/truthprobe-levels.test.ts b/packages/core/test/truthprobe-levels.test.ts
+index 119fe61..ea6f776 100644
+--- a/packages/core/test/truthprobe-levels.test.ts
++++ b/packages/core/test/truthprobe-levels.test.ts
+@@ -4,7 +4,7 @@ import { isDoubtful, LEVEL_BOUNDS, levelOf, LEVEL_ORDER } from "../src/truthprob
+ import type { TokenLogprob } from "../src/truthprobe/types"
+ 
+ describe("levelOf", () => {
+-  test("границы уровней включительные снизу", () => {
++  test("level bounds are inclusive from below", () => {
+     expect(levelOf(1)).toBe("safe")
+     expect(levelOf(LEVEL_BOUNDS.safe)).toBe("safe")
+     expect(levelOf(0.899)).toBe("likely")
+@@ -17,18 +17,18 @@ describe("levelOf", () => {
+     expect(levelOf(0)).toBe("unreliable")
+   })
+ 
+-  test("нет сигнала — нет уровня, а не «самый плохой»", () => {
++  test("no signal — no level, not \"the worst one\"", () => {
+     expect(levelOf(null)).toBeNull()
+     expect(levelOf(undefined)).toBeNull()
+     expect(levelOf(Number.NaN)).toBeNull()
+     expect(levelOf(Number.POSITIVE_INFINITY)).toBeNull()
+   })
+ 
+-  test("уровни идут от надёжного к ненадёжному", () => {
++  test("levels go from reliable to unreliable", () => {
+     expect([...LEVEL_ORDER]).toEqual(["safe", "likely", "uncertain", "risky", "unreliable"])
+   })
+ 
+-  test("подсвечиваются только risky и unreliable", () => {
++  test("only risky and unreliable are highlighted", () => {
+     expect(isDoubtful("risky")).toBe(true)
+     expect(isDoubtful("unreliable")).toBe(true)
+     expect(isDoubtful("uncertain")).toBe(false)
+@@ -39,8 +39,8 @@ describe("levelOf", () => {
+ const tokens = (parts: string[], logprob = -0.01): TokenLogprob[] =>
+   parts.map((token) => ({ token, logprob, top: [0, 1, 2].map((k) => ({ token: `alt${k}`, logprob: logprob - 0.1 * (k + 1) })) }))
+ 
+-describe("scoreAnswer проставляет уровень", () => {
+-  test("уровень ответа и предложений согласован со score", () => {
++describe("scoreAnswer assigns a level", () => {
++  test("the answer and sentence levels agree with the score", () => {
+     const text = "The answer is 42."
+     const result = scoreAnswer(text, tokens(["The", " answer", " is", " 42", "."]))
+     expect(result.status).toBe("ok")
+@@ -50,7 +50,7 @@ describe("scoreAnswer проставляет уровень", () => {
+     expect(String(first.level)).toBe(String(levelOf(first.score)))
+   })
+ 
+-  test("неуверенный токен опускает уровень", () => {
++  test("an unconfident token lowers the level", () => {
+     const text = "The answer is 42."
+     const result = scoreAnswer(text, [
+       { token: "The", logprob: -0.01 },
+@@ -65,7 +65,7 @@ describe("scoreAnswer проставляет уровень", () => {
+     expect(String(only.level)).toBe(String(levelOf(only.score)))
+   })
+ 
+-  test("без токенов уровень null, а не unreliable", () => {
++  test("without tokens the level is null, not unreliable", () => {
+     const result = scoreAnswer("Anything.", [])
+     expect(result.status).toBe("unavailable")
+     expect(result.level).toBeNull()
+@@ -73,14 +73,14 @@ describe("scoreAnswer проставляет уровень", () => {
+ })
+ 
+ describe("envScoreOptions", () => {
+-  test("читает пороги из окружения", () => {
+-    // `TRUTHPROBE_SHAKY_THRESHOLD` больше не читается: переменная ничего не настраивала.
++  test("reads the thresholds from the environment", () => {
++    // `TRUTHPROBE_SHAKY_THRESHOLD` is no longer read: the variable configured nothing.
+     expect(envScoreOptions({ TRUTHPROBE_RISKY_THRESHOLD: "0.6", TRUTHPROBE_SHAKY_THRESHOLD: "0.2" })).toEqual({
+       riskyThreshold: 0.6,
+     })
+   })
+ 
+-  test("мусор и значения вне 0..1 игнорируются", () => {
++  test("garbage and values outside 0..1 are ignored", () => {
+     expect(envScoreOptions({ TRUTHPROBE_RISKY_THRESHOLD: "abc" })).toEqual({})
+     expect(envScoreOptions({ TRUTHPROBE_RISKY_THRESHOLD: "1.5" })).toEqual({})
+     expect(envScoreOptions({ TRUTHPROBE_RISKY_THRESHOLD: "" })).toEqual({})
+diff --git a/packages/core/test/truthprobe-scorer-bundle.test.ts b/packages/core/test/truthprobe-scorer-bundle.test.ts
+index 427223d..b57dc99 100644
+--- a/packages/core/test/truthprobe-scorer-bundle.test.ts
++++ b/packages/core/test/truthprobe-scorer-bundle.test.ts
+@@ -8,13 +8,13 @@ const weak: LinearWeights = { bias: -6, meanLp: 0, minLp: 0, meanPhi: -6, fracLo
+ const features = { meanLp: -1, minLp: -2, meanPhi: 0.5, fracLow: 0.25, digitDensity: 0.1, tokens: 12 }
+ 
+ describe("parseWeightsBundle", () => {
+-  test("плоские веса становятся global, моделей нет", () => {
++  test("flat weights become global, with no models", () => {
+     const bundle = parseWeightsBundle({ bias: 1, meanLp: 2, minLp: 3, meanPhi: 4, fracLow: 5 })
+     expect(bundle.global).toEqual({ bias: 1, meanLp: 2, minLp: 3, meanPhi: 4, fracLow: 5, digitDensity: 0 })
+     expect(Object.keys(bundle.models)).toEqual([])
+   })
+ 
+-  test("бандл читается вместе с весами моделей", () => {
++  test("a bundle is read together with the per-model weights", () => {
+     const bundle = parseWeightsBundle({
+       version: 1,
+       features: ["bias", "meanLp", "minLp", "meanPhi", "fracLow"],
+@@ -25,7 +25,7 @@ describe("parseWeightsBundle", () => {
+     expect(bundle.models["freepi/particle"]).toEqual(weak)
+   })
+ 
+-  test("битая запись модели пропускается, остальные остаются", () => {
++  test("a broken model record is skipped, the rest remain", () => {
+     const bundle = parseWeightsBundle({
+       global: strong,
+       models: { broken: { bias: "nope" }, "freepi/particle": weak },
+@@ -34,7 +34,7 @@ describe("parseWeightsBundle", () => {
+     expect(bundle.models["freepi/particle"]).toEqual(weak)
+   })
+ 
+-  test("нечисловые общие веса — ошибка, а не тихий ноль", () => {
++  test("non-numeric global weights are an error, not a silent zero", () => {
+     expect(() => parseWeightsBundle({ bias: "x", meanLp: 1, minLp: 1, meanPhi: 1, fracLow: 1 })).toThrow()
+   })
+ })
+@@ -42,11 +42,11 @@ describe("parseWeightsBundle", () => {
+ describe("weightsFor", () => {
+   const bundle = parseWeightsBundle({ global: strong, models: { "freepi/particle": weak } })
+ 
+-  test("для известной модели берёт её веса", () => {
++  test("for a known model it takes that model's weights", () => {
+     expect(weightsFor(bundle, "freepi/particle")).toEqual(weak)
+   })
+ 
+-  test("для чужой модели и без модели — global", () => {
++  test("for an unknown model and without a model it uses global", () => {
+     expect(weightsFor(bundle, "opencode/gpt-5")).toEqual(strong)
+     expect(weightsFor(bundle)).toEqual(strong)
+   })
+@@ -56,20 +56,20 @@ describe("bundleScorer", () => {
+   const bundle = parseWeightsBundle({ global: strong, models: { "freepi/particle": weak } })
+   const scorer = bundleScorer(bundle, "test")
+ 
+-  test("разные модели дают разные оценки на одних признаках", () => {
+-    const a = scorer.score({ features, text: "ответ", model: "freepi/particle" })
+-    const b = scorer.score({ features, text: "ответ", model: "other/model" })
++  test("different models give different scores on the same features", () => {
++    const a = scorer.score({ features, text: "answer", model: "freepi/particle" })
++    const b = scorer.score({ features, text: "answer", model: "other/model" })
+     expect(a).toBeLessThan(b)
+     expect(b).toBeGreaterThan(0.9)
+   })
+ 
+-  test("без модели работает global", () => {
+-    expect(scorer.score({ features, text: "ответ" })).toBeCloseTo(scorer.score({ features, text: "ответ", model: "other/model" }))
++  test("without a model it uses global", () => {
++    expect(scorer.score({ features, text: "answer" })).toBeCloseTo(scorer.score({ features, text: "answer", model: "other/model" }))
+   })
+ 
+-  test("оценка остаётся в [0,1]", () => {
++  test("the score stays within [0,1]", () => {
+     for (const model of ["freepi/particle", "other/model", undefined]) {
+-      const value = scorer.score({ features, text: "ответ", model })
++      const value = scorer.score({ features, text: "answer", model })
+       expect(value).toBeGreaterThanOrEqual(0)
+       expect(value).toBeLessThanOrEqual(1)
+     }
+@@ -82,16 +82,16 @@ describe("scorerFromEnv", () => {
+     return JSON.stringify({ global: strong, models: { "freepi/particle": weak } })
+   }
+ 
+-  test("бандл из файла подхватывается по TRUTHPROBE_SCORER", () => {
++  test("a bundle from a file is picked up via TRUTHPROBE_SCORER", () => {
+     const scorer = scorerFromEnv({ TRUTHPROBE_SCORER: "linear:/wb.json" }, read)
+     expect(scorer).not.toBeNull()
+     expect(scorer!.name).toContain("1 models")
+-    const perModel = scorer!.score({ features, text: "ответ", model: "freepi/particle" })
+-    const global = scorer!.score({ features, text: "ответ", model: "other/model" })
++    const perModel = scorer!.score({ features, text: "answer", model: "freepi/particle" })
++    const global = scorer!.score({ features, text: "answer", model: "other/model" })
+     expect(perModel).toBeLessThan(global)
+   })
+ 
+-  test("плоский файл весов по-прежнему работает", () => {
++  test("a flat weights file still works", () => {
+     const flat = scorerFromEnv({ TRUTHPROBE_SCORER: "linear:/flat.json" }, () =>
+       JSON.stringify({ bias: 0, meanLp: 1, minLp: 1, meanPhi: 1, fracLow: 0 }),
+     )
+@@ -99,7 +99,7 @@ describe("scorerFromEnv", () => {
+     expect(flat!.name).not.toContain("models")
+   })
+ 
+-  test("битый файл — null (откат на geometric), без падения", () => {
++  test("a broken file is null (fallback to geometric), without crashing", () => {
+     const scorer = scorerFromEnv({ TRUTHPROBE_SCORER: "linear:/broken.json" }, () => "not json")
+     expect(scorer).toBeNull()
+   })
+diff --git a/packages/core/test/truthprobe-scorer.test.ts b/packages/core/test/truthprobe-scorer.test.ts
+index dfc05d0..9af6b91 100644
+--- a/packages/core/test/truthprobe-scorer.test.ts
++++ b/packages/core/test/truthprobe-scorer.test.ts
+@@ -11,13 +11,13 @@ import { scoreAnswer } from "../src/truthprobe/score"
+ import type { Scorer } from "../src/truthprobe/types"
+ 
+ describe("geometricScorer", () => {
+-  test("повторяет встроенную формулу: геометрическое среднее вероятностей", () => {
++  test("reproduces the built-in formula: the geometric mean of the probabilities", () => {
+     const features = featuresOf({ meanLp: Math.log(0.8), minLp: Math.log(0.5), meanPhi: 0.9, lowFraction: 0.2 })
+     const score = geometricScorer().score({ features, text: "" })
+     expect(score).toBeCloseTo(0.8, 10)
+   })
+ 
+-  test("φ и худший токен больше не влияют на встроенную оценку", () => {
++  test("φ and the worst token no longer affect the built-in score", () => {
+     const base = featuresOf({ meanLp: Math.log(0.8), minLp: Math.log(0.5), meanPhi: 0.9, lowFraction: 0.2 })
+     const grim = featuresOf({ meanLp: Math.log(0.8), minLp: Math.log(0.01), meanPhi: 0.02, lowFraction: 0.9 })
+     expect(geometricScorer().score({ features: grim, text: "" })).toBeCloseTo(
+@@ -28,14 +28,14 @@ describe("geometricScorer", () => {
+ })
+ 
+ describe("linearScorer", () => {
+-  test("считает sigmoid(bias + w·x)", () => {
++  test("computes sigmoid(bias + w·x)", () => {
+     const scorer = linearScorer({ bias: 2, meanLp: 1, minLp: 0, meanPhi: 0, fracLow: 0 })
+     // meanLp = 0 → z = 2 → sigmoid(2) ≈ 0.8808
+     const features = featuresOf({ meanLp: 0, minLp: -3, meanPhi: 0.4, lowFraction: 0.5 })
+     expect(scorer.score({ features, text: "" })).toBeCloseTo(1 / (1 + Math.exp(-2)), 6)
+   })
+ 
+-  test("нечисловой вес не роняет оценку, а откатывает к geometric", () => {
++  test("a non-numeric weight does not break the score, it falls back to geometric", () => {
+     const scorer = linearScorer({ bias: Number.NaN, meanLp: 1, minLp: 1, meanPhi: 1, fracLow: 1 })
+     const features = featuresOf({ meanLp: Math.log(0.7), minLp: Math.log(0.4), meanPhi: 0.8, lowFraction: 0.1 })
+     expect(scorer.score({ features, text: "" })).toBeCloseTo(geometricScorer().score({ features, text: "" }), 10)
+@@ -43,21 +43,21 @@ describe("linearScorer", () => {
+ })
+ 
+ describe("parseLinearWeights", () => {
+-  test("принимает и обёрнутый, и плоский объект", () => {
++  test("accepts both a wrapped and a flat object", () => {
+     const flat = { bias: 0.1, meanLp: 1, minLp: 2, meanPhi: 3, fracLow: 4 }
+     expect(parseLinearWeights(flat)).toEqual({ ...flat, digitDensity: 0 })
+     expect(parseLinearWeights({ weights: flat })).toEqual({ ...flat, digitDensity: 0 })
+   })
+ 
+-  test("читает необязательный вес текстового признака", () => {
++  test("reads the optional text-feature weight", () => {
+     const w = parseLinearWeights({ bias: 0, meanLp: 1, minLp: 1, meanPhi: 0, fracLow: 0, digitDensity: 2.5 })
+     expect(w.digitDensity).toBe(2.5)
+   })
+ 
+-  test("отвергает мусор", () => {
++  test("rejects garbage", () => {
+     expect(() => parseLinearWeights(null)).toThrow()
+     expect(() => parseLinearWeights({ bias: "x" })).toThrow()
+-    // Number() пропускает пустую строку, массив и boolean: они не числа.
++    // Number() lets through an empty string, an array and a boolean: they are not numbers.
+     expect(() => parseLinearWeights({ bias: "" })).toThrow()
+     expect(() => parseLinearWeights({ bias: [] })).toThrow()
+     expect(() => parseLinearWeights({ bias: true })).toThrow()
+@@ -66,29 +66,29 @@ describe("parseLinearWeights", () => {
+ })
+ 
+ describe("scorerFromEnv", () => {
+-  test("пусто и geometric — это встроенная формула (null)", () => {
++  test("empty and geometric mean the built-in formula (null)", () => {
+     expect(scorerFromEnv({})).toBeNull()
+     expect(scorerFromEnv({ TRUTHPROBE_SCORER: "geometric" })).toBeNull()
+   })
+ 
+-  test("linear:<path> загружает веса через переданный reader", () => {
++  test("linear:<path> loads weights through the provided reader", () => {
+     const json = JSON.stringify({ weights: { bias: 1, meanLp: 1, minLp: 1, meanPhi: 1, fracLow: 1 } })
+     const scorer = scorerFromEnv({ TRUTHPROBE_SCORER: "linear:/tmp/w.json" }, () => json)
+     expect(scorer?.name).toBe("linear:/tmp/w.json")
+   })
+ 
+-  test("битый файл не ломает запуск: предупреждение и null", () => {
++  test("a broken file does not break startup: a warning and null", () => {
+     const scorer = scorerFromEnv({ TRUTHPROBE_SCORER: "linear:/nope.json" }, () => "not json")
+     expect(scorer).toBeNull()
+   })
+ 
+-  test("неизвестный вид скорера — null", () => {
++  test("an unknown scorer kind is null", () => {
+     expect(scorerFromEnv({ TRUTHPROBE_SCORER: "http://example" })).toBeNull()
+   })
+ })
+ 
+-describe("scoreAnswer со сменным скорером", () => {
+-  test("использует переданный скорер для ответа и предложений", () => {
++describe("scoreAnswer with a pluggable scorer", () => {
++  test("uses the provided scorer for the answer and the sentences", () => {
+     const tokens = [
+       { token: "It ", logprob: -0.01 },
+       { token: "is ", logprob: -0.01 },
+@@ -101,7 +101,7 @@ describe("scoreAnswer со сменным скорером", () => {
+     expect(result.level).toBe("unreliable")
+   })
+ 
+-  test("scorer: null принудительно возвращает встроенную формулу", () => {
++  test("scorer: null forces the built-in formula", () => {
+     const tokens = [{ token: "Yes.", logprob: -0.01 }]
+     const result = scoreAnswer("Yes.", tokens, { scorer: null })
+     expect(result.status).toBe("ok")
+@@ -109,14 +109,14 @@ describe("scoreAnswer со сменным скорером", () => {
+   })
+ })
+ 
+-describe("parseLinearWeights — null не превращается в ноль", () => {
+-  test("null-коэффициент — ошибка", () => {
++describe("parseLinearWeights — null does not become zero", () => {
++  test("a null coefficient is an error", () => {
+     expect(() =>
+       parseLinearWeights({ bias: 0, meanLp: 1, minLp: 1, meanPhi: null, fracLow: 0, digitDensity: 0 }),
+     ).toThrow()
+   })
+ 
+-  test("отсутствующий digitDensity по-прежнему означает 0", () => {
++  test("a missing digitDensity still means 0", () => {
+     expect(parseLinearWeights({ bias: 0, meanLp: 1, minLp: 1, meanPhi: 1, fracLow: 0 }).digitDensity).toBe(0)
+   })
+ })
+diff --git a/packages/core/test/truthprobe-unicode.test.ts b/packages/core/test/truthprobe-unicode.test.ts
+index 92b6302..c80acf1 100644
+--- a/packages/core/test/truthprobe-unicode.test.ts
++++ b/packages/core/test/truthprobe-unicode.test.ts
+@@ -5,10 +5,10 @@ import { splitSentences } from "../src/truthprobe/sentences"
+ import type { TokenLogprob } from "../src/truthprobe/types"
+ 
+ /**
+- * Кириллица, CJK, эмодзи, арабский и combining-знаки — это не экзотика:
+- * модели отвечают на всех этих языках. Тест фиксирует, что токенизация по
+- * кодовым единицам не ломает выравнивание и оценку, и что «нет сигнала»
+- * не подменяется выдуманным числом.
++ * Greek, CJK, emoji, Arabic and combining marks are not exotic:
++ * models answer in all these languages. The test pins down that tokenization by
++ * code units does not break alignment or scoring, and that "no signal"
++ * is not replaced by an invented number.
+  */
+ const cut = (text: string, size: number): TokenLogprob[] => {
+   const out: TokenLogprob[] = []
+@@ -28,16 +28,16 @@ const cut = (text: string, size: number): TokenLogprob[] => {
+ }
+ 
+ const cases: Array<[string, string]> = [
+-  ["кириллица", "Москва — столица России. В ней живёт больше десяти миллионов человек."],
++  ["greek", "Η Αθήνα είναι η πρωτεύουσα της Ελλάδας. Έχει πάνω από τρία εκατομμύρια κατοίκους."],
+   ["CJK", "北京是中国的首都。它有一千多万人口。"],
+-  ["эмодзи", "Paris is the capital of France 🇫🇷. It has about two million people."],
+-  ["арабский", "القاهرة هي عاصمة مصر. يعيش فيها أكثر من عشرة ملايين نسمة."],
++  ["emoji", "Paris is the capital of France 🇫🇷. It has about two million people."],
++  ["arabic", "القاهرة هي عاصمة مصر. يعيش فيها أكثر من عشرة ملايين نسمة."],
+   ["combining", "Zürich liegt in der Schweiz. Die Stadt hat rund 400 000 Einwohner."],
+ ]
+ 
+-describe("scoreAnswer на нелатинском тексте", () => {
++describe("scoreAnswer on non-Latin text", () => {
+   for (const [name, text] of cases) {
+-    test(`${name}: токены покрывают текст и оценка считается`, () => {
++    test(`${name}: tokens cover the text and the score is computed`, () => {
+       const tokens = cut(text, 3)
+       expect(tokens.map((t) => t.token).join("")).toBe(text)
+ 
+@@ -58,7 +58,7 @@ describe("scoreAnswer на нелатинском тексте", () => {
+     })
+   }
+ 
+-  test("сумма оценок предложений покрывает весь текст без дыр", () => {
++  test("the sentence scores cover the whole text without holes", () => {
+     for (const [, text] of cases) {
+       const res = scoreAnswer(text, cut(text, 3), {})
+       const covered = res.sentences.reduce((sum, s) => sum + (s.end - s.start), 0)
+@@ -69,14 +69,14 @@ describe("scoreAnswer на нелатинском тексте", () => {
+     }
+   })
+ 
+-  test("CJK режется на предложения по 。", () => {
++  test("CJK is split into sentences by 。", () => {
+     expect(splitSentences("北京是中国的首都。它有一千多万人口。").map((s) => s.text)).toEqual([
+       "北京是中国的首都。",
+       "它有一千多万人口。",
+     ])
+   })
+ 
+-  test("чужие токены — unavailable, а не выдуманное число", () => {
++  test("foreign tokens are unavailable, not an invented number", () => {
+     const text = "北京是中国的首都。"
+     const wrong = cut("The quick brown fox jumps over the lazy dog.", 3)
+     const res = scoreAnswer(text, wrong, {})
+diff --git a/packages/core/test/truthprobe.test.ts b/packages/core/test/truthprobe.test.ts
+index 83dd517..d7b7df9 100755
+--- a/packages/core/test/truthprobe.test.ts
++++ b/packages/core/test/truthprobe.test.ts
+@@ -10,7 +10,7 @@ import {
+ import { codeRanges, splitSentences } from "../src/truthprobe/sentences.js"
+ import type { TokenLogprob } from "../src/truthprobe/types.js"
+ 
+-/** Токен с двумя альтернативами: сам токен и «шум» на дельту ниже. */
++/** A token with two alternatives: the token itself and "noise" one delta lower. */
+ const token = (text: string, logprob: number, delta = 1): TokenLogprob => ({
+   token: text,
+   logprob,
+@@ -20,25 +20,25 @@ const token = (text: string, logprob: number, delta = 1): TokenLogprob => ({
+   ],
+ })
+ 
+-/** Собирает токены из пар, как их вернул бы провайдер. */
++/** Builds tokens from pairs, the way a provider would return them. */
+ const tokens = (values: Array<[string, number]>, delta = 1): TokenLogprob[] =>
+   values.map(([text, logprob]) => token(text, logprob, delta))
+ 
+-/** Нарезает текст на токены по границам слов, чтобы смещения совпадали. */
++/** Slices text into tokens by word boundaries so the offsets line up. */
+ const slice = (text: string, size = 4): string[] => {
+   const out: string[] = []
+   for (let i = 0; i < text.length; i += size) out.push(text.slice(i, i + size))
+   return out
+ }
+ 
+-/** Ровные токены с заданным logprob на весь текст. */
++/** Even tokens with the given logprob over the whole text. */
+ const flat = (text: string, logprob: number): TokenLogprob[] =>
+   slice(text).map((part) => token(part, logprob))
+ 
+ describe("truthprobe.isContentToken", () => {
+   test("keeps ordinary words", () => {
+     expect(isContentToken("Paris")).toBe(true)
+-    expect(isContentToken("Париж")).toBe(true)
++    expect(isContentToken("Berlin")).toBe(true)
+     expect(isContentToken(" 13")).toBe(true)
+   })
+ 
+@@ -62,7 +62,7 @@ describe("truthprobe.isContentToken", () => {
+ 
+ describe("truthprobe.normalizedEntropy / phi", () => {
+   test("certain token has zero entropy and full phi", () => {
+-    const certain = { token: "да", logprob: 0, top: [{ token: "да", logprob: 0 }] }
++    const certain = { token: "yes", logprob: 0, top: [{ token: "yes", logprob: 0 }] }
+     expect(normalizedEntropy(certain)).toBe(0)
+     expect(phi(certain)).toBe(1)
+   })
+@@ -73,7 +73,7 @@ describe("truthprobe.normalizedEntropy / phi", () => {
+   })
+ 
+   test("two equal alternatives give zero phi", () => {
+-    const split = { token: "да", logprob: -0.7, top: [{ token: "да", logprob: -0.7 }, { token: "нет", logprob: -0.7 }] }
++    const split = { token: "yes", logprob: -0.7, top: [{ token: "yes", logprob: -0.7 }, { token: "no", logprob: -0.7 }] }
+     expect(normalizedEntropy(split)).toBeCloseTo(1, 6)
+     expect(phi(split)).toBeCloseTo(0, 6)
+   })
+@@ -132,7 +132,7 @@ describe("truthprobe.normalizedEntropy / phi", () => {
+         { token: "c", logprob: Number.NEGATIVE_INFINITY },
+       ],
+     }
+-    // После фильтра остаётся один кандидат → деградация к p(token).
++    // After filtering, one candidate remains → degrade to p(token).
+     expect(phi(noisy)).toBeCloseTo(Math.exp(-0.1), 6)
+   })
+ 
+@@ -196,7 +196,7 @@ describe("truthprobe.splitSentences", () => {
+   })
+ 
+   test("offsets match the source string", () => {
+-    const text = "Первое. Второе.\n\nТретье — с тире!"
++    const text = "First one. Second one.\n\nThird one — with a dash!"
+     for (const sentence of splitSentences(text)) {
+       expect(text.slice(sentence.start, sentence.end)).toBe(sentence.text)
+     }
+@@ -207,14 +207,14 @@ describe("truthprobe.splitSentences", () => {
+   })
+ 
+   test("does not split abbreviations", () => {
+-    expect(texts("Это т.е. пример. Конец.")).toEqual(["Это т.е. пример.", "Конец."])
++    expect(texts("That is i.e. an example. End.")).toEqual(["That is i.e. an example.", "End."])
+     expect(texts("Use e.g. this one. Fine.")).toEqual(["Use e.g. this one.", "Fine."])
+     expect(texts("Apples, pears, etc. And more.")).toEqual(["Apples, pears, etc.", "And more."])
+-    expect(texts("См. выше. Да.")).toEqual(["См. выше.", "Да."])
++    expect(texts("See cf. above. Yes.")).toEqual(["See cf. above.", "Yes."])
+   })
+ 
+   test("supports the ellipsis and CJK terminators", () => {
+-    expect(texts("Ждём… И вот.")).toEqual(["Ждём…", "И вот."])
++    expect(texts("Wait… And there.")).toEqual(["Wait…", "And there."])
+     expect(texts("これは文です。次です。")).toEqual(["これは文です。", "次です。"])
+   })
+ 
+@@ -223,12 +223,12 @@ describe("truthprobe.splitSentences", () => {
+   })
+ 
+   test("code blocks are dropped entirely", () => {
+-    const text = "Перед.\n```js\nconst a = 1;\n```\nПосле."
+-    expect(texts(text)).toEqual(["Перед.", "После."])
++    const text = "Before.\n```js\nconst a = 1;\n```\nAfter."
++    expect(texts(text)).toEqual(["Before.", "After."])
+   })
+ 
+   test("unclosed code block swallows the rest", () => {
+-    expect(texts("Перед.\n```js\nconst a = 1;")).toEqual(["Перед."])
++    expect(texts("Before.\n```js\nconst a = 1;")).toEqual(["Before."])
+   })
+ 
+   test("empty and whitespace-only input give nothing", () => {
+@@ -237,11 +237,11 @@ describe("truthprobe.splitSentences", () => {
+   })
+ 
+   test("single line without terminator is one sentence", () => {
+-    expect(texts("Просто строка без точки")).toEqual(["Просто строка без точки"])
++    expect(texts("Just a line without a dot")).toEqual(["Just a line without a dot"])
+   })
+ 
+   test("list items without terminators stay together", () => {
+-    // Документируем поведение: одиночный перевод строки не является границей.
++    // Documenting the behaviour: a single newline is not a boundary.
+     expect(texts("- one\n- two")).toEqual(["- one\n- two"])
+   })
+ 
+@@ -251,9 +251,9 @@ describe("truthprobe.splitSentences", () => {
+   })
+ })
+ 
+-describe("truthprobe.scoreAnswer — деградация", () => {
+-  test("без токенов возвращает unavailable", () => {
+-    const result = scoreAnswer("Любой текст.", [])
++describe("truthprobe.scoreAnswer — degradation", () => {
++  test("without tokens returns unavailable", () => {
++    const result = scoreAnswer("Any text.", [])
+     expect(result.status).toBe("unavailable")
+     expect(result.score).toBeNull()
+     expect(result.risk).toBeNull()
+@@ -263,22 +263,22 @@ describe("truthprobe.scoreAnswer — деградация", () => {
+     expect(result.reason).toBe("no logprobs in response")
+   })
+ 
+-  test("только пунктуация — нет содержательных токенов", () => {
++  test("punctuation only — no content tokens", () => {
+     const result = scoreAnswer("...", tokens([["...", -0.1], [" .", -0.2]]))
+     expect(result.status).toBe("unavailable")
+     expect(result.reason).toBe("no content tokens")
+   })
+ 
+-  test("minTokenChars можно ослабить", () => {
++  test("minTokenChars can be relaxed", () => {
+     const text = "a b"
+     const raw = tokens([["a", -0.1], [" b", -0.1]])
+     expect(scoreAnswer(text, raw).status).toBe("unavailable")
+     expect(scoreAnswer(text, raw, { minTokenChars: 1 }).status).toBe("ok")
+   })
+ 
+-  test("токены не совпадают с текстом — unavailable, а не выдуманные числа", () => {
+-    const result = scoreAnswer("Совсем другой текст, который не совпадает.", tokens([["Что-то", -0.1], [" иное", -0.2]]))
+-    // Гадать по токенам, которых нет в тексте, нельзя: числа были бы фикцией.
++  test("tokens that do not match the text — unavailable, not invented numbers", () => {
++    const result = scoreAnswer("A completely different text that does not match.", tokens([["Something", -0.1], [" else", -0.2]]))
++    // Guessing from tokens that are not in the text is not allowed: the numbers would be fiction.
+     expect(result.status).toBe("unavailable")
+     expect(result.reason).toBe("tokens do not match the answer text")
+     expect(result.score).toBeNull()
+@@ -287,9 +287,9 @@ describe("truthprobe.scoreAnswer — деградация", () => {
+   })
+ })
+ 
+-describe("truthprobe.scoreAnswer — арифметика", () => {
+-  test("risk всегда дополняет score до единицы", () => {
+-    const text = "Москва — столица России."
++describe("truthprobe.scoreAnswer — arithmetic", () => {
++  test("risk always complements score to one", () => {
++    const text = "Moscow is the capital of Russia."
+     const result = scoreAnswer(text, flat(text, -1))
+     expect(result.score).not.toBeNull()
+     expect(result.risk!).toBeCloseTo(1 - result.score!, 10)
+@@ -297,24 +297,24 @@ describe("truthprobe.scoreAnswer — арифметика", () => {
+     expect(result.score!).toBeLessThanOrEqual(1)
+   })
+ 
+-  test("уверенный ответ выше сомнительного", () => {
+-    const text = "Москва — столица России. Население около 13 миллионов человек."
++  test("a confident answer ranks above a hesitant one", () => {
++    const text = "Moscow is the capital of Russia. The population is about 13 million people."
+     const confident = scoreAnswer(text, flat(text, -0.02))
+     const hesitant = scoreAnswer(text, flat(text, -2.2))
+     expect(confident.score!).toBeGreaterThan(hesitant.score!)
+     expect(hesitant.flagged).toBeGreaterThan(0)
+   })
+ 
+-  test("первый токен — первый содержательный, пунктуация пропускается", () => {
+-    const text = "«Париж» — столица."
+-    const result = scoreAnswer(text, tokens([["«", -0.1], ["Париж", -0.5], ["»", -0.1], [" —", -0.1], [" столица", -0.2], [".", -0.1]]))
+-    expect(result.first!.token).toBe("Париж")
+-    expect(result.first!.score).toBeCloseTo(phi(token("Париж", -0.5)), 10)
++  test("the first token is the first content token, punctuation is skipped", () => {
++    const text = "«Paris» is the capital."
++    const result = scoreAnswer(text, tokens([["«", -0.1], ["Paris", -0.5], ["»", -0.1], [" is", -0.1], [" the capital", -0.2], [".", -0.1]]))
++    expect(result.first!.token).toBe("Paris")
++    expect(result.first!.score).toBeCloseTo(phi(token("Paris", -0.5)), 10)
+   })
+ 
+-  test("предложения не смешивают токены соседей", () => {
+-    const text = "Хорошо. Плохо."
+-    const raw = tokens([["Хорошо", -0.01], [".", -0.01], [" Плохо", -3.5], [".", -3.5]])
++  test("sentences do not mix neighbouring tokens", () => {
++    const text = "Good. Bad."
++    const raw = tokens([["Good", -0.01], [".", -0.01], [" Bad", -3.5], [".", -3.5]])
+     const result = scoreAnswer(text, raw)
+     expect(result.sentences.length).toBe(2)
+     const [good, bad] = result.sentences
+@@ -325,17 +325,17 @@ describe("truthprobe.scoreAnswer — арифметика", () => {
+     expect(bad.tokens).toBe(1)
+   })
+ 
+-  test("minLp и meanLp отражают худший и средний токен", () => {
+-    const text = "Аа бб"
+-    const raw = tokens([["Аа", -0.2], [" бб", -2.4]])
++  test("minLp and meanLp reflect the worst and average token", () => {
++    const text = "Aa bb"
++    const raw = tokens([["Aa", -0.2], [" bb", -2.4]])
+     const result = scoreAnswer(text, raw)
+     const sentence = result.sentences[0]
+     expect(sentence.minLp).toBe(-2.4)
+     expect(sentence.meanLp).toBeCloseTo(Math.exp((-0.2 - 2.4) / 2), 10)
+   })
+ 
+-  test("порог риска настраивается", () => {
+-    const text = "Средне сомнительно."
++  test("the risk threshold is configurable", () => {
++    const text = "Moderately doubtful."
+     const raw = flat(text, -1.4)
+     const lenient = scoreAnswer(text, raw, { riskyThreshold: 1 })
+     const strict = scoreAnswer(text, raw, { riskyThreshold: 0 })
+@@ -344,21 +344,21 @@ describe("truthprobe.scoreAnswer — арифметика", () => {
+     expect(strict.flagged).toBeGreaterThan(0)
+   })
+ 
+-  test("globalWeight=1 даёт геометрическое среднее по всем токенам", () => {
+-    const text = "Совершенно уверенно."
+-    const raw = tokens([["Совер", -0.1], ["шенно", -0.3], [" уверен", -0.2], ["но", -0.4], [".", -0.1]])
++  test("globalWeight=1 gives the geometric mean over all tokens", () => {
++    const text = "One two three four."
++    const raw = tokens([["One", -0.1], [" two", -0.3], [" three", -0.2], [" four", -0.4], [".", -0.1]])
+     const result = scoreAnswer(text, raw, { globalWeight: 1 })
+-    const expected = Math.exp((-0.1 - 0.3 - 0.2 - 0.4) / 4) // пунктуация не в счёте
++    const expected = Math.exp((-0.1 - 0.3 - 0.2 - 0.4) / 4) // punctuation is not counted
+     expect(result.score!).toBeCloseTo(expected, 10)
+   })
+ 
+-  test("score детерминирован", () => {
+-    const text = "Повторяемый ответ. Тот же самый."
++  test("score is deterministic", () => {
++    const text = "Repeatable answer. The very same."
+     const raw = flat(text, -0.7)
+     expect(JSON.stringify(scoreAnswer(text, raw))).toBe(JSON.stringify(scoreAnswer(text, raw)))
+   })
+ 
+-  test("идеально уверенный ответ даёт score 1 и risk 0", () => {
++  test("a perfectly confident answer gives score 1 and risk 0", () => {
+     const text = "ok"
+     const result = scoreAnswer(text, [{ token: "ok", logprob: 0 }])
+     expect(result.score).toBeCloseTo(1, 10)
+@@ -366,34 +366,34 @@ describe("truthprobe.scoreAnswer — арифметика", () => {
+     expect(result.flagged).toBe(0)
+   })
+ 
+-  test("крайне неуверенный ответ даёт risk около единицы", () => {
+-    const text = "Что-то очень странное."
++  test("an extremely unconfident answer gives risk close to one", () => {
++    const text = "Something very strange."
+     const result = scoreAnswer(text, flat(text, -12))
+     expect(result.risk!).toBeGreaterThan(0.95)
+     expect(result.flagged).toBe(1)
+   })
+ 
+-  test("границы предложений в оценке совпадают с сегментатором", () => {
+-    const text = "Первое. Второе."
++  test("sentence boundaries in the score match the segmenter", () => {
++    const text = "First. Second."
+     const result = scoreAnswer(text, flat(text, -0.3))
+     const sentences = splitSentences(text)
+     expect(result.sentences.map((s) => [s.start, s.end])).toEqual(sentences.map((s) => [s.start, s.end]))
+   })
+ 
+-  test("каждое оценённое предложение имеет risk = 1 - score", () => {
+-    const text = "Раз. Два. Три."
++  test("every scored sentence has risk = 1 - score", () => {
++    const text = "One. Two. Three."
+     for (const sentence of scoreAnswer(text, flat(text, -0.9)).sentences) {
+       expect(sentence.risk).toBeCloseTo(1 - sentence.score, 10)
+     }
+   })
+ })
+ 
+-describe("границы и состояния", () => {
+-  test("обрезанный поток токенов даёт status partial", () => {
+-    const text = "Привет мир, как дела сегодня."
++describe("boundaries and states", () => {
++  test("a truncated token stream gives status partial", () => {
++    const text = "Hello world, how are you today."
+     const raw = [
+-      { token: "Привет", logprob: -0.1 },
+-      { token: " мир", logprob: -0.2 },
++      { token: "Hello", logprob: -0.1 },
++      { token: " world", logprob: -0.2 },
+     ]
+     const result = scoreAnswer(text, raw as never)
+     expect(result.status).toBe("partial")
+@@ -401,42 +401,42 @@ describe("границы и состояния", () => {
+     expect(result.score!).toBeGreaterThan(0.5)
+   })
+ 
+-  test("digitDensity считает только ASCII-цифры и делит на code points", () => {
++  test("digitDensity counts only ASCII digits and divides by code points", () => {
+     expect(digitDensity("\u0661\u0662ab")).toBe(0)
+     expect(digitDensity("12")).toBe(1)
+-    // Флаг — два code points (региональные индикаторы), а не четыре UTF-16 unit:
+-    // доля цифр в «🇫🇷12» — 2 из 4, а не 2 из 6.
++    // A flag is two code points (regional indicators), not four UTF-16 units:
++    // the digit fraction in "🇫🇷12" is 2 of 4, not 2 of 6.
+     expect(digitDensity("\u{1F1EB}\u{1F1F7}12")).toBeCloseTo(0.5, 6)
+-    // Астральная CJK тоже один символ, иначе знаменатель раздувается.
++    // Astral CJK is also a single character, otherwise the denominator inflates.
+     expect(digitDensity("\u{20000}7")).toBeCloseTo(0.5, 6)
+   })
+ 
+-  test("при дрейфе смещений оценка не исчезает: одно псевдопредложение на весь текст", () => {
+-    const text = "Привет мир, как дела сегодня."
+-    // Два токена совпали с текстом, третий — нет: смещения уехали, привязать
+-    // токены к предложениям нельзя.
++  test("under offset drift the score does not vanish: one pseudo-sentence for the whole text", () => {
++    const text = "Hello world, how are you today."
++    // Two tokens matched the text, the third did not: the offsets drifted and tokens
++    // cannot be bound to sentences.
+     const raw = [
+-      { token: "Привет", logprob: -0.1 },
+-      { token: " мир", logprob: -0.2 },
+-      { token: "абракадабра", logprob: -1.5 },
++      { token: "Hello", logprob: -0.1 },
++      { token: " world", logprob: -0.2 },
++      { token: "gibberish", logprob: -1.5 },
+     ]
+     const result = scoreAnswer(text, raw as never)
+     expect(result.status).toBe("partial")
+-    // До фикса `sentences` был пуст, и снаружи это читалось как «спорных нет».
++    // Before the fix `sentences` was empty, and outside that read as "nothing is disputed".
+     expect(result.sentences).toHaveLength(1)
+     expect(result.sentences[0].text).toBe(text)
+     expect(result.sentences[0].tokens).toBe(2)
+     expect(result.sentences[0].level).toBe("likely")
+   })
+ 
+-  test("флаг предложения строго выше порога риска", () => {
+-    // logprob = ln 0.55 → score 0.55, risk 1 − 0.55: ровно граница уровней.
++  test("a sentence's flag is strictly above the risk threshold", () => {
++    // logprob = ln 0.55 → score 0.55, risk 1 − 0.55: exactly the level boundary.
+     const lp = Math.log(0.55)
+     const raw = ["aaa", "bbb", "ccc"].map((token) => ({ token, logprob: lp }))
+     const atBoundary = scoreAnswer("aaabbbccc", raw as never, { riskyThreshold: 1 - 0.55 })
+     expect(atBoundary.sentences[0].risk).toBe(1 - 0.55)
+     expect(atBoundary.sentences[0].level).toBe("uncertain")
+-    // `>=` на этой границе пометил бы предложение спорным, хотя уровень — uncertain.
++    // `>=` at this boundary would mark the sentence as disputed even though the level is uncertain.
+     expect(atBoundary.sentences[0].flag).toBe(false)
+     expect(atBoundary.flagged).toBe(0)
+ 
+@@ -445,7 +445,7 @@ describe("границы и состояния", () => {
+     expect(below.flagged).toBe(1)
+   })
+ 
+-  test("top_logprobs длиннее topK считаются по тому же набору, что и нормировка", () => {
++  test("top_logprobs longer than topK use the same set as the normalisation", () => {
+     const many = Array.from({ length: 30 }, (_, i) => ({ token: `t${i}`, logprob: -0.01 * (i + 1) }))
+     const wide = phi({ token: "x", logprob: -0.01, top: many } as never, 5)
+     const narrow = phi({ token: "x", logprob: -0.01, top: many.slice(0, 5) } as never, 5)
+diff --git a/packages/desktop/src/main/service/cli-version.test.ts b/packages/desktop/src/main/service/cli-version.test.ts
+index 310ac89..5794bcb 100644
+--- a/packages/desktop/src/main/service/cli-version.test.ts
++++ b/packages/desktop/src/main/service/cli-version.test.ts
+@@ -15,8 +15,8 @@ describe("cli-version", () => {
+     { bundled: "0.0.0-beta-2", running: "0.0.0-beta-2", expected: ["0.0.0-beta-2-arm64"] },
+     { bundled: "2.0.32", running: undefined, expected: ["2.0.32-arm64"] },
+     {
+-      // Штампованный ключ стадии обязан выжить в cleanStages, иначе распакованный
+-      // CLI удалят вместе с каталогом стадии: `+` превращается в `-`.
++      // A stamped stage key must survive cleanStages, otherwise the unpacked
++      // CLI is removed together with the stage directory: `+` turns into `-`.
+       bundled: "0.0.0-dev-202611230939+ef470da66c44",
+       running: "0.0.0-dev-202611230939",
+       expected: ["0.0.0-dev-202611230939-ef470da66c44-arm64", "0.0.0-dev-202611230939-arm64"],
+@@ -27,22 +27,22 @@ describe("cli-version", () => {
+ 
+   test.each([
+     {
+-      // Штамп сборки: версия CLI и отпечаток содержимого.
++      // Build stamp: the CLI version and a fingerprint of the contents.
+       shipped: "0.0.0-dev-202611230939+ef470da66c44",
+       version: "0.0.0-dev-202611230939",
+       stage: "0.0.0-dev-202611230939+ef470da66c44",
+     },
+-    // Без штампа ключ стадии совпадает с версией.
++    // Without a stamp the stage key matches the version.
+     { shipped: "2.0.32", version: "2.0.32", stage: "2.0.32" },
+-    // Плюс без отпечатка: версия всё равно обрезана, иначе сверка с сервисом
+-    // снова провалится («2.0.32+» против «2.0.32» в service.json).
++    // A plus without a fingerprint: the version is still trimmed, otherwise the check against
++    // the service fails again ("2.0.32+" against "2.0.32" in service.json).
+     { shipped: "2.0.32+", version: "2.0.32", stage: "2.0.32+" },
+   ])("splitStamp($shipped)", (input) => {
+     expect(splitStamp(input.shipped)).toEqual({ version: input.version, stage: input.stage })
+   })
+ 
+   test("splitStamp never leaks a build stamp into the compared version", () => {
+-    // Строка, начинающаяся с плюса, версии не несёт: такой файл считается нештампованным.
++    // A line that starts with a plus carries no version: such a file counts as unstamped.
+     for (const shipped of ["0.0.0-dev-202611230939+ef470da66c44", "2.0.32+", "2.0.32"]) {
+       expect(splitStamp(shipped).version).not.toContain("+")
+     }
+diff --git a/packages/desktop/src/main/service/cli-version.ts b/packages/desktop/src/main/service/cli-version.ts
+index 7286429..0e0a419 100644
+--- a/packages/desktop/src/main/service/cli-version.ts
++++ b/packages/desktop/src/main/service/cli-version.ts
+@@ -31,20 +31,20 @@ export function shouldRetryEnsure(version: string | undefined, message: string)
+ }
+ 
+ /**
+- * Разбирает штамп из `opencode-cli.version`.
++ * Splits the stamp out of `opencode-cli.version`.
+  *
+- * Сборка пишет `0.0.0-dev-202611230939+ef470da66c44`: до плюса — версия, которую CLI сообщает
+- * о себе (`opencode-cli --version`, поле `version` в `service.json`), после плюса — отпечаток
+- * содержимого бинаря. Разделять их обязательно: сервис сверяет свою версию с той, что ему
+- * передали, и штамп целиком не совпадёт никогда — приложение будет перезапускать сервис до
+- * таймаута. Отпечаток нужен только как ключ каталога, в котором лежит распакованный CLI, чтобы
+- * пересборка не переиспользовала старый бинарь.
++ * The build writes `0.0.0-dev-202611230939+ef470da66c44`: before the plus is the version the CLI
++ * reports about itself (`opencode-cli --version`, the `version` field in `service.json`), after the
++ * plus is a fingerprint of the binary's contents. They must be split: the service compares its own
++ * version with the one it was given, and the whole stamp would never match — the app would restart
++ * the service until it times out. The fingerprint is only needed as the key of the directory that
++ * holds the unpacked CLI, so a rebuild does not reuse the old binary.
+  */
+ export function splitStamp(shipped: string) {
+   const at = shipped.indexOf("+")
+-  // Без плюса штампа нет, и ключ стадии равен версии. Плюс в конце — штамп без
+-  // отпечатка: версия всё равно обрезается, иначе «2.0.32+» уйдёт в сверку с
+-  // сервисом и повторится ровно тот таймаут, ради которого всё это разделение.
++  // Without a plus there is no stamp, and the stage key equals the version. A trailing plus is a
++  // stamp without a fingerprint: the version is still trimmed, otherwise "2.0.32+" would go into the
++  // check against the service and repeat exactly the timeout this whole split exists for.
+   if (at <= 0) return { version: shipped, stage: shipped }
+ 
+   return { version: shipped.slice(0, at), stage: shipped }
+diff --git a/packages/desktop/src/main/service/desktop-cli.ts b/packages/desktop/src/main/service/desktop-cli.ts
+index 8b37978..1fbe6cd 100644
+--- a/packages/desktop/src/main/service/desktop-cli.ts
++++ b/packages/desktop/src/main/service/desktop-cli.ts
+@@ -18,9 +18,9 @@ const execFileAsync = promisify(execFile)
+ const RUN_TIMEOUT_MS = 30_000
+ 
+ export interface Resolved {
+-  /** Версия, которую CLI сообщает о себе: ровно её сервис записывает в `service.json`. */
++  /** The version the CLI reports about itself: exactly the one the service writes to `service.json`. */
+   readonly version: string
+-  /** Ключ каталога распакованного CLI: версия плюс отпечаток сборки, если он есть. */
++  /** The directory key of the unpacked CLI: the version plus the build fingerprint, when there is one. */
+   readonly stage: string
+   readonly command: readonly string[]
+   readonly binary?: string
+@@ -131,7 +131,7 @@ const bundledVersion = Effect.fn("DesktopCli.bundledVersion")(function* (bundled
+   if (identity && cached?.path === bundled && cached.identity === identity) {
+     yield* Effect.logInfo("v2 CLI version reused", { version: cached.version })
+ 
+-    // Отпечатка сборки без файла версии взять негде: стадия остаётся версией.
++    // Without a version file there is no build fingerprint to take: the stage stays the version.
+     return { version: cached.version, stage: cached.version }
+   }
+ 
+diff --git a/packages/desktop/src/main/service/sidecar-probe.ts b/packages/desktop/src/main/service/sidecar-probe.ts
+index 4391ae7..bb2ffef 100644
+--- a/packages/desktop/src/main/service/sidecar-probe.ts
++++ b/packages/desktop/src/main/service/sidecar-probe.ts
+@@ -30,8 +30,8 @@ export function takeSidecarProbe() {
+ 
+ function bundledVersion() {
+   try {
+-    // Сервис записывает в `service.json` собственную версию CLI, поэтому штамп сборки здесь
+-    // нужно снять — иначе проба никогда не найдёт уже запущенный сервис.
++    // The service writes its own CLI version to `service.json`, so the build stamp has to be
++    // stripped here — otherwise the probe never finds an already running service.
+     return splitStamp(readFileSync(path.join(process.resourcesPath, "opencode-cli.version"), "utf8").trim()).version
+   } catch {
+     return ""
+diff --git a/packages/schema/src/session-message.ts b/packages/schema/src/session-message.ts
+index 3ef7277..cb481ae 100644
+--- a/packages/schema/src/session-message.ts
++++ b/packages/schema/src/session-message.ts
+@@ -188,7 +188,7 @@ export const AssistantText = Schema.Struct({
+   type: Schema.tag("text"),
+   text: Schema.String,
+   native: Native.pipe(optional),
+-  /** Оценка уверенности модели по token logprobs. */
++  /** Confidence score from token logprobs. */
+   truthprobe: Truthprobe.Info.pipe(optional),
+ }).annotate({ identifier: "Session.Message.Assistant.Text" })
+ 
+diff --git a/packages/schema/src/truthprobe.ts b/packages/schema/src/truthprobe.ts
+index 99b4171..8050d66 100644
+--- a/packages/schema/src/truthprobe.ts
++++ b/packages/schema/src/truthprobe.ts
+@@ -4,43 +4,43 @@ import { Schema } from "effect"
+ import { optional } from "./schema.js"
+ 
+ /**
+- * TruthProbe: уверенность модели по token logprobs.
++ * TruthProbe: model confidence from token logprobs.
+  *
+- * Схема намеренно совпадает с внутренним типом скоринга (packages/core/src/truthprobe),
+- * чтобы результат scoreAnswer() уходил в событие без преобразований.
++ * The schema deliberately matches the core scoring type (packages/core/src/truthprobe)
++ * so the result of scoreAnswer() travels into the event without conversions.
+  */
+ export interface First extends Schema.Schema.Type<typeof First> {}
+ export const First = Schema.Struct({
+-  /** Уверенность по первому содержательному токену ответа, 0..1. */
++  /** Confidence from the answer's first content token, 0..1. */
+   score: Schema.Number,
+-  /** Нормированная энтропия top-K первого токена, 0..1. */
++  /** Normalised top-K entropy of the first token, 0..1. */
+   entropy: Schema.Number,
+   token: Schema.String,
+ }).annotate({ identifier: "Truthprobe.First" })
+ 
+ export type Level = Schema.Schema.Type<typeof Level>
+-/** Уровень уверенности по score; отсутствует у ответов, записанных до 0.5. */
++/** Confidence level for the score; absent on answers recorded before 0.5. */
+ export const Level = Schema.Literals(["safe", "likely", "uncertain", "risky", "unreliable"]).annotate({
+   identifier: "Truthprobe.Level",
+ })
+ 
+ export interface Sentence extends Schema.Schema.Type<typeof Sentence> {}
+ export const Sentence = Schema.Struct({
+-  /** Порядковый номер предложения, с нуля. */
++  /** Zero-based index of the sentence. */
+   i: Schema.Number,
+-  /** Смещение начала в тексте ответа. */
++  /** Start offset in the answer text. */
+   start: Schema.Number,
+-  /** Смещение конца (исключительно). */
++  /** End offset (exclusive). */
+   end: Schema.Number,
+   text: Schema.String,
+-  /** 0..1, выше — увереннее. */
++  /** 0..1, higher is more confident. */
+   score: Schema.Number,
+   risk: Schema.Number,
+   meanLp: Schema.Number,
+   minLp: Schema.Number,
+   phi: Schema.Number,
+   tokens: Schema.Number,
+-  /** score ниже порога: предложение спорное. */
++  /** score below the threshold: the sentence is disputed. */
+   flag: Schema.Boolean,
+   level: optional(Schema.NullOr(Level)),
+ }).annotate({ identifier: "Truthprobe.Sentence" })
+diff --git a/packages/session-ui/src/message/confidence.tsx b/packages/session-ui/src/message/confidence.tsx
+index e55f026..a4b10ea 100644
+--- a/packages/session-ui/src/message/confidence.tsx
++++ b/packages/session-ui/src/message/confidence.tsx
+@@ -1,9 +1,9 @@
+ /**
+- * Визуальная часть вердикта TruthProbe: один и тот же язык для веба, desktop и TUI.
++ * The visual side of the TruthProbe verdict: one language for the web, desktop and TUI.
+  *
+- * Здесь нет логики скоринга — только представление. Числа приходят из парта
+- * (`truthprobe`), уровни уже посчитаны ядром; если старый парт уровня не нёс,
+- * `levelOfSentence`/`levelOfInfo` восстанавливают его по score.
++ * No scoring logic lives here — only presentation. The numbers come from the part
++ * (`truthprobe`), the levels are already computed by the core; if an old part carried
++ * no level, `levelOfSentence`/`levelOfInfo` restore it from score.
+  */
+ 
+ import type { TruthprobeInfo } from "@opencode/client/promise"
+@@ -11,7 +11,7 @@ import { For, Show } from "solid-js"
+ 
+ import { type ConfidenceLevel, doubtfulSentences, levelOfInfo, percentOf } from "./doubtful"
+ 
+-/** Цвета уровней. Одна палитра на все темы, поэтому заданы литералами. */
++/** Level colours. One palette for every theme, so they are plain literals. */
+ export function toneOf(level?: ConfidenceLevel): string {
+   switch (level) {
+     case "safe":
+@@ -34,8 +34,8 @@ function ratio(value: unknown): number {
+ }
+ 
+ /**
+- * Тонкая шкала 0..100%. Ширина фиксирована, чтобы строки метаданных не прыгали
+- * при стриминге; заливка красится по уровню.
++ * A thin 0..100% scale. Its width is fixed so meta lines do not jump while
++ * streaming; the fill is coloured by level.
+  */
+ export function ConfidenceMeter(props: { value: unknown; level?: ConfidenceLevel; width?: number }) {
+   return (
+@@ -71,8 +71,8 @@ export function ConfidenceMeter(props: { value: unknown; level?: ConfidenceLevel
+ }
+ 
+ /**
+- * Строка-вердикт под ответом: точка уровня, процент, название уровня и шкала.
+- * `unavailable` — отдельный чип с причиной, без выдуманных процентов.
++ * The verdict line under the answer: level dot, percentage, level name and the meter.
++ * `unavailable` is a separate chip with the reason, no invented percentages.
+  */
+ export function ConfidenceLine(props: { probe?: TruthprobeInfo }) {
+   const level = () => levelOfInfo(props.probe)
+@@ -121,9 +121,9 @@ export function ConfidenceLine(props: { probe?: TruthprobeInfo }) {
+ }
+ 
+ /**
+- * Спорные предложения: плашка уровня, процент, мини-шкала уверенности и начало
+- * текста. Раньше был только цвет левой границы — на глаз он почти не отличался
+- * от обычного текста, теперь уровень читается и по цвету, и по числу.
++ * Doubtful sentences: level badge, percentage, a mini confidence meter and the start
++ * of the text. Before, only the left border was coloured — by eye it barely differed
++ * from ordinary text; now the level reads from both the colour and the number.
+  */
+ export function DoubtfulList(props: { probe?: TruthprobeInfo }) {
+   const rows = () => doubtfulSentences(props.probe)
+diff --git a/packages/session-ui/src/message/doubtful.test.ts b/packages/session-ui/src/message/doubtful.test.ts
+index 8c9f98c..b3fcc58 100644
+--- a/packages/session-ui/src/message/doubtful.test.ts
++++ b/packages/session-ui/src/message/doubtful.test.ts
+@@ -28,12 +28,12 @@ const info = (over: Partial<TruthprobeInfo>): TruthprobeInfo => ({
+ })
+ 
+ describe("percentOf", () => {
+-  test("округляет число", () => {
++  test("rounds the number", () => {
+     expect(percentOf(0.708)).toBe("71%")
+     expect(percentOf(0)).toBe("0%")
+     expect(percentOf(1)).toBe("100%")
+   })
+-  test("нечисловые значения дают ?", () => {
++  test("non-numeric values give ?", () => {
+     expect(percentOf(undefined)).toBe("?")
+     expect(percentOf(null)).toBe("?")
+     expect(percentOf("Infinity")).toBe("?")
+@@ -43,12 +43,12 @@ describe("percentOf", () => {
+ })
+ 
+ describe("doubtfulSentences", () => {
+-  test("без пробы и при unavailable список пуст", () => {
++  test("the list is empty without a probe and when unavailable", () => {
+     expect(doubtfulSentences(undefined)).toEqual([])
+     expect(doubtfulSentences(info({ status: "unavailable", reason: "no logprobs" }))).toEqual([])
+   })
+ 
+-  test("берёт только помеченные предложения, номер с единицы", () => {
++  test("takes only flagged sentences, numbered from one", () => {
+     const result = doubtfulSentences(
+       info({
+         flagged: 1,
+@@ -58,14 +58,14 @@ describe("doubtfulSentences", () => {
+     expect(result).toEqual([{ index: 2, score: "8%", level: "unreliable", text: "It was built in 1755." }])
+   })
+ 
+-  test("длинное предложение обрезается до 96 символов", () => {
++  test("a long sentence is clipped to 96 characters", () => {
+     const long = "a".repeat(200)
+     const [item] = doubtfulSentences(info({ sentences: [sentence({ flag: true, text: long })] }))
+     expect(item?.text.length).toBe(96)
+     expect(item?.text.endsWith("...")).toBe(true)
+   })
+ 
+-  test("битый индекс и битый score не ломают строку", () => {
++  test("a broken index and a broken score do not break the row", () => {
+     const [item] = doubtfulSentences(
+       info({ sentences: [sentence({ i: Number.NaN, score: Number.NaN, flag: true, text: "x" })] }),
+     )
+@@ -74,11 +74,11 @@ describe("doubtfulSentences", () => {
+ })
+ 
+ describe("levelOfSentence", () => {
+-  test("уровень берётся из парта, если он есть", () => {
++  test("the level comes from the part when it has one", () => {
+     expect(levelOfSentence({ level: "uncertain", score: 0.99, flag: false })).toBe("uncertain")
+   })
+ 
+-  test("старые парты без level считаются по score", () => {
++  test("old parts without level are scored from score", () => {
+     expect(levelOfSentence({ score: 0.95 })).toBe("safe")
+     expect(levelOfSentence({ score: 0.8 })).toBe("likely")
+     expect(levelOfSentence({ score: 0.6 })).toBe("uncertain")
+@@ -86,7 +86,7 @@ describe("levelOfSentence", () => {
+     expect(levelOfSentence({ score: 0.1 })).toBe("unreliable")
+   })
+ 
+-  test("без score и level последним свидетельством остаётся флаг", () => {
++  test("without score and level the flag stays the last evidence", () => {
+     expect(levelOfSentence({ flag: true })).toBe("risky")
+     expect(levelOfSentence({ flag: false })).toBeUndefined()
+     expect(levelOfSentence({ flag: true, score: Number.NaN })).toBe("risky")
+diff --git a/packages/session-ui/src/message/doubtful.ts b/packages/session-ui/src/message/doubtful.ts
+index ff7ba8c..49933c3 100644
+--- a/packages/session-ui/src/message/doubtful.ts
++++ b/packages/session-ui/src/message/doubtful.ts
+@@ -1,7 +1,7 @@
+ import { LEVEL_BOUNDS } from "@opencode/core/truthprobe/levels"
+ import type { TruthprobeInfo } from "@opencode/client/promise"
+ 
+-/** Процент из числа из схемы: там score бывает number | "Infinity" | "NaN" | null. */
++/** A percentage out of a schema number: there score may be number | "Infinity" | "NaN" | null. */
+ export const percentOf = (value: unknown) =>
+   typeof value === "number" && Number.isFinite(value) ? `${Math.round(value * 100)}%` : "?"
+ 
+@@ -11,7 +11,7 @@ const LEVELS: readonly ConfidenceLevel[] = ["safe", "likely", "uncertain", "risk
+ 
+ const asLevel = (value: unknown) => LEVELS.find((level) => level === value)
+ 
+-/** Уровень по порогам ядра — берём их из `levels.ts`, а не повторяем числа. */
++/** Level by the core thresholds — they come from `levels.ts`, we do not repeat the numbers. */
+ export function levelFromScore(score: unknown): ConfidenceLevel | undefined {
+   if (typeof score !== "number" || !Number.isFinite(score)) return undefined
+   if (score >= LEVEL_BOUNDS.safe) return "safe"
+@@ -24,31 +24,31 @@ export function levelFromScore(score: unknown): ConfidenceLevel | undefined {
+ export interface DoubtfulSentence {
+   readonly index?: number
+   readonly score: string
+-  /** Уровень из парта; у ответов до 0.5 его нет. */
++  /** Level from the part; answers from before 0.5 do not carry it. */
+   readonly level?: ConfidenceLevel
+   readonly text: string
+ }
+ 
+-/** Уровень ответа: из парта, а если парт старый — восстановленный из score. */
++/** The answer's level: from the part, or restored from score when the part is old. */
+ export function levelOfInfo(probe: TruthprobeInfo | undefined): ConfidenceLevel | undefined {
+   return asLevel(probe?.level) ?? levelFromScore(probe?.score)
+ }
+ 
+-/** Уровень предложения с откатом на флаг: старые парты не несут `level`. */
++/** A sentence's level with a fallback to the flag: old parts do not carry `level`. */
+ export function levelOfSentence(item: { level?: unknown; flag?: unknown; score?: unknown }): ConfidenceLevel | undefined {
+   return asLevel(item.level) ?? levelFromScore(item.score) ?? (item.flag ? "risky" : undefined)
+ }
+ 
+-/** Обрезка по кодпоинтам: `slice` по UTF-16 режет суррогатные пары (эмодзи, CJK). */
++/** Clipping by code points: UTF-16 `slice` cuts surrogate pairs (emoji, CJK). */
+ const clip = (text: string) => {
+   const chars = [...text]
+   return chars.length > 96 ? `${chars.slice(0, 93).join("")}...` : text
+ }
+ 
+ /**
+- * Спорные предложения для подписи под ответом — ровно те же строки, что печатает
+- * TUI: `! #N 8%: <начало предложения>`. Логика вынесена из компонента, чтобы её
+- * можно было проверить тестом без монтирования интерфейса.
++ * Doubtful sentences for the caption under the answer — exactly the lines the TUI
++ * prints: `! #N 8%: <start of the sentence>`. The logic lives outside the component
++ * so a test can check it without mounting the interface.
+  */
+ export function doubtfulSentences(probe: TruthprobeInfo | undefined): DoubtfulSentence[] {
+   if (!probe || probe.status === "unavailable") return []
+diff --git a/packages/session-ui/src/message/message-content.tsx b/packages/session-ui/src/message/message-content.tsx
+index 6043672..fbdb2d6 100644
+--- a/packages/session-ui/src/message/message-content.tsx
++++ b/packages/session-ui/src/message/message-content.tsx
+@@ -1141,7 +1141,7 @@ export function AssistantTextContent(props: {
+   id: string
+   text: string
+   message: SessionMessageAssistant
+-  /** TruthProbe: уверенность модели по logprobs, посчитанная ядром для этого парта. */
++  /** TruthProbe: the model's confidence over logprobs, computed by the core for this part. */
+   probe?: TruthprobeInfo
+   showCopy: boolean
+   keepCopyVisible?: boolean
+@@ -1194,8 +1194,8 @@ export function AssistantTextContent(props: {
+   // Mobile omits the per-response agent and model; see CurrentUserMessageDisplay.
+   const mobile = createMediaQuery("(max-width: 767px)")
+ 
+-  // Одна строка рядом с длительностью: сколько модель была уверена и сколько
+-  // предложений помечено спорными. Нет вердикта — нет и строки, лишнего шума не добавляем.
++  // One meta line next to the duration: how confident the model was and how many
++  // sentences were flagged doubtful. No verdict, no line — no extra noise.
+   const confidence = createMemo<MetaItem[]>(() => {
+     const probe = props.probe
+     if (!probe) return []
+@@ -1209,9 +1209,9 @@ export function AssistantTextContent(props: {
+     const answerScore = pct(probe.score)
+     if (!firstScore && !answerScore) return []
+ 
+-    // Явно называем, что считаем: «первый токен» — это φ первого токена,
+-    // «ответ» — агрегат по всем токенам. Раньше первое число называлось
+-    // «первым предложением», что было неправдой.
++    // Name exactly what is measured: "first token" is the φ of the first token,
++    // "answer" is the aggregate over all tokens. The first number used to be called
++    // "the first sentence", which was untrue.
+     const parts: string[] = []
+     if (firstScore) parts.push(`first-token ${firstScore}`)
+     if (answerScore) {
+@@ -1224,7 +1224,7 @@ export function AssistantTextContent(props: {
+     return [{ label: parts.join(" · ") }]
+   })
+ 
+-  // Спорные предложения рисует DoubtfulList из ./confidence — тот же список, что печатает TUI.
++  // Doubtful sentences are drawn by DoubtfulList from ./confidence — the same list the TUI prints.
+ 
+   const meta = createMemo<MetaItem[]>(() => [
+     ...(mobile() ? [] : labels()),
+diff --git a/packages/tui/src/routes/session/message-parts.tsx b/packages/tui/src/routes/session/message-parts.tsx
+index 000ab12..15235b6 100644
+--- a/packages/tui/src/routes/session/message-parts.tsx
++++ b/packages/tui/src/routes/session/message-parts.tsx
+@@ -198,7 +198,7 @@ export function TextPart(props: {
+     if (value.level === "safe" || value.level === "likely" || value.level === "uncertain" || value.level === "risky" || value.level === "unreliable")
+       return value.level
+     const score = typeof value.score === "number" && Number.isFinite(value.score) ? value.score : undefined
+-    // Старые парты не несут `level`: флаг остаётся последним свидетельством сомнения.
++    // Old parts do not carry `level`: the flag stays the last evidence of doubt.
+     if (score === undefined) return value.flag === true ? "risky" : undefined
+     if (score >= LEVEL_BOUNDS.safe) return "safe"
+     if (score >= LEVEL_BOUNDS.likely) return "likely"
+@@ -257,13 +257,13 @@ export function TextPart(props: {
+                 ? ` · ${flagged().length} doubtful sentence${flagged().length > 1 ? "s" : ""}`
+                 : ""}
+             </text>
+-            {/* Без logprobs спорных предложений быть не может: строки не должны
+-                висеть под «no confidence signal». */}
++            {/* Without logprobs there can be no doubtful sentences: the rows must not
++                hang under "no confidence signal". */}
+             <For each={flagged()}>
+               {(sentence) => {
+                 const chars = [...sentence.text]
+                 const label = chars.length > 96 ? `${chars.slice(0, 93).join("")}...` : sentence.text
+-                // Номер только если он есть: иначе получался `#NaN`.
++                // The number only when there is one: otherwise it printed `#NaN`.
+                 const index =
+                   typeof sentence.i === "number" && Number.isFinite(sentence.i) ? `#${sentence.i + 1} ` : ""
+                 return (
 -- 
 2.53.0
 

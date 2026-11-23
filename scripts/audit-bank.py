@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
-"""Проверяет банк вопросов: где ошибка в данных, а где модели действительно врут.
+"""Checks the question bank: where the data is wrong and where the models really lie.
 
-Три разных диагноза, и путать их нельзя:
+Three different diagnoses, and they must not be confused:
 
-- `bank_error` — вопрос сам подсказывает неверный ответ («Saturn or Neptune», а в
-  эталоне `jupiter`). Такой лейбл `0` — брак данных, а не сигнал. Это exit 1.
-- `ambiguous` — модели расходятся между собой (у них разные модальные ответы).
-  Значит вопрос допускает разные прочтения, и на нём нельзя учить. Это exit 1.
-- `suspect` — все модели независимо дают ОДИН И ТОТ ЖЕ ответ, которого нет в
-  эталоне. Либо эталон врёт, либо модели одинаково ошибаются. Это именно тот
-  случай, ради которого собирают негативы, поэтому по умолчанию это
-  предупреждение, а не провал (`--strict` превращает его в провал).
+- `bank_error` — the question itself hints at a wrong answer ("Saturn or Neptune", while the
+  reference is `jupiter`). Such a `0` label is broken data, not a signal. This is exit 1.
+- `ambiguous` — the models disagree with each other (they have different modal answers).
+  That means the question allows several readings, and it must not be used for training. This is exit 1.
+- `suspect` — all models independently give ONE AND THE SAME answer that is not in the
+  reference. Either the reference is wrong or the models are uniformly wrong. This is exactly the
+  case negatives are collected for, so by default it is a
+  warning, not a failure (`--strict` turns it into a failure).
 
-Скрипт ничего не меняет: только показывает пункты, которые надо перечитать руками.
+The script changes nothing: it only shows the items that must be re-read by hand.
 
     python3 scripts/audit-bank.py data/qa-hard-bank.jsonl data/rows-hard.jsonl
     python3 scripts/audit-bank.py bank.jsonl rows.jsonl --json --strict
@@ -34,7 +34,7 @@ def norm(text: str) -> str:
 
 
 def matches(answer: str, expect: list[str]) -> bool:
-    """То же правило, что в collect.py: короткое — по границе слова, длинное — подстрокой."""
+    """Same rule as in collect.py: short values on word boundaries, long ones by substring."""
     got = norm(answer)
     if not got:
         return False
@@ -65,7 +65,7 @@ def load_jsonl(path: str) -> list[dict]:
 
 
 def premise_conflict(prompt: str, expect: list[str]) -> bool:
-    """Вопрос предлагает выбор «X or Y», а ожидаемого ответа нет среди вариантов."""
+    """The question offers an "X or Y" choice, and the expected answer is not among the options."""
     options = re.findall(r"([A-Za-z][A-Za-z .'-]{2,30}?)\s+or\s+([A-Za-z][A-Za-z .'-]{2,30})", prompt)
     if not options:
         return False
@@ -74,22 +74,22 @@ def premise_conflict(prompt: str, expect: list[str]) -> bool:
 
 
 def classify(prompt: str, expect: list[str], modals: dict[str, str]) -> tuple[str | None, str]:
-    """Возвращает (диагноз, человеческое объяснение) или (None, '')."""
+    """Returns (diagnosis, human-readable explanation) or (None, '')."""
     total = len(modals)
     if total < 2:
         return None, ""
     if premise_conflict(prompt, expect):
-        return "bank_error", "выбор в вопросе противоречит эталону"
+        return "bank_error", "the choice in the question contradicts the reference"
     wrong = {model: answer for model, answer in modals.items() if not matches(answer, expect)}
     if not wrong:
         return None, ""
     distinct = {answer for answer in wrong.values()}
     if len(wrong) == total and len(distinct) == 1:
-        return "suspect", "все модели дают один и тот же ответ мимо эталона"
+        return "suspect", "all models give the same answer that misses the reference"
     if len(distinct) > 1:
-        return "ambiguous", "модели расходятся между собой — вопрос допускает разные прочтения"
+        return "ambiguous", "the models disagree with each other — the question allows several readings"
     if len(wrong) >= max(2, (total + 1) // 2):
-        return "suspect", "большинство моделей согласно против эталона"
+        return "suspect", "most models agree against the reference"
     return None, ""
 
 
@@ -97,9 +97,9 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("bank")
     parser.add_argument("rows")
-    parser.add_argument("--json", action="store_true", help="машиночитаемый вывод")
-    parser.add_argument("--strict", action="store_true", help="считать suspect провалом")
-    parser.add_argument("--min-models", type=int, default=2, help="сколько моделей нужно для диагноза (default 2)")
+    parser.add_argument("--json", action="store_true", help="machine-readable output")
+    parser.add_argument("--strict", action="store_true", help="treat suspect as a failure")
+    parser.add_argument("--min-models", type=int, default=2, help="how many models are needed for a diagnosis (default 2)")
     args = parser.parse_args()
 
     bank = {row["prompt"]: row.get("expect") or [] for row in load_jsonl(args.bank) if row.get("prompt")}
@@ -156,19 +156,19 @@ def main() -> int:
         ambiguous = sum(1 for item in findings if item["diagnosis"] == "ambiguous")
         suspects = sum(1 for item in findings if item["diagnosis"] == "suspect")
         print(
-            f"проверено пунктов банка: {len(bank)} | брак банка: {errors} | "
-            f"двусмысленных: {ambiguous} | моделей поймали на неверном ответе: {suspects}"
+            f"bank items checked: {len(bank)} | broken bank: {errors} | "
+            f"ambiguous: {ambiguous} | models caught with a wrong answer: {suspects}"
         )
         for item in findings:
             print(f"\n- [{item['diagnosis']}] {item['prompt']}")
-            print(f"  эталон: {item['expect']} | {item['why']}")
+            print(f"  reference: {item['expect']} | {item['why']}")
             for model, answer in item["modals"].items():
                 mark = " " if matches(answer, item["expect"]) else "!"
                 print(f"  {mark} {model}: {answer!r}")
         if errors or ambiguous:
-            print("\nПервые два диагноза — брак данных: такие пункты нельзя использовать в обучении.")
+            print("\nThe first two diagnoses are broken data: such items must not be used for training.")
         if suspects:
-            print("\nsuspect — это либо брак эталона, либо настоящая ошибка всех моделей; решается руками.")
+            print("\nsuspect means either a broken reference or a real mistake of all models; decided by hand.")
 
     return 1 if failed else 0
 

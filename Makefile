@@ -1,28 +1,28 @@
-# TruthProbe — короткие команды для разработки.
+# TruthProbe — short commands for development.
 #
-# Всё, что делает `make`, — это вызов скриптов из `scripts/`. Так один и тот же
-# набор работает в Linux/macOS/WSL (bash) и в PowerShell (см. scripts/*.ps1).
+# All `make` does is call the scripts in `scripts/`. That way one and the same
+# set works on Linux/macOS/WSL (bash) and in PowerShell (see scripts/*.ps1).
 #
-#   make setup     развернуть пропатченное дерево opencode и поставить зависимости
-#   make test      юнит-тесты репозитория (без клонирования opencode, ~2 с)
-#   make verify    тесты + проверка, что патч ложится на чистую базу
-#   make docs-check  сверить числа в доках (коммиты/файлы/байты) с самим патчем
-#   make patch     перегенерировать patches/truthprobe-0001.patch из dev-дерева
-#   make preview   поднять мок-провайдер и прогнать один запрос через CLI
-#   make desktop   собрать desktop-приложение (нужен установленный bun)
-#   make desktop-install  поставить собранное приложение и сбросить кеш CLI
-#                  (FROM=<win-unpacked> TO=<каталог> bash scripts/install-desktop.sh)
-#   make release   опубликовать GitHub Release для последнего тега и вложить патч
-#                  (нужен GITHUB_TOKEN; без него: bash scripts/release.sh --dry-run)
-#   make clean     удалить рабочее дерево, собранное setup
-#   make eval      AUROC/ECE/Brier по размеченным строкам (data/eval-fixture.jsonl)
-#   make weights   обучить веса на data/rows-lie-vs-truth.jsonl (нужен python3)
-#   make data      собрать новые строки с шлюза (нужен COLLECT_URL и ключ)
+#   make setup     set up the patched opencode tree and install the dependencies
+#   make test      unit tests of the repository (no opencode clone, ~2 s)
+#   make verify    tests + check that the patch applies to a clean base
+#   make docs-check  verify the numbers in the docs (commits/files/bytes) against the patch itself
+#   make patch     regenerate patches/truthprobe-0001.patch from the dev tree
+#   make preview   start the mock provider and run one request through the CLI
+#   make desktop   build the desktop app (needs bun installed)
+#   make desktop-install  install the built app and reset the CLI cache
+#                  (FROM=<win-unpacked> TO=<directory> bash scripts/install-desktop.sh)
+#   make release   publish a GitHub Release for the latest tag and attach the patch
+#                  (needs GITHUB_TOKEN; without it: bash scripts/release.sh --dry-run)
+#   make clean     remove the working tree created by setup
+#   make eval      AUROC/ECE/Brier over labeled rows (data/eval-fixture.jsonl)
+#   make weights   train weights on data/rows-lie-vs-truth.jsonl (needs python3)
+#   make data      collect new rows from the gateway (needs COLLECT_URL and a key)
 #
-# Переменные:
-#   TP_DIR   куда клонировать opencode (по умолчанию .worktree/opencode)
-#   BASE     коммит sst/opencode, на который нарезан патч (= TRUTHPROBE_BASE)
-#   WEIGHTS  JSON с весами для linear-скорера (make eval WEIGHTS=weights.json)
+# Variables:
+#   TP_DIR   where to clone opencode (default .worktree/opencode)
+#   BASE     the sst/opencode commit the patch is cut against (= TRUTHPROBE_BASE)
+#   WEIGHTS  JSON with weights for the linear scorer (make eval WEIGHTS=weights.json)
 
 SHELL := bash
 BASE ?= $(or $(TRUTHPROBE_BASE),007afb1b0c8a36dff93d7945909d4e976545ba95)
@@ -63,14 +63,14 @@ release:
 
 clean:
 	rm -rf "$(TP_DIR)" scripts/.mock.log
-	@echo "удалено: $(TP_DIR)"
+	@echo "removed: $(TP_DIR)"
 
 eval:
 	python3 scripts/evaluate.py data/eval-fixture.jsonl $(if $(WEIGHTS),--weights $(WEIGHTS),)
 
 weights:
 	python3 scripts/calibrate.py data/rows-lie-vs-truth.jsonl --fit --by-model --out data/weights.json
-	@echo "готово: data/weights.json — включить так: TRUTHPROBE_SCORER=linear:data/weights.json"
+	@echo "done: data/weights.json — enable it like this: TRUTHPROBE_SCORER=linear:data/weights.json"
 
 data:
 	python3 scripts/collect.py --url "$${COLLECT_URL:-http://127.0.0.1:3001/v1}" \
@@ -79,4 +79,4 @@ data:
 		--prompts data/qa-hard2-bank.jsonl --auto-label data/qa-hard2-bank.jsonl \
 		--samples "$${COLLECT_SAMPLES:-4}" --temperature 0.8 --max-tokens 200 --workers 6 \
 		--out "$${COLLECT_OUT:-data/rows-new.jsonl}" --resume
-	@echo "дальше: python3 scripts/audit-bank.py data/rows-new.jsonl data/qa-hard2-bank.jsonl"
+	@echo "next: python3 scripts/audit-bank.py data/rows-new.jsonl data/qa-hard2-bank.jsonl"

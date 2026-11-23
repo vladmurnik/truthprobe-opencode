@@ -1,20 +1,20 @@
 #!/usr/bin/env python3
-"""Проверяет, отдаёт ли FreeLLMAPI logprobs — то, без чего TruthProbe слепая.
+"""Checks whether FreeLLMAPI returns logprobs — without them TruthProbe is blind.
 
-FreeLLMAPI (https://github.com/tashfeenahmed/freellmapi) — один OpenAI-совместимый
-эндпоинт поверх ~87 бесплатных провайдеров. Для TruthProbe он ценен тем, что даёт
-много разных моделей через один baseURL: можно собрать размеченный набор
-(«правда/ложь» + признаки скорера) по десяткам моделей и обучить отдельные веса
-на каждую (`calibrate.py --fit --by-model`).
+FreeLLMAPI (https://github.com/tashfeenahmed/freellmapi) is a single OpenAI-compatible
+endpoint over ~87 free providers. For TruthProbe it is valuable because it provides
+many different models behind one baseURL: you can collect a labeled dataset
+("true/false" + scorer features) across dozens of models and train separate weights
+for each one (`calibrate.py --fit --by-model`).
 
-Скрипт ничего не знает про внутренности роутера: он просто проверяет контракт.
+The script knows nothing about the internals of the router: it simply checks the contract.
 
     python3 scripts/probe-freellmapi.py --key freellmapi-xxxx
     python3 scripts/probe-freellmapi.py --url http://127.0.0.1:3001/v1 --model auto:fast
     python3 scripts/probe-freellmapi.py --key ... --jsonl probe.jsonl
 
-Ключ (unified key) берётся на странице Keys в локальном дашборде
-http://127.0.0.1:3001 после добавления ключей провайдеров.
+The key (unified key) is taken from the Keys page of the local dashboard
+http://127.0.0.1:3001 after the provider keys are added.
 """
 
 from __future__ import annotations
@@ -28,7 +28,7 @@ import urllib.error
 import urllib.request
 
 PROMPT = "What is the capital of France? Answer in one sentence."
-FRAC_LOW_CUTOFF = math.log(0.5)  # порог ровно как в packages/core/src/truthprobe/score.ts
+FRAC_LOW_CUTOFF = math.log(0.5)  # threshold exactly as in packages/core/src/truthprobe/score.ts
 
 
 def request(url: str, key: str, payload: dict | None = None, timeout: int = 90):
@@ -54,11 +54,11 @@ def main() -> int:
     parser.add_argument("--model", default="auto")
     parser.add_argument("--prompt", default=PROMPT)
     parser.add_argument("--max-tokens", type=int, default=64)
-    parser.add_argument("--jsonl", help="куда дописать строку замера для калибровки")
+    parser.add_argument("--jsonl", help="where to append the measurement row for calibration")
     args = parser.parse_args()
 
     if not args.key:
-        print("нужен unified key: --key freellmapi-... (или FREELLMAPI_KEY)", file=sys.stderr)
+        print("a unified key is required: --key freellmapi-... (or FREELLMAPI_KEY)", file=sys.stderr)
         return 2
 
     base = args.url.rstrip("/")
@@ -70,7 +70,7 @@ def main() -> int:
             models = [item.get("id", "") for item in json.loads(body).get("data", [])]
         except json.JSONDecodeError:
             pass
-    print(f"GET /models -> {status}, моделей: {len(models)}")
+    print(f"GET /models -> {status}, models: {len(models)}")
     if models:
         print("  " + ", ".join(models[:10]) + (" ..." if len(models) > 10 else ""))
     elif status != 200:
@@ -95,16 +95,16 @@ def main() -> int:
         payload_out = json.loads(body)
         choice = payload_out["choices"][0]
     except (json.JSONDecodeError, KeyError, IndexError):
-        print("  ответ не разобрался: " + body[:300])
+        print("  could not parse the response: " + body[:300])
         return 1
 
     text = (choice.get("message") or {}).get("content") or ""
     tokens = ((choice.get("logprobs") or {}).get("content") or [])
-    print(f"  ответ: {text[:160]!r}")
-    print(f"  токенов с logprob: {len(tokens)}")
+    print(f"  answer: {text[:160]!r}")
+    print(f"  tokens with logprob: {len(tokens)}")
 
     if not tokens:
-        print("  ВЕРДИКТ: logprobs НЕ пришли — TruthProbe покажет 'unavailable' для этой модели.")
+        print("  VERDICT: logprobs did NOT arrive — TruthProbe will show 'unavailable' for this model.")
         return 1
 
     lps = [float(token["logprob"]) for token in tokens if token.get("logprob") is not None]
@@ -119,11 +119,11 @@ def main() -> int:
         h = -sum((p / total) * math.log(p / total) for p in probs if total > 0 and p > 0)
         start_phi = max(0.0, min(1.0, h / math.log(max(2, min(20, len(top))))))
     frac_low = sum(1 for lp in lps if lp < FRAC_LOW_CUTOFF) / len(lps)
-    print(f"  meanLp {mean_lp:.4f}, minLp {min_lp:.4f}, phi(первый токен) {start_phi:.3f}, "
-          f"fracLow {frac_low:.2f}, пример: " + ", ".join(
+    print(f"  meanLp {mean_lp:.4f}, minLp {min_lp:.4f}, phi(first token) {start_phi:.3f}, "
+          f"fracLow {frac_low:.2f}, example: " + ", ".join(
         f"{token['token']!r}={token['logprob']:.3f}" for token in tokens[:5]
     ))
-    print("  ВЕРДИКТ: logprobs доходят — модель годится для сбора калибровочных данных.")
+    print("  VERDICT: logprobs arrive — the model is suitable for collecting calibration data.")
 
     if args.jsonl:
         row = {
@@ -138,7 +138,7 @@ def main() -> int:
         }
         with open(args.jsonl, "a", encoding="utf-8", newline="\n") as handle:
             handle.write(json.dumps(row, ensure_ascii=False) + "\n")
-        print(f"  строка без метки дописана в {args.jsonl} (label надо проставить вручную)")
+        print(f"  unlabeled row appended to {args.jsonl} (the label has to be set by hand)")
     return 0
 
 

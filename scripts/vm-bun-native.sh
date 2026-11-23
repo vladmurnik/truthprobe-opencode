@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Ставит НАТИВНЫЙ bun внутрь WSL и пересобирает зависимости opencode им.
-# Причина: в PATH WSL раньше стоит /mnt/c/.../bun (Windows-бинарь), из-за чего
-# postinstall вызывает CMD.EXE и падает на UNC-путях.
+# Installs the NATIVE bun inside WSL and rebuilds the opencode dependencies with it.
+# Reason: the WSL PATH used to list /mnt/c/.../bun (the Windows binary) first, which made
+# postinstall invoke CMD.EXE and fail on UNC paths.
 set -uo pipefail
 
 export BUN_INSTALL="$HOME/.bun"

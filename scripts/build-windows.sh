@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# Собирает один opencode.exe под Windows x64.
+# Builds a single opencode.exe for Windows x64.
 #
-# Можно собирать и на Linux (кросс-сборка): bun не скачивает платформенные
-# optional-зависимости чужой ОС, поэтому сначала ставим их скриптом
+# It can also be built on Linux (cross-build): bun does not download the platform-specific
+# optional dependencies of the other OS, so we install them first with a script
 # install-cross-deps.py.
 #
 #   OPENCODE_REPO=~/src/opencode bash scripts/build-windows.sh [--out file]

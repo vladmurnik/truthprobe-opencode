@@ -1,12 +1,12 @@
 /**
- * TruthProbe: чтение вердикта «провайдер отдаёт logprobs» из кэша.
+ * TruthProbe: reading the "provider returns logprobs" verdict from the cache.
  *
- * Путь к файлу кэша сообщает ядро (переменная OPENCODE_TRUTHPROBE_CACHE,
- * её ставит плагин opencode.truthprobe). Если переменной нет, пакет ai просто
- * не знает о кэше и работает по явному `capabilities.logprobs`.
+ * The core reports the path to the cache file (the OPENCODE_TRUTHPROBE_CACHE
+ * variable, set by the opencode.truthprobe plugin). If the variable is absent, the ai
+ * package simply does not know about the cache and relies on an explicit `capabilities.logprobs`.
  *
- * Модуль не делает сетевых запросов и не зависит от каталога моделей: только
- * чтение файла с коротким TTL в памяти, чтобы не трогать диск на каждый токен.
+ * The module makes no network requests and does not depend on the model catalog: it only
+ * reads the file with a short in-memory TTL, so the disk is not touched on every token.
  */
 
 import fs from "node:fs"
@@ -26,7 +26,7 @@ const READ_INTERVAL_MS = 2_000
 
 let snapshot: { at: number; path: string; entries: Record<string, Entry> } | undefined
 
-/** Путь к кэшу: ядро передаёт его переменной, иначе берём стандартный каталог данных. */
+/** Path to the cache: the core passes it via a variable, otherwise we use the default data directory. */
 const cachePath = (): string | undefined => {
   const explicit = typeof process === "undefined" ? undefined : process.env?.OPENCODE_TRUTHPROBE_CACHE
   if (explicit) return explicit
@@ -56,7 +56,7 @@ const readEntries = (): Record<string, Entry> => {
   return entries
 }
 
-/** Сколько живёт вердикт. Повторяет правило ядра: auth перепроверяем быстро. */
+/** How long the verdict lives. Mirrors the core rule: auth is re-checked quickly. */
 const ttl = (status: string) => (status === "auth" ? AUTH_TTL : DEFAULT_TTL)
 
 const fresh = (entry: Entry | undefined, now: number): boolean => {
@@ -66,11 +66,11 @@ const fresh = (entry: Entry | undefined, now: number): boolean => {
 }
 
 /**
- * `true` — провайдер подтверждённо отдаёт logprobs.
+ * `true` — the provider is confirmed to return logprobs.
  *
- * Проверяется запись именно этой модели, а если её нет — любая запись того же
- * провайдера: поддержка logprobs почти всегда свойство эндпоинта, а не модели,
- * и алиасы/варианты не должны гасить бейдж. Просроченные записи не считаются.
+ * The entry of this exact model is checked, and if it is absent, any entry of the same
+ * provider: logprobs support is almost always a property of the endpoint, not of the model,
+ * and aliases/variants must not turn the badge off. Stale entries do not count.
  */
 export const supported = (providerID: string | undefined, modelID: string | undefined): boolean => {
   if (!providerID) return false
@@ -81,7 +81,7 @@ export const supported = (providerID: string | undefined, modelID: string | unde
   return Object.keys(entries).some((key) => key.startsWith(prefix) && fresh(entries[key], now))
 }
 
-/** Сброс кэша в памяти — для тестов. */
+/** Reset the in-memory cache — for tests. */
 export const reset = () => {
   snapshot = undefined
 }

@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# Прогоняет тесты TruthProbe внутри дерева opencode.
+# Runs the TruthProbe tests inside the opencode tree.
 #
 #   OPENCODE_REPO=~/src/opencode bash scripts/run-opencode-tests.sh
 #
-# Скрипт синхронизирует эталонные исходники из src/truthprobe в дерево,
-# поэтому падение тестов всегда означает падение реального кода патча.
+# The script syncs the reference sources from src/truthprobe into the tree,
+# so a test failure always means a failure of the real patch code.
 set -euo pipefail
 
 REPO=${OPENCODE_REPO:-$HOME/src/opencode}

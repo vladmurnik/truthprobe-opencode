@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Честная оценка: базы, обученные модели, контроль длины, кластерный бутстрэп по qid.
+"""Honest evaluation: baselines, trained models, length control, cluster bootstrap by qid.
 
-Только out-of-fold: `GroupKFold` по `qid`, стандартизация на train-фолде. Ничего не подгоняется
-на тестовых фолдах, включая ортогонализацию по длине.
+Out-of-fold only: `GroupKFold` by `qid`, standardization on the train fold. Nothing is tuned
+on the test folds, including the orthogonalization by length.
 """
 import json
 import math
@@ -20,7 +20,7 @@ train.DATA = Path(os.environ.get("DATASET_OUT", HERE / "dataset.jsonl"))
 rows = train.load()
 y = [r["y"] for r in rows]
 pos, neg = sum(y), len(y) - sum(y)
-print(f"строк {len(rows)}: ложных {pos}, верных {neg}, вопросов {len({r['qid'] for r in rows})}")
+print(f"rows {len(rows)}: lies {pos}, truths {neg}, questions {len({r['qid'] for r in rows})}")
 
 LEAN = [f for f in train.FEATURES if f not in train.LENGTH]
 PRODUCT = ["mean_lp", "min_lp", "mean_phi", "frac_below_half", "digit_density"]
@@ -74,15 +74,15 @@ lean_orth = oof(LEAN, orth=True)
 
 fmt = lambda v: "—" if v is None else f"{v:.3f}"
 
-print("\n| оценка (направление риска) | AUROC |")
+print("\n| estimate (risk direction) | AUROC |")
 print("| --- | --- |")
 for name, s in [("1 − exp(meanLp)", risk_geo), ("1 − meanφ", risk_phi),
-                ("логистика, 5 продуктовых признаков", five), ("логистика, 26 без длины", lean),
-                ("5 признаков, ортогонализовано по n_tokens", five_orth),
-                ("26 без длины, ортогонализовано по n_tokens", lean_orth)]:
+                ("logistic, 5 product features", five), ("logistic, 26 without length", lean),
+                ("5 features, orthogonalized by n_tokens", five_orth),
+                ("26 without length, orthogonalized by n_tokens", lean_orth)]:
     print(f"| {name} | {fmt(train.auroc(list(zip(s, y))))} |")
 
-print("\n| категория | n | ложных | 1−exp(meanLp) | 5 признаков | 26 без длины |")
+print("\n| category | n | lies | 1-exp(meanLp) | 5 features | 26 without length |")
 print("| --- | --- | --- | --- | --- | --- |")
 for name in ["false-premise", "fake-work", "fake-person", "myth", "fact", "numer"]:
     a, n, p = cat(risk_geo, name)
@@ -90,7 +90,7 @@ for name in ["false-premise", "fake-work", "fake-person", "myth", "fact", "numer
     c, _, _ = cat(lean, name)
     print(f"| {name} | {n} | {p} | {fmt(a)} | {fmt(b)} | {fmt(c)} |")
 
-print("\n| квартиль n_tokens | диапазон | ложных/верных | 1−exp(meanLp) | 5 признаков |")
+print("\n| n_tokens quartile | range | lies/truths | 1-exp(meanLp) | 5 features |")
 print("| --- | --- | --- | --- | --- |")
 counts = sorted(r["n_tokens"] for r in rows)
 cuts = [counts[len(counts) // 4], counts[len(counts) // 2], counts[3 * len(counts) // 4]]
@@ -124,10 +124,10 @@ def au(idx, s):
 
 
 print()
-for name, s in [("1 − exp(meanLp)", risk_geo), ("5 признаков", five), ("26 без длины", lean)]:
+for name, s in [("1 - exp(meanLp)", risk_geo), ("5 features", five), ("26 without length", lean)]:
     lo, hi = boot(lambda idx, s=s: au(idx, s))
-    print(f"CI {name}: [{lo:.3f}, {hi:.3f}]  точка {fmt(train.auroc(list(zip(s, y))))}")
-for name, s in [("5 признаков − формула", five), ("26 без длины − формула", lean)]:
+    print(f"CI {name}: [{lo:.3f}, {hi:.3f}]  point {fmt(train.auroc(list(zip(s, y))))}")
+for name, s in [("5 features - formula", five), ("26 without length - formula", lean)]:
     lo, hi = boot(lambda idx, s=s: (au(idx, s) or 0) - (au(idx, risk_geo) or 0))
     print(f"CI Δ({name}): [{lo:+.3f}, {hi:+.3f}]")
 
@@ -137,4 +137,4 @@ for r in rows:
 for q, ys in by_qid.items():
     if len(ys) == 1:
         pure += len(by_q[q])
-print(f"\nстрок с меткой, полностью определяемой вопросом: {pure}/{len(rows)} ({100 * pure / len(rows):.0f}%)")
+print(f"\nrows with a label fully determined by the question: {pure}/{len(rows)} ({100 * pure / len(rows):.0f}%)")

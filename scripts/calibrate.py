@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
-"""AUROC и ECE для сигналов TruthProbe на размеченных предложениях.
+"""AUROC and ECE for the TruthProbe signals on labeled sentences.
 
-Набор — JSONL, по одному предложению на строку:
+The dataset is JSONL, one sentence per line:
 
     {"score": 0.71, "phi": 0.96, "phiDef": "confidence", "meanLp": -0.87, "minLp": -1.43, "label": true}
 
-`label` — правда ли утверждение (ставит человек по источникам). Строки с меткой
-`null`/`"unverifiable"` пропускаются, но их количество печатается: молча их
-выбрасывать нельзя, иначе метрика смещается в сторону проверяемых фактов.
+`label` says whether the claim is true (a human sets it from sources). Rows with the label
+`null`/`"unverifiable"` are skipped, but their count is printed: throwing them away
+silently is not allowed, otherwise the metric skews towards verifiable facts.
 
     python3 scripts/calibrate.py labeled.jsonl
     python3 scripts/calibrate.py --demo
 
-`--demo` считает синтетику. Это проверка самого скрипта, а не измерение модели.
+`--demo` computes synthetic data. That checks the script itself, not the model.
 """
 
 from __future__ import annotations
@@ -27,7 +27,7 @@ COLUMNS = ("score", "phi", "meanLp", "minLp")
 
 
 def truthy_label(value):
-    """label из JSON: true/false, но также 1/0 — так их пишет `collect.py`."""
+    """label from JSON: true/false, but also 1/0 — that is how `collect.py` writes them."""
     if isinstance(value, bool):
         return value
     if isinstance(value, (int, float)) and value in (0, 1):
@@ -54,17 +54,17 @@ def load(path: str) -> tuple[list[dict], int]:
                 skipped += 1
                 continue
             row["label"] = label
-            # φ в рантайме (`score.ts.phi`) — уверенность: 1 − H/ln K. Наборы, собранные
-            # до исправления `collect.py`, хранят энтропию H/ln K; приводим к определению
-            # рантайма, иначе обученный вес `meanPhi` получает обратный знак и на живых
-            # ответах работает против уверенности.
+            # phi (φ) at runtime (`score.ts.phi`) is confidence: 1 - H/ln K. The datasets collected
+            # before the `collect.py` fix store entropy H/ln K; we bring them to the runtime
+            # definition, otherwise the trained `meanPhi` weight gets the opposite sign and
+            # works against confidence on live answers.
             if row.get("phiDef") != "confidence" and "phi" in row:
                 row["phi"] = 1.0 - float(row["phi"] or 0.0)
                 row["phiDef"] = "confidence"
                 legacy += 1
             rows.append(row)
-    # Немаркированная строка трактуется как энтропия. Это верно только для наборов,
-    # собранных до исправления `collect.py`; для нового формата нужен `phiDef`.
+    # An unlabeled row is treated as entropy. That is only correct for the datasets
+    # collected before the `collect.py` fix; the new format needs `phiDef`.
     if legacy:
         print(
             f"warning: {legacy} row(s) have no phiDef; treated phi as entropy and converted it to confidence",
@@ -94,7 +94,7 @@ def demo(n: int = 400, seed: int = 7) -> list[dict]:
 
 
 def auroc(pairs: list[tuple[float, bool]]) -> float:
-    """Вероятность, что верное предложение получило больший сигнал, чем неверное."""
+    """Probability that the correct sentence got a larger signal than the incorrect one."""
     positives = [value for value, label in pairs if label]
     negatives = [value for value, label in pairs if not label]
     if not positives or not negatives:
@@ -125,7 +125,7 @@ def ece(pairs: list[tuple[float, bool]], bins: int = 10) -> float:
 
 
 def fit(rows: list[dict], epochs: int = 4000, lr: float = 0.6, l2: float = 1e-3) -> dict:
-    """Логистическая регрессия на признаках скорера (bias, meanLp, minLp, phi, fracLow, digitDensity)."""
+    """Logistic regression over the scorer features (bias, meanLp, minLp, phi, fracLow, digitDensity)."""
     xs = [
         [1.0, float(row["meanLp"]), float(row["minLp"]), float(row["phi"]), float(row.get("fracLow") or 0.0),
          float(row.get("digitDensity") or 0.0)]
@@ -133,7 +133,7 @@ def fit(rows: list[dict], epochs: int = 4000, lr: float = 0.6, l2: float = 1e-3)
     ]
     ys = [1.0 if row["label"] else 0.0 for row in rows]
     w = [0.0] * 6
-    # Баланс классов: иначе редкая ложь тонет в общей точности.
+    # Class balance: otherwise rare lies drown in the overall accuracy.
     pos = sum(ys) or 1.0
     neg = (len(ys) - sum(ys)) or 1.0
     weights_per_row = [0.5 * len(ys) / pos if y else 0.5 * len(ys) / neg for y in ys]
@@ -177,16 +177,16 @@ def predict(weights: dict, row: dict) -> float:
 
 
 def group_key(row: dict) -> tuple[str, str]:
-    """Группа переноса: модель + вопрос. Ответы внутри группы — повторы одного факта."""
+    """Transfer group: model + question. Answers inside a group are repeats of one fact."""
     return (str(row.get("model") or ""), str(row.get("prompt") or row.get("source") or ""))
 
 
 def fold_assignment(rows: list[dict], folds: int = 5, seed: int = 11) -> list[int]:
-    """Номер фолда на каждую строку, одинаковый внутри группы `group_key`.
+    """Fold number for every row, identical inside the `group_key` group.
 
-    Резать по строкам нельзя: один и тот же ответ встречается в наборе несколько раз,
-    а вопрос переиспользуется всеми моделями. При построчном делении 88% теста
-    оказывается в обучении побайтово, и OOF измеряет запоминание, а не перенос.
+    Splitting by row is not allowed: the same answer appears in the dataset several times,
+    and the question is reused by every model. With a row-wise split 88% of the test set
+    ends up in training byte for byte, and OOF measures memorization instead of transfer.
     """
     groups: dict[tuple[str, str], list[int]] = {}
     for index, row in enumerate(rows):
@@ -201,10 +201,10 @@ def fold_assignment(rows: list[dict], folds: int = 5, seed: int = 11) -> list[in
 
 
 def cross_validate(rows: list[dict], folds: int = 5) -> tuple[float, float]:
-    """AUROC и ECE по out-of-fold предсказаниям с групповым делением.
+    """AUROC and ECE over out-of-fold predictions with group splitting.
 
-    Фолды режутся по `(model, prompt)`: повторный ответ на тот же вопрос не попадает
-    в обучение, иначе метрика льстит себе.
+    Folds are cut by `(model, prompt)`: a repeated answer to the same question does not
+    get into training, otherwise the metric flatters itself.
     """
     size = len(rows)
     if size < folds * 2:
@@ -224,12 +224,12 @@ def cross_validate(rows: list[dict], folds: int = 5) -> tuple[float, float]:
 
 
 def fit_by_model(rows: list[dict], min_rows: int = 20, min_negatives: int = 30) -> dict:
-    """Обучает отдельные веса на каждую модель (поле "model" в JSONL).
+    """Trains separate weights per model (the "model" field in JSONL).
 
-    Смысл: у моделей разная форма распределения логвероятностей, поэтому один
-    общий sigmoid систематически смещён для части моделей. Группам, где мало строк
-    или меньше `min_negatives` примеров любого класса, веса не выдаются — на таком
-    объёме коэффициенты уходят в случайный знак, и уверенность инвертируется.
+    Rationale: the models have differently shaped logprob distributions, so one shared
+    sigmoid is systematically biased for part of the models. Groups with few rows
+    or fewer than `min_negatives` examples of any class get no weights: at such
+    a volume the coefficients go to a random sign, and confidence gets inverted.
     """
     groups: dict[str, list[dict]] = {}
     for row in rows:
@@ -249,7 +249,7 @@ def fit_by_model(rows: list[dict], min_rows: int = 20, min_negatives: int = 30) 
                 "rows": len(group),
                 "positives": positives,
                 "weights": None,
-                "note": f"меньше {min_rows} строк — используется global",
+                "note": f"fewer than {min_rows} rows — global is used",
             }
             continue
         if positives == 0 or positives == len(group):
@@ -257,7 +257,7 @@ def fit_by_model(rows: list[dict], min_rows: int = 20, min_negatives: int = 30) 
                 "rows": len(group),
                 "positives": positives,
                 "weights": None,
-                "note": "в группе один класс — веса не обучаются, используется global",
+                "note": "single class in the group — weights are not trained, global is used",
             }
             continue
         negatives = len(group) - positives
@@ -267,7 +267,7 @@ def fit_by_model(rows: list[dict], min_rows: int = 20, min_negatives: int = 30) 
                 "positives": positives,
                 "negatives": negatives,
                 "weights": None,
-                "note": f"меньше {min_negatives} примеров класса — используется global",
+                "note": f"fewer than {min_negatives} examples of the class — global is used",
             }
             continue
         cv_auroc, cv_ece = cross_validate(group)
@@ -283,56 +283,56 @@ def fit_by_model(rows: list[dict], min_rows: int = 20, min_negatives: int = 30) 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("path", nargs="?", help="JSONL с размеченными предложениями")
-    parser.add_argument("--demo", action="store_true", help="считать синтетику")
-    parser.add_argument("--fit", action="store_true", help="обучить веса linear-скорера")
-    parser.add_argument("--by-model", action="store_true", help="отдельные веса на каждую модель из поля model")
-    parser.add_argument("--out", help="куда записать веса (по умолчанию stdout)")
+    parser.add_argument("path", nargs="?", help="JSONL with labeled sentences")
+    parser.add_argument("--demo", action="store_true", help="compute synthetic data")
+    parser.add_argument("--fit", action="store_true", help="train linear-scorer weights")
+    parser.add_argument("--by-model", action="store_true", help="separate weights per model from the model field")
+    parser.add_argument("--out", help="where to write the weights (stdout by default)")
     args = parser.parse_args()
 
     if args.demo:
         rows, skipped = demo(), 0
-        print("== demo: синтетика, это НЕ измерение модели ==")
+        print("== demo: synthetic data, this is NOT a model measurement ==")
     elif args.path:
         rows, skipped = load(args.path)
-        print(f"== {args.path}: {len(rows)} размеченных строк, пропущено {skipped}")
+        print(f"== {args.path}: {len(rows)} labeled rows, {skipped} skipped")
     else:
-        parser.error("нужен путь к JSONL или --demo")
+        parser.error("a JSONL path or --demo is required")
 
     positives = sum(1 for row in rows if row["label"])
-    print(f"правда: {positives}, ложь: {len(rows) - positives}")
+    print(f"true: {positives}, false: {len(rows) - positives}")
 
     print(f"{'signal':10s} {'AUROC':>7s} {'ECE':>7s}")
     for column in COLUMNS:
         pairs = [(float(row[column]), row["label"]) for row in rows if row.get(column) is not None]
         if not pairs:
             continue
-        # Все четыре сигнала растут вместе с уверенностью: score/phi — прямо,
-        # meanLp/minLp — как logprob (ближе к нулю значит увереннее). Поэтому
-        # никаких инверсий: иначе AUROC показывает 1-AUROC.
+        # All four signals grow together with confidence: score/phi directly,
+        # meanLp/minLp like logprob (closer to zero means more confident). Hence
+        # no inversions: otherwise AUROC shows 1-AUROC.
         print(f"{column:10s} {auroc(pairs):7.3f} {ece(pairs, bins=10):7.3f}")
 
     if args.fit:
         if len(rows) < 20:
-            print("\nслишком мало строк для обучения весов (нужно >= 20)")
+            print("\ntoo few rows to train weights (need >= 20)")
             return 1
         if positives == 0 or positives == len(rows):
-            # Один класс: sigmoid выучит константу, AUROC/ECE станут бессмысленными,
-            # а веса — вредными. Лучше честно отказаться, чем записать такой файл.
+            # Single class: sigmoid will learn a constant, AUROC/ECE become meaningless,
+            # and the weights harmful. Better to refuse honestly than to write such a file.
             print(
-                f"\nотказ: в наборе только один класс (правда {positives}, ложь {len(rows) - positives}).\n"
-                "Для калибровки нужны ОБЕ метки: 0 — модель ошиблась/выдумала, 1 — ответила верно.\n"
-                "Возьмите вопросы, на которых часть моделей ошибается, или добавьте более слабые модели.",
+                f"\nrefusing: the dataset has only one class (true {positives}, false {len(rows) - positives}).\n"
+                "Calibration needs BOTH labels: 0 — the model was wrong/hallucinated, 1 — it answered correctly.\n"
+                "Take questions where part of the models fail, or add weaker models.",
                 file=sys.stderr,
             )
             return 2
         cv_auroc, cv_ece = cross_validate(rows)
-        print(f"\nlinear-скорер, out-of-fold ({len(rows)} строк, 5 фолдов):")
+        print(f"\nlinear scorer, out-of-fold ({len(rows)} rows, 5 folds):")
         print(f"  AUROC {cv_auroc:.3f}   ECE {cv_ece:.3f}")
 
         if args.by_model:
             bundle = fit_by_model(rows)
-            print("\nпо моделям (out-of-fold там, где строк >= 20):")
+            print("\nper model (out-of-fold where rows >= 20):")
             print(f"{'model':34s} {'rows':>5s} {'AUROC':>7s} {'ECE':>7s}")
             for name, entry in bundle["models"].items():
                 auroc_text = f"{entry['auroc']:.3f}" if entry.get("auroc") is not None else "   —  "
@@ -342,11 +342,11 @@ def main() -> int:
             if args.out:
                 with open(args.out, "w", encoding="utf-8", newline="\n") as handle:
                     handle.write(text + "\n")
-                print(f"\nбандл весов записан: {args.out}")
-                print(f"включить: TRUTHPROBE_SCORER=linear:{args.out}")
-                print("рантайм берёт models[providerID/modelID], а при его отсутствии — global")
+                print(f"\nweights bundle written: {args.out}")
+                print(f"enable with: TRUTHPROBE_SCORER=linear:{args.out}")
+                print("at runtime it takes models[providerID/modelID], and global when that is missing")
             else:
-                print("\nбандл весов:")
+                print("\nweights bundle:")
                 print(text)
             return 0
 
@@ -355,16 +355,16 @@ def main() -> int:
         if args.out:
             with open(args.out, "w", encoding="utf-8", newline="\n") as handle:
                 handle.write(text + "\n")
-            print(f"\nвеса записаны: {args.out}")
-            print(f"включить: TRUTHPROBE_SCORER=linear:{args.out}")
+            print(f"\nweights written: {args.out}")
+            print(f"enable with: TRUTHPROBE_SCORER=linear:{args.out}")
         else:
-            print("\nвеса (положить в JSON и указать TRUTHPROBE_SCORER=linear:<путь>):")
+            print("\nweights (put them into a JSON file and set TRUTHPROBE_SCORER=linear:<path>):")
             print(text)
         return 0
 
-    print("\nВеса сменного скорера обучаются на этом же наборе:")
+    print("\nThe swappable scorer weights are trained on this same dataset:")
     print("  python3 scripts/calibrate.py labeled.jsonl --fit --out truthprobe-weights.json")
-    print("Пока они не обучены, проценты в UI — не калиброванная вероятность (см. docs/CALIBRATION.md).")
+    print("Until they are trained, the percentages in the UI are not a calibrated probability (see docs/CALIBRATION.md).")
     return 0
 
 

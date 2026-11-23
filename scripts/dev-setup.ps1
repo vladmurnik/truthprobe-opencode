@@ -1,10 +1,10 @@
 <#
 .SYNOPSIS
-  Разворачивает пропатченное дерево opencode (Windows / PowerShell).
+  Sets up the patched opencode tree (Windows / PowerShell).
 
 .DESCRIPTION
-  Те же шаги, что в scripts/dev-setup.sh: клон sst/opencode на BASE,
-  git am патча, bun install, truthprobe-тесты.
+  Same steps as in scripts/dev-setup.sh: clone sst/opencode at BASE,
+  git am the patch, bun install, truthprobe tests.
 
 .EXAMPLE
   powershell -ExecutionPolicy Bypass -File scripts\dev-setup.ps1
@@ -24,18 +24,18 @@ $Patch = Join-Path $Root "patches\truthprobe-0001.patch"
 if (-not $Dir) { $Dir = Join-Path $Root ".worktree\opencode" }
 $Upstream = if ($env:TRUTHPROBE_UPSTREAM) { $env:TRUTHPROBE_UPSTREAM } else { "https://github.com/sst/opencode.git" }
 
-if (-not (Get-Command git -ErrorAction SilentlyContinue)) { throw "нужен git" }
-if (-not (Test-Path $Patch)) { throw "нет $Patch" }
+if (-not (Get-Command git -ErrorAction SilentlyContinue)) { throw "git is required" }
+if (-not (Test-Path $Patch)) { throw "missing $Patch" }
 
 if ($Check) {
   $tmp = Join-Path ([System.IO.Path]::GetTempPath()) ("tp-check-" + [guid]::NewGuid().ToString("n"))
   try {
-    Write-Host "== проверяю патч на чистой базе $Base"
+    Write-Host "== checking the patch against a clean base $Base"
     git clone -q --filter=blob:none --no-checkout $Upstream $tmp
     git -C $tmp checkout -q $Base
     git -C $tmp apply --check $Patch
-    if ($LASTEXITCODE -ne 0) { throw "патч не ложится" }
-    Write-Host "OK: патч ложится без конфликтов"
+    if ($LASTEXITCODE -ne 0) { throw "the patch does not apply" }
+    Write-Host "OK: the patch applies without conflicts"
   } finally {
     if (Test-Path $tmp) { Remove-Item -Recurse -Force $tmp }
   }
@@ -43,32 +43,32 @@ if ($Check) {
 }
 
 if (Test-Path (Join-Path $Dir ".git")) {
-  Write-Host "== дерево уже есть: $Dir"
+  Write-Host "== tree already present: $Dir"
   $last = git -C $Dir log --oneline -1
   if ($last -match "TruthProbe|per-model calibration") {
-    Write-Host "== патч уже применён"
+    Write-Host "== patch already applied"
   } else {
-    Write-Host "== применяю патч"
+    Write-Host "== applying the patch"
     git -C $Dir -c user.name=TruthProbe -c user.email=dev@localhost am $Patch
     if ($LASTEXITCODE -ne 0) { git -C $Dir apply $Patch }
   }
 } else {
-  Write-Host "== клонирую $Upstream -> $Dir"
+  Write-Host "== cloning $Upstream -> $Dir"
   New-Item -ItemType Directory -Force -Path (Split-Path -Parent $Dir) | Out-Null
   git clone --filter=blob:none --no-checkout $Upstream $Dir
   git -C $Dir checkout -q $Base
-  Write-Host "== применяю патч"
+  Write-Host "== applying the patch"
   git -C $Dir -c user.name=TruthProbe -c user.email=dev@localhost am $Patch
   if ($LASTEXITCODE -ne 0) { git -C $Dir apply $Patch }
 }
 
 if (-not $SkipInstall) {
-  if (-not (Get-Command bun -ErrorAction SilentlyContinue)) { throw "нужен bun: https://bun.sh" }
+  if (-not (Get-Command bun -ErrorAction SilentlyContinue)) { throw "bun is required: https://bun.sh" }
   Write-Host "== bun install"
   Push-Location $Dir
   try {
     bun install
-    Write-Host "== truthprobe-тесты"
+    Write-Host "== truthprobe tests"
     bun test test/truthprobe
   } finally {
     Pop-Location
@@ -76,8 +76,8 @@ if (-not $SkipInstall) {
 }
 
 Write-Host ""
-Write-Host "готово. дерево: $Dir"
+Write-Host "done. tree: $Dir"
 Write-Host "  cd $Dir"
 Write-Host "  bun test test/truthprobe"
 Write-Host "  bun run --cwd packages/cli src/index.ts run `"...`""
-Write-Host "дальше: docs/DEVELOPMENT.md"
+Write-Host "next: docs/DEVELOPMENT.md"

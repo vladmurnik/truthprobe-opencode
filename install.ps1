@@ -25,11 +25,30 @@ $Base = "007afb1b0c8a36dff93d7945909d4e976545ba95"
 $BaseShort = "007afb1"
 $Upstream = "https://github.com/sst/opencode.git"
 $Repo = "https://raw.githubusercontent.com/vladmurnik/truthprobe-opencode/master"
+$Releases = "https://github.com/vladmurnik/truthprobe-opencode/releases/latest/download"
 $PatchName = "patches/truthprobe-0001.patch"
+# The release asset is a flat file name; the repo path has a directory in it.
+$PatchAsset = "truthprobe-0001.patch"
 
 function Step($text) { Write-Host "==> $text" -ForegroundColor Cyan }
 function Note($text) { Write-Host "    $text" }
 function Fail($text) { Write-Host "error: $text" -ForegroundColor Red; exit 1 }
+
+# raw.githubusercontent.com occasionally answers 503 Backend.max_conn reached, which
+# killed the Windows CI job on 2026-11-23. Retry, then fall back to the release asset:
+# it serves the same bytes, and the pinned checksum still decides whether to trust them.
+function Save-Patch($url, $path) {
+  for ($i = 1; $i -le 3; $i++) {
+    try {
+      Invoke-WebRequest -UseBasicParsing -Uri $url -OutFile $path
+      if ((Test-Path $path) -and (Get-Item $path).Length -gt 0) { return $true }
+    } catch {
+      Note "download attempt $i failed: $($_.Exception.Message)"
+    }
+    Start-Sleep -Seconds (2 * $i)
+  }
+  return $false
+}
 
 Step "checking requirements"
 try { $gitVersion = (git --version) } catch { Fail "git is required (https://git-scm.com)" }
@@ -69,8 +88,8 @@ if ($Uninstall) {
 }
 
 Step "fetching sst/opencode @ $BaseShort"
-# `-DryRun` не трогает $Dir: reset --hard + checkout -B передвигают ветку и теряют
-# локальные коммиты, поэтому проверка идёт в одноразовом клоне.
+# `-DryRun` does not touch $Dir: reset --hard + checkout -B move the branch and drop
+# local commits, so the check runs in a throwaway clone.
 $tempClone = $null
 if ($DryRun) {
   $tempClone = Join-Path ([System.IO.Path]::GetTempPath()) ("truthprobe-check-" + [guid]::NewGuid().ToString("N"))
@@ -80,7 +99,7 @@ if ($DryRun) {
   git remote add origin $Upstream
   git fetch -q --depth 1 origin $Base
   if ($LASTEXITCODE -ne 0) {
-    # GitHub может отказать в необъявленном SHA: тогда тянем историю целиком.
+    # GitHub may refuse an unadvertised SHA: then fetch the whole history.
     git fetch -q origin
     if ($LASTEXITCODE -ne 0) { Pop-Location; Fail "git fetch of $Base failed" }
   }
@@ -95,7 +114,7 @@ if ($DryRun) {
   if ($LASTEXITCODE -ne 0) { git remote set-url origin $Upstream }
   git fetch -q --depth 1 origin $Base
   if ($LASTEXITCODE -ne 0) {
-    # GitHub может отказать в необъявленном SHA: тогда тянем историю целиком.
+    # GitHub may refuse an unadvertised SHA: then fetch the whole history.
     git fetch -q origin
     if ($LASTEXITCODE -ne 0) { Pop-Location; Fail "git fetch of $Base failed" }
   }
@@ -108,8 +127,8 @@ if ($DryRun) {
   $head = (git rev-parse HEAD 2>$null | Select-Object -First 1)
   $known = (git log --oneline -n 40 2>$null) -join "`n"
   if ($head -ne $Base -and $known -notmatch "truthprobe") {
-    # Дерево на чужом коммите: без приведения к $Base патч не ляжет, а reset --hard
-    # молча стирает незакоммиченные правки — поэтому сначала проверяем чистоту.
+    # The tree is at a foreign commit: without rebasing to $Base the patch does not apply,
+    # and reset --hard silently wipes uncommitted edits — so check for cleanliness first.
     $dirty = (git status --porcelain 2>$null) -join ""
     if ($dirty -ne "" -and $env:TRUTHPROBE_ALLOW_DIRTY -ne "1") {
       Pop-Location
@@ -118,7 +137,7 @@ if ($DryRun) {
     Note "moving the checkout to $BaseShort"
     git fetch -q --depth 1 origin $Base
     if ($LASTEXITCODE -ne 0) {
-      # GitHub может отказать в необъявленном SHA: тогда тянем историю целиком.
+      # GitHub may refuse an unadvertised SHA: then fetch the whole history.
       git fetch -q origin
       if ($LASTEXITCODE -ne 0) { Pop-Location; Fail "git fetch of $Base failed" }
     }
@@ -132,16 +151,19 @@ if ($log -match "truthprobe") {
   Step "patch already applied, skipping"
 } else {
   Step "downloading $PatchName"
-  # Уникальное имя: фиксированный путь в %TEMP% можно подменить между записью и чтением,
-  # а сам патч затем исполняется (bun install + сборка).
+  # Unique name: a fixed path in %TEMP% can be swapped between write and read,
+  # and the patch itself is executed afterwards (bun install + build).
   $patch = Join-Path ([System.IO.Path]::GetTempPath()) ("truthprobe-" + [guid]::NewGuid().ToString("N") + ".patch")
-  Invoke-WebRequest -UseBasicParsing -Uri "$Repo/$PatchName" -OutFile $patch
+  if (-not (Save-Patch "$Repo/$PatchName" $patch) -and -not (Save-Patch "$Releases/$PatchAsset" $patch)) {
+    Pop-Location
+    Fail "patch download failed: $Repo/$PatchName and $Releases/$PatchAsset"
+  }
   if (-not (Test-Path $patch) -or (Get-Item $patch).Length -eq 0) { Pop-Location; Fail "patch download failed" }
   $hash = (Get-FileHash -Algorithm SHA256 -Path $patch).Hash.ToLower()
-  if ($hash -ne "381b37d02024f6e30a43c1bd0002b360da55c4affe70309ac4f3ed387ccc4fe5") {
+  if ($hash -ne "8d6d23eb8089649f21cab4911775aff9df9889dc6921ec1274a3bb7c4578d124") {
     Remove-Item $patch -Force -ErrorAction SilentlyContinue
     Pop-Location
-    Fail "patch checksum mismatch: pinned 381b37d02024f6e30a43c1bd0002b360da55c4affe70309ac4f3ed387ccc4fe5, got $hash"
+    Fail "patch checksum mismatch: pinned 8d6d23eb8089649f21cab4911775aff9df9889dc6921ec1274a3bb7c4578d124, got $hash"
   }
 
   Step "checking patch"

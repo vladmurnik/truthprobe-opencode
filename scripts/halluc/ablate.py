@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""Абляции: какие группы признаков реально несут сигнал, и переносится ли он
-на модель, которой не было в обучении (leave-one-model-out)."""
+"""Ablations: which feature groups actually carry the signal, and whether it transfers
+to a model that was not part of training (leave-one-model-out)."""
 from __future__ import annotations
 
 import json
@@ -35,18 +35,18 @@ def run(name: str, rows: list[dict], features: list[str]) -> None:
 def main() -> None:
     rows = T.load()
     lean = [f for f in T.FEATURES if f not in LENGTH]
-    print(f"строк {len(rows)}, ложных {sum(r['y'] for r in rows)}\n")
-    print("| набор признаков | кол-во | AUROC | ECE | Brier |")
+    print(f"rows {len(rows)}, lies {sum(r['y'] for r in rows)}\n")
+    print("| feature set | count | AUROC | ECE | Brier |")
     print("| --- | --- | --- | --- | --- |")
-    run("все 30", rows, T.FEATURES)
-    run("без длины", rows, lean)
-    run("без длины и текста", rows, [f for f in lean if f not in TEXT])
-    run("только дисперсия logprob", rows, [f for f in lean if f in DISPERSION])
-    run("только текст", rows, [f for f in lean if f in TEXT])
-    run("только средние (mean_lp, geo, mean_phi)", rows, ["mean_lp", "geo", "mean_phi", "first_lp", "first_phi"])
+    run("all 30", rows, T.FEATURES)
+    run("no length", rows, lean)
+    run("no length and no text", rows, [f for f in lean if f not in TEXT])
+    run("logprob dispersion only", rows, [f for f in lean if f in DISPERSION])
+    run("text only", rows, [f for f in lean if f in TEXT])
+    run("means only (mean_lp, geo, mean_phi)", rows, ["mean_lp", "geo", "mean_phi", "first_lp", "first_phi"])
 
-    print("\n### Leave-one-model-out (логистика на 'без длины')")
-    print("| отложенная модель | train | test | верных/ложных в test | AUROC | ECE |")
+    print("\n### Leave-one-model-out (logistic on 'no length')")
+    print("| held-out model | train | test | true/lies in test | AUROC | ECE |")
     print("| --- | --- | --- | --- | --- | --- |")
     X = T.matrix(rows, lean)
     y = [row["y"] for row in rows]

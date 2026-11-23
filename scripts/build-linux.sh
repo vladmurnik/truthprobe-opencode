@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Собирает один бинарь opencode под Linux x64.
+# Builds a single opencode binary for Linux x64.
 #
 #   OPENCODE_REPO=~/src/opencode bash scripts/build-linux.sh [--out file]
 set -euo pipefail

@@ -1,18 +1,18 @@
 /**
- * TruthProbe: проверка провайдеров и автоматическое включение сбора logprobs.
+ * TruthProbe: probing providers and automatically enabling logprobs collection.
  *
- * Плагин слушает `http.request` — единственное место, где видны и модель, и
- * готовый URL с авторизацией. Запрос уходит своим чередом: хук только кладёт
- * событие в очередь, а проверка выполняется в отдельной fiber, поэтому ответ
- * модели никогда не ждёт проверки.
+ * The plugin listens on `http.request` — the only place where both the model and
+ * a ready URL with authorization are visible. The request proceeds on its own: the
+ * hook only puts an event into a queue, and the probe runs in a separate fiber, so
+ * the model answer never waits for the probe.
  *
- * Проверка — одна посылка на один токен с фиксированным текстом "ping".
- * Данные пользователя в ней не участвуют. Вердикт кладётся в
- * `<data>/truthprobe/capabilities.json` и, если провайдер отдаёт logprobs,
- * включает `capabilities.logprobs` у модели: со следующего запроса протокол
- * сам просит logprobs, и бейдж уверенности появляется без переменных окружения.
+ * The probe is a single request for a single token with the fixed text "ping".
+ * No user data takes part in it. The verdict goes into
+ * `<data>/truthprobe/capabilities.json` and, if the provider returns logprobs,
+ * enables `capabilities.logprobs` on the model: from the next request the protocol
+ * asks for logprobs itself, and the confidence badge appears without environment variables.
  *
- * Отключить проверку: OPENCODE_TRUTHPROBE_PROBE=off.
+ * To disable the probe: OPENCODE_TRUTHPROBE_PROBE=off.
  */
 import { define } from "@opencode/plugin/effect/plugin"
 import { Effect, Queue, Stream } from "effect"
@@ -25,7 +25,7 @@ import type { PluginInternal } from "./internal.js"
 
 const PROBE_TIMEOUT_MS = 15_000
 const CHAT_PATH = "/chat/completions"
-/** Столько же альтернатив, сколько просит боевой запрос (TRUTHPROBE_TOP_K). */
+/** As many alternatives as the production request asks for (TRUTHPROBE_TOP_K). */
 const PROBE_TOP_K = 20
 
 type HttpRequest = SessionHooks["http.request"]
@@ -45,7 +45,7 @@ export const TruthprobePlugin = define({
     const directory = path.join(global.data, "truthprobe")
     const file = path.join(directory, "capabilities.json")
 
-    // Протокол в пакете ai читает тот же файл: путь передаём один раз на процесс.
+    // The protocol inside the ai package reads the same file: pass the path once per process.
     process.env.OPENCODE_TRUTHPROBE_CACHE ??= file
 
     let state = Capability.parse(read())
@@ -67,11 +67,11 @@ export const TruthprobePlugin = define({
         fs.writeFileSync(temporary, Capability.serialize(next))
         fs.renameSync(temporary, file)
       } catch {
-        // кэш — оптимизация: без него просто проверим ещё раз
+        // the cache is an optimisation: without it we simply probe once more
       }
     }
 
-    /** Включает logprobs у модели, если пользователь не выставил флаг явно. */
+    /** Enables logprobs on the model if the user has not set the flag explicitly. */
     const enable = Effect.fn("TruthprobePlugin.enable")(function* (providerID: string, modelID: string) {
       const key = Capability.keyOf(providerID, modelID)
       if (enabled.has(key)) return
@@ -112,7 +112,7 @@ export const TruthprobePlugin = define({
       }
       const status = Capability.classify(response)
       if (status === "error") {
-        // 429/5xx: не кэшируем, попробуем на следующем запросе
+        // 429/5xx: do not cache, retry on the next request
         yield* Effect.logDebug("truthprobe: probe inconclusive", { providerID, modelID, code: response.status })
         return
       }
@@ -128,10 +128,10 @@ export const TruthprobePlugin = define({
       if (status === "ok") yield* enable(providerID, event.model.id)
     })
 
-    // Выключено пользователем: не трогаем ни каталог моделей, ни сеть.
+    // Disabled by the user: touch neither the model catalog nor the network.
     if (disabled()) return
 
-    // Известные «да» включаем сразу: бейдж работает с первого же ответа.
+    // Known "yes" answers are enabled right away: the badge works from the very first answer.
     const now = Date.now()
     for (const [key, entry] of Object.entries(state.entries)) {
       if (!Capability.enabled(entry, now)) continue
@@ -141,7 +141,7 @@ export const TruthprobePlugin = define({
     }
 
 
-    // Очередь + одна fiber: хук не ждёт сети, проверки идут строго по одной.
+    // Queue + a single fiber: the hook does not wait for the network, probes run strictly one at a time.
     const queue = yield* Queue.unbounded<HttpRequest>()
     yield* Stream.fromQueue(queue).pipe(
       Stream.runForEach((event) => {

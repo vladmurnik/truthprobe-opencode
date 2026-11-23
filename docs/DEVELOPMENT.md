@@ -1,228 +1,230 @@
-# Development: карта «что где менять»
+> Русская версия: [docs/ru/DEVELOPMENT.md](ru/DEVELOPMENT.md)
 
-TruthProbe живёт в пропатченном дереве `.worktree/opencode` (создаётся `make setup`).
-Пути ниже — относительно корня **этого дерева**, т.е. `packages/…`. Ссылки на оригинальные
-файлы sst/opencode из `docs/DEVELOPMENT.md` даны, чтобы их было видно и без дерева.
+# Development: the "what to change where" map
 
-## Поток данных (куда смотреть первым делом)
+TruthProbe lives in the patched tree `.worktree/opencode` (created by `make setup`).
+The paths below are relative to the root of **this tree**, i.e. `packages/…`. Links to the original
+sst/opencode files from `docs/DEVELOPMENT.md` are given so that they are visible even without the tree.
+
+## Data flow (where to look first)
 
 ```
 provider stream ─► packages/ai/… (request logprobs, parse tokens)
-       │                logprobs из ответа
+       │                logprobs from the response
        ▼
-session/runner/publish-llm-event.ts   ─ накапливает токены, в конце зовёт scoreAnswer
+session/runner/publish-llm-event.ts   ─ accumulates tokens, calls scoreAnswer at the end
        │    modelKey = providerID/modelID
        ▼
-packages/core/src/truthprobe/score.ts ─ scoreAnswer(): выравнивание токенов, разбивка
-       │                                  на предложения, признаки → Scorer
+packages/core/src/truthprobe/score.ts ─ scoreAnswer(): token alignment, splitting
+       │                                  into sentences, features → Scorer
        ▼
-packages/core/src/truthprobe/scorer.ts ─ geometric (по умолчанию) или linear-веса
-       │                                  из TRUTHPROBE_SCORER, выбор по модели
+packages/core/src/truthprobe/scorer.ts ─ geometric (default) or linear weights
+       │                                  from TRUTHPROBE_SCORER, chosen by model
        ▼
-schema/src/truthprobe.ts ─ сериализация итога (AnswerScore) в базу/клиент
+schema/src/truthprobe.ts ─ serializes the result (AnswerScore) to the database/client
        ▼
-packages/session-ui/src/message/… ─ desktop-чип «confidence NN%» и спорные предложения
-packages/tui/src/routes/session/message-parts.tsx ─ то же в терминальном UI
+packages/session-ui/src/message/… ─ desktop chip "confidence NN%" and doubtful sentences
+packages/tui/src/routes/session/message-parts.tsx ─ the same in the terminal UI
 ```
 
-signature вердикта (`AnswerScore`): `status`, `score`, `risk`, `level`, `first`,
+The verdict signature (`AnswerScore`): `status`, `score`, `risk`, `level`, `first`,
 `sentences[] {i,start,end,text,score,risk,meanLp,minLp,phi,tokens,flag,level}`, `flagged`.
 
-## Математика (пакеты core)
+## Maths (core packages)
 
-| Файл | Что внутри | Когда трогать |
+| File | What is inside | When to touch |
 |---|---|---|
-| `src/truthprobe/types.ts` | `TokenLogprob`, `ScorerInput{features,text,model}`, `LinearWeights`, `ScoreOptions`, `SentenceScore`, `AnswerScore`, `DEFAULT_SCORE_OPTIONS` | меняется контракт скорера/схемы |
-| `src/truthprobe/score.ts` | `phi()` (1 − норм. энтропия top_logprobs), `alignTokens`, `splitSentences`, `scoreAnswer(text, tokens, options, model)` | формула уверенности, разбиение, признаки |
-| `src/truthprobe/scorer.ts` | `geometricScorer`, `linearScorer`, `parseLinearWeights`, `WeightsBundle`, `parseWeightsBundle`, `bundleScorer`, `weightsFor`, `scorerFromEnv()` | сменные веса, выбор `models[providerID/modelID]`, откаты |
-| `src/truthprobe/levels.ts` | `LEVEL_BOUNDS` (safe 0.90, likely 0.75, uncertain 0.55, risky 0.35), `levelOf` | пороги уровней |
-| `src/truthprobe/sentences.ts` | `splitSentences` (честное разбиение на предложения) | токенизация текста |
-| `src/truthprobe/capability.ts` | возможность модели отдавать `logprobs` | авто-включение probe'а |
+| `src/truthprobe/types.ts` | `TokenLogprob`, `ScorerInput{features,text,model}`, `LinearWeights`, `ScoreOptions`, `SentenceScore`, `AnswerScore`, `DEFAULT_SCORE_OPTIONS` | the scorer/schema contract changes |
+| `src/truthprobe/score.ts` | `phi()` (1 − normalized entropy of top_logprobs), `alignTokens`, `splitSentences`, `scoreAnswer(text, tokens, options, model)` | the confidence formula, splitting, features |
+| `src/truthprobe/scorer.ts` | `geometricScorer`, `linearScorer`, `parseLinearWeights`, `WeightsBundle`, `parseWeightsBundle`, `bundleScorer`, `weightsFor`, `scorerFromEnv()` | interchangeable weights, selection of `models[providerID/modelID]`, fallbacks |
+| `src/truthprobe/levels.ts` | `LEVEL_BOUNDS` (safe 0.90, likely 0.75, uncertain 0.55, risky 0.35), `levelOf` | level thresholds |
+| `src/truthprobe/sentences.ts` | `splitSentences` (honest splitting into sentences) | text tokenization |
+| `src/truthprobe/capability.ts` | the model's ability to return `logprobs` | auto-enabling the probe |
 
-**Важно:** `src/truthprobe/*` в этом репозитории — reference-копии для тестов без клона.
-После правки в dev-дереве их надо синхронизировать (см. ниже). Тесты репозитория в `test/`.
+**Important:** `src/truthprobe/*` in this repository are reference copies for tests without a clone.
+After editing in the dev tree they must be synchronized (see below). The repository tests are in `test/`.
 
-## Признаки скорера (должны совпадать везде!)
+## Scorer features (must match everywhere!)
 
-| Признак | Определение | Где считается |
+| Feature | Definition | Where it is computed |
 |---|---|---|
-| `meanLp` | среднее logprob по содержательным токенам ответа | `score.ts` |
-| `minLp` | худший logprob | `score.ts` |
-| `phi` | 1 − норм. энтропия по `top_logprobs` **первого** токена | `score.ts` `phi()` |
-| `fracLow` | доля токенов с `logprob < ln 0.5` | `score.ts` |
-| `digitDensity` | доля цифр среди символов видимого ответа | `score.ts` `digitDensity()` |
+| `meanLp` | mean logprob over the content-bearing tokens of the answer | `score.ts` |
+| `minLp` | worst logprob | `score.ts` |
+| `phi` | 1 − normalized entropy over `top_logprobs` of the **first** token | `score.ts` `phi()` |
+| `fracLow` | share of tokens with `logprob < ln 0.5` | `score.ts` |
+| `digitDensity` | share of digits among the characters of the visible answer | `score.ts` `digitDensity()` |
 
-Эти же формулы обязаны быть в `scripts/collect.py` и `scripts/calibrate.py`, иначе обученные
-веса применяются к другим числам и калибровка разваливается. Признаки повторены там
-комментарием-ссылкой на `score.ts`.
+These same formulas must be in `scripts/collect.py` and `scripts/calibrate.py`, otherwise the trained
+weights are applied to other numbers and the calibration falls apart. The features are repeated there
+as a comment-reference to `score.ts`.
 
-## Скрипты калибровки (репозиторий, вне патча)
+## Calibration scripts (repository, outside the patch)
 
-| Файл | Роль |
+| File | Role |
 |---|---|
-| `scripts/collect.py` | сбор строк по моделям и промптам, `--auto-label` по банку `{prompt, expect}`, вырезает reasoning-токены |
-| `scripts/calibrate.py` | `--fit` (linear-веса), `--fit --by-model` (бандл `{global, models}`), AUROC/ECE, отказ при одноклассовых данных |
-| `scripts/probe-freellmapi.py` | проверка, что эндпоинт отдаёт `logprobs` |
-| `scripts/mock-openai-logprobs.py` | мок-провайдер с настоящими logprobs (для e2e и `make preview`) |
-| `scripts/preview.sh` / `dev-setup.sh` / `dev-setup.ps1` / `make-patch.sh` / `build-desktop.sh` / `install-desktop.sh` | DX-обвязка |
-| `data/qa-bank.jsonl` | канонические ответы для авто-разметки (`expect`) |
+| `scripts/collect.py` | collects rows by models and prompts, `--auto-label` against the bank `{prompt, expect}`, cuts out reasoning tokens |
+| `scripts/calibrate.py` | `--fit` (linear weights), `--fit --by-model` (the bundle `{global, models}`), AUROC/ECE, refusal on single-class data |
+| `scripts/probe-freellmapi.py` | checks that the endpoint returns `logprobs` |
+| `scripts/mock-openai-logprobs.py` | a mock provider with real logprobs (for e2e and `make preview`) |
+| `scripts/preview.sh` / `dev-setup.sh` / `dev-setup.ps1` / `make-patch.sh` / `build-desktop.sh` / `install-desktop.sh` | DX plumbing |
+| `data/qa-bank.jsonl` | canonical answers for auto-labelling (`expect`) |
 
-## Как поменять конкретную вещь
+## How to change a specific thing
 
-### Порог уровня (например `safe: 0.90 → 0.93`)
+### Level threshold (for example `safe: 0.90 → 0.93`)
 1. `src/truthprobe/levels.ts` → `LEVEL_BOUNDS.safe`.
-2. `packages/core/test/truthprobe-levels.test.ts` (в дереве) — тесты границ.
-3. `make patch`, `make verify` (внутри — `make docs-check`), обновить цифры в README/docs.
+2. `packages/core/test/truthprobe-levels.test.ts` (in the tree) — boundary tests.
+3. `make patch`, `make verify` (inside — `make docs-check`), update the numbers in README/docs.
 
-### Добавить признак в скорер
-1. `src/truthprobe/scorer.ts`: `FEATURE_NAMES` + `LinearWeights` в `types.ts`.
-2. `src/truthprobe/score.ts`: посчитать и положить в `ScorerFeatures`.
-3. `scripts/calibrate.py`: `COLUMNS`, `fit()` (вектор), `--by-model`.
+### Add a feature to the scorer
+1. `src/truthprobe/scorer.ts`: `FEATURE_NAMES` + `LinearWeights` in `types.ts`.
+2. `src/truthprobe/score.ts`: compute it and put it into `ScorerFeatures`.
+3. `scripts/calibrate.py`: `COLUMNS`, `fit()` (the vector), `--by-model`.
 4. `scripts/collect.py`: `features()`.
-5. Тесты на парсинг бандла и откаты: `truthprobe-scorer-bundle.test.ts`.
-6. Патч, verify, документация.
+5. Tests for bundle parsing and fallbacks: `truthprobe-scorer-bundle.test.ts`.
+6. Patch, verify, documentation.
 
-### Веса только для `freepi/particle`
+### Weights only for `freepi/particle`
 ```bash
 python3 scripts/collect.py --url http://127.0.0.1:8790/v1 --model freepi/particle \
     --prompts data/prompts-labeled.jsonl --out data/rows.jsonl
-# проставить label 0/1, затем:
+# set label 0/1, then:
 python3 scripts/calibrate.py data/rows.jsonl --fit --by-model --out data/weights.json
 TRUTHPROBE_SCORER=linear:data/weights.json bun run --cwd .worktree/opencode/packages/cli src/index.ts run "…"
 ```
-Рантайм берёт `models[providerID/modelID]` и откатывается на `global`. Битая запись модели
-пропускается молча.
+The runtime takes `models[providerID/modelID]` and falls back to `global`. A broken model record
+is silently skipped.
 
-### UI (desktop-чип и спорные предложения)
-- `packages/session-ui/src/message/confidence.tsx` — новый общий компонент: `ConfidenceMeter`
-  (шкала), `ConfidenceLine` (строка «confidence NN% · level»), `DoubtfulList` (список
-  предложений с плашкой «#N NN% level»).
-- `packages/session-ui/src/message/message-content.tsx` — место вставки `<ConfidenceLine/>` +
-  `<DoubtfulList/>` (блок `data-slot="text-part-doubtful"`), плюс мемо `confidence()` для
-  мета-строки (first-token NN% / answer NN% / N doubtful).
-- `packages/session-ui/src/message/doubtful.ts` — хелперы: `levelOfInfo(probe)`,
+### UI (desktop chip and doubtful sentences)
+- `packages/session-ui/src/message/confidence.tsx` — a new shared component: `ConfidenceMeter`
+  (the scale), `ConfidenceLine` (the line "confidence NN% · level"), `DoubtfulList` (the list of
+  sentences with the flag "#N NN% level").
+- `packages/session-ui/src/message/message-content.tsx` — the insertion point of `<ConfidenceLine/>` +
+  `<DoubtfulList/>` (the block `data-slot="text-part-doubtful"`), plus the memo `confidence()` for the
+  meta line (first-token NN% / answer NN% / N doubtful).
+- `packages/session-ui/src/message/doubtful.ts` — helpers: `levelOfInfo(probe)`,
   `levelOfSentence(item)`, `doubtfulSentences(probe)`, `percentOf`.
-- `packages/tui/src/routes/session/message-parts.tsx` — тот же вердикт в TUI.
+- `packages/tui/src/routes/session/message-parts.tsx` — the same verdict in the TUI.
 
-Проверка типизации пакета — из корня дерева opencode: `bun run --cwd packages/session-ui typecheck`
-(тот же вызов, что в CI; для TUI — `bun run --cwd packages/tui typecheck`).
+Typecheck of the package — from the root of the opencode tree: `bun run --cwd packages/session-ui typecheck`
+(the same call as in CI; for the TUI — `bun run --cwd packages/tui typecheck`).
 
-### Prompt / промпты сбора
-Файл промптов: txt (по строке) или JSONL `{"prompt": "...", "label": 0/1}`. Пары
-`(model, prompt)` в `--out` пропускаются при `--resume`. Банк для `--auto-label`:
-`{"prompt": "...", "expect": ["canberra", "two", "2"]}` — короткие эталоны сравниваются
-регуляркой по границам слова, длинные — подстрокой.
+### Prompt / collection prompts
+The prompts file: txt (one per line) or JSONL `{"prompt": "...", "label": 0/1}`. Pairs
+`(model, prompt)` in `--out` are skipped under `--resume`. The bank for `--auto-label`:
+`{"prompt": "...", "expect": ["canberra", "two", "2"]}` — short references are compared by
+a word-boundary regex, long ones — by substring.
 
-## Окружение и переменные
+## Environment and variables
 
-| Переменная | Где читается | Назначение |
+| Variable | Where it is read | Purpose |
 |---|---|---|
-| `OPENCODE_TRUTHPROBE=1` | ai-provider, авто-включение | вкл. сбор logprobs (обычно не нужна, capability решает) |
-| `TRUTHPROBE_SCORER=linear:<path>` | `scorer.ts`, `score.ts` | путь к весам; пусто/`geometric` = встроенный |
-| `TRUTHPROBE_BASE` | `Makefile`, `dev-setup.*`, `make-patch.sh` | коммит sst/opencode под патч (default `007afb1b`) |
-| `TP_DIR` / `OPENCODE_REPO` | `Makefile`, `preview.sh`, `build-desktop.sh` | где развёрнуто dev-дерево |
-| `MOCK_PORT` / `COLLECT_URL` | `preview.sh`, `collect.py` | адрес мок-/target-эндпоинта |
+| `OPENCODE_TRUTHPROBE=1` | ai-provider, auto-enabling | turns on collection of logprobs (usually not needed, capability decides) |
+| `TRUTHPROBE_SCORER=linear:<path>` | `scorer.ts`, `score.ts` | path to the weights; empty/`geometric` = built-in |
+| `TRUTHPROBE_BASE` | `Makefile`, `dev-setup.*`, `make-patch.sh` | the sst/opencode commit under the patch (default `007afb1b`) |
+| `TP_DIR` / `OPENCODE_REPO` | `Makefile`, `preview.sh`, `build-desktop.sh` | where the dev tree is deployed |
+| `MOCK_PORT` / `COLLECT_URL` | `preview.sh`, `collect.py` | the address of the mock/target endpoint |
 
-Пример `.env.example` в корне репозитория.
+An example `.env.example` in the repository root.
 
-## Как узнать, что ничего не сломалось
+## How to know that nothing broke
 
 ```bash
-make verify                        # тесты репо + патч на чистой базе
+make verify                        # repo tests + the patch on a clean base
 cd .worktree/opencode
-bun test truthprobe                # юнит-тесты патча (129 на сейчас)
+bun test truthprobe                # unit tests of the patch (129 at the moment)
 ```
-(реальный прогон — `make preview`; вердикт смотрите в `scripts/inspect-db.py` или
-`make preview` выведет сам.)
+(a real run — `make preview`; look at the verdict in `scripts/inspect-db.py` or
+`make preview` will print it itself.)
 
-## Перед сборкой патча
+## Before building the patch
 
-1. Коммит в dev-дереве (никаких незакоммиченных изменений — `make-patch.sh` откажется).
+1. A commit in the dev tree (no uncommitted changes — `make-patch.sh` will refuse).
 2. `make patch` → `patches/truthprobe-0001.patch`.
-3. Синхронизировать reference-копии `src/truthprobe/*` (иначе `make test` проверит старьё).
+3. Synchronize the reference copies `src/truthprobe/*` (otherwise `make test` will check stale code).
 4. `make verify`.
-5. Desktop: `bash scripts/build-desktop.sh --win` (результат в `packages/desktop/dist/win-unpacked`),
-   затем `make desktop-install` (`scripts/install-desktop.sh`) — копирует сборку поверх
-   `AppData/Local/Programs/TruthProbe` и **чистит кеш CLI**.
-   Скрипт сам копирует собранный CLI в `packages/desktop/resources/opencode-cli[.exe]` — именно
-   оттуда electron-builder берёт бинарь (`extraResources`). Если этот шаг пропустить, приложение
-   соберётся со **старым** CLI и будет молча вести себя как предыдущая версия.
-   Штамп `resources/opencode-cli.version` собирается как `<версия сборки>+<sha256[:12]>`:
-   приложение кеширует CLI по этой строке (`%APPDATA%\ai.truthprobe.desktop\cli\<штамп>-x64`)
-   и переиспользует его, пока строка не изменилась. Без отпечатка содержимого новая сборка
-   не доезжает до пользователя — так и вышло 22.11.2026, когда кеш продолжал отдавать CLI от 19-го.
+5. Desktop: `bash scripts/build-desktop.sh --win` (the result is in `packages/desktop/dist/win-unpacked`),
+   then `make desktop-install` (`scripts/install-desktop.sh`) — copies the build over
+   `AppData/Local/Programs/TruthProbe` and **cleans the CLI cache**.
+   The script itself copies the built CLI into `packages/desktop/resources/opencode-cli[.exe]` — it is
+   from there that electron-builder takes the binary (`extraResources`). If this step is skipped, the application
+   will be built with the **old** CLI and will silently behave like the previous version.
+   The stamp `resources/opencode-cli.version` is composed as `<build version>+<sha256[:12]>`:
+   the application caches the CLI by this string (`%APPDATA%\ai.truthprobe.desktop\cli\<stamp>-x64`)
+   and reuses it as long as the string has not changed. Without a content fingerprint the new build
+   does not reach the user — that is exactly what happened on 22.11.2026, when the cache kept serving the CLI from the 19th.
 
-## Подпись
+## Signing
 
-Приложение собирается неподписанным: `electron-builder` подписывает только тогда, когда задан
-сертификат. Без него Windows показывает в свойствах файла «неизвестный издатель», а SmartScreen
-блокирует первый запуск у каждого нового пользователя — это единственное, чего сборке не хватает
-для раздачи.
+The application is built unsigned: `electron-builder` signs only when a
+certificate is set. Without it Windows shows "unknown publisher" in the file properties, and SmartScreen
+blocks the first launch for every new user — this is the only thing the build lacks
+for distribution.
 
-**Собрать подписанную сборку.** Сертификат `electron-builder` читает из окружения:
+**Build a signed build.** `electron-builder` reads the certificate from the environment:
 
 ```bash
 WIN_CSC_LINK=/secure/truthprobe.pfx \
-WIN_CSC_KEY_PASSWORD='<пароль>' \
+WIN_CSC_KEY_PASSWORD='<password>' \
 OPENCODE_REPO=$HOME/src/opencode bash scripts/build-desktop.sh --win
 ```
 
-`WIN_CSC_LINK` принимает путь к `.pfx` или HTTPS-ссылку; `WIN_CSC_KEY_PASSWORD` — пароль к нему.
-`scripts/build-desktop.sh` в конце печатает состояние подписи: если сертификат не задан, он прямо
-пишет `ВНИМАНИЕ: WIN_CSC_LINK не задан — … не подписан (NotSigned)`, а не делает вид, что сборка
-готова к раздаче.
+`WIN_CSC_LINK` accepts a path to a `.pfx` or an HTTPS link; `WIN_CSC_KEY_PASSWORD` — the password for it.
+`scripts/build-desktop.sh` prints the signing state at the end: if the certificate is not set, it plainly
+writes `ВНИМАНИЕ: WIN_CSC_LINK не задан — … не подписан (NotSigned)`, rather than pretending the build
+is ready for distribution.
 
-**Проверить результат** (Windows, тот же файл через `\\wsl$`):
+**Verify the result** (Windows, the same file through `\\wsl$`):
 
 ```powershell
 $exe = "\\wsl$\Ubuntu\home\adik\src\opencode\packages\desktop\dist\win-unpacked\TruthProbe.exe"
-(Get-AuthenticodeSignature $exe).Status      # ожидается Valid
+(Get-AuthenticodeSignature $exe).Status      # Valid is expected
 (Get-Item $exe).VersionInfo | Select-Object ProductName, CompanyName, FileVersion, LegalCopyright
 ```
 
-**Метаданные exe** (`Get-Item … .VersionInfo`, замер 23.11.2026):
+**exe metadata** (`Get-Item … .VersionInfo`, measurement 23.11.2026):
 
-| Поле | До 0.13.15 | С 0.13.15 |
+| Field | Up to 0.13.15 | Since 0.13.15 |
 | --- | --- | --- |
 | `ProductName` | `TruthProbe` | `TruthProbe` |
 | `FileDescription` | `TruthProbe` | `TruthProbe` |
 | `CompanyName` | `OpenCode` | `TruthProbe` |
-| `FileVersion` | `2.3.0` (версия оболочки) | `0.13.14` (версия продукта) |
+| `FileVersion` | `2.3.0` (shell version) | `0.13.14` (product version) |
 | `LegalCopyright` | `Copyright c 2026 OpenCode` | `Copyright c 2026 TruthProbe` |
 | `Signature` | `NotSigned` | `NotSigned` |
 
-`CompanyName` берётся из `extraMetadata.author.name`, `LegalCopyright` — из `copyright`, оба поля
-`brand()` в `packages/desktop/electron-builder.config.ts` заполняет из `OPENCODE_DESKTOP_COMPANY`
-(по умолчанию — `OPENCODE_DESKTOP_APP`). `FileVersion` — `OPENCODE_VERSION`, который
-`scripts/build-desktop.sh` читает из `package.json` этого репозитория: иначе exe сообщает версию
-оболочки (2.3.0), а тег релиза — совсем другое число.
+`CompanyName` is taken from `extraMetadata.author.name`, `LegalCopyright` — from `copyright`, both fields
+`brand()` in `packages/desktop/electron-builder.config.ts` fills from `OPENCODE_DESKTOP_COMPANY`
+(by default — `OPENCODE_DESKTOP_APP`). `FileVersion` — `OPENCODE_VERSION`, which
+`scripts/build-desktop.sh` reads from `package.json` of this repository: otherwise the exe reports the version of the
+shell (2.3.0), while the release tag is a completely different number.
 
-**Чего это не доказывает.** Подпись проверена только как «сертификата нет — и это сказано вслух»;
-с настоящим `.pfx` сборка не запускалась. Запуск подписанного exe на чистой машине и сценарий
-SmartScreen тоже не проверены.
+**What this does not prove.** The signature was verified only as "there is no certificate — and that is said out loud";
+the build was never run with a real `.pfx`. Launching a signed exe on a clean machine and the SmartScreen scenario
+are also not verified.
 
-## Релиз
+## Release
 
-Релиз — это тег плюс вложенный патч. Скрипт `scripts/release.sh` делает это одной командой:
+A release is a tag plus an attached patch. The `scripts/release.sh` script does this with one command:
 
 ```bash
-bash scripts/release.sh --dry-run        # показать план: тег, сумма, owner/repo, описание
-GITHUB_TOKEN=... bash scripts/release.sh # создать черновик, загрузить патч, опубликовать
-make release TAG=v0.13.15                # то же через make
+bash scripts/release.sh --dry-run        # show the plan: tag, sum, owner/repo, description
+GITHUB_TOKEN=... bash scripts/release.sh # create a draft, upload the patch, publish
+make release TAG=v0.13.15                # the same through make
 ```
 
-Что он проверяет до сети: тег существует локально, `patches/truthprobe-0001.patch` на месте,
-его sha256 совпадает с пином `PATCH_SHA256` в `install.sh`, `owner/repo` разбирается из
-`git remote get-url origin`. Описание релиза берётся из записи этого тега в `CHANGELOG.md` —
-отдельного текста не нужно; если записи для тега нет, скрипт возьмёт верхнюю и предупредит.
-Повторный запуск для того же тега обновляет описание и перезаливает ассет, а не падает.
+What it checks before the network: the tag exists locally, `patches/truthprobe-0001.patch` is in place,
+its sha256 matches the pin `PATCH_SHA256` in `install.sh`, `owner/repo` is parsed from
+`git remote get-url origin`. The release description is taken from the entry for this tag in `CHANGELOG.md` —
+no separate text is needed; if there is no entry for the tag, the script will take the top one and warn.
+A repeated run for the same tag updates the description and re-uploads the asset instead of failing.
 
-**Чего это не доказывает.** С настоящим токеном скрипт ни разу не исполнялся: в песочнице
-токена нет, проверен только `--dry-run` и негативные ветки (нет тега, расхождение суммы).
+**What this does not prove.** The script has never been executed with a real token: in the sandbox there is no
+token, only `--dry-run` and the negative branches were checked (no tag, sum mismatch).
 
-**Если `curl` в этой машине не проходит.** В WSL запросы к `api.github.com` обрывались с
-`curl: (56) Proxy CONNECT aborted` (код `000`), хотя из Windows тот же адрес отвечает `200`.
-Обходной маршрут — повторить план в PowerShell: создать draft-релиз, залить ассет через
-`https://uploads.github.com/.../assets?name=truthprobe-0001.patch`, снять `draft`. Описание брать
-из записи этого тега в `CHANGELOG.md`, сумму ассета сверять с `PATCH_SHA256` до заливки — GitHub
-в ответе отдаёт собственный `digest: sha256:…`, и он должен совпасть.
+**If `curl` on this machine does not get through.** In WSL requests to `api.github.com` were breaking with
+`curl: (56) Proxy CONNECT aborted` (code `000`), although from Windows the same address answers `200`.
+The workaround route — repeat the plan in PowerShell: create a draft release, upload the asset through
+`https://uploads.github.com/.../assets?name=truthprobe-0001.patch`, remove `draft`. Take the description
+from the entry for this tag in `CHANGELOG.md`, verify the asset sum against `PATCH_SHA256` before uploading — GitHub
+returns its own `digest: sha256:…` in the response, and it must match.

@@ -1,10 +1,10 @@
 /**
- * TruthProbe — скоринг уверенности по token logprobs.
+ * TruthProbe — confidence scoring from token logprobs.
  *
- * Все функции чистые, кроме необязательной загрузки сменного скорера из
- * `TRUTHPROBE_SCORER` (см. scorer.ts): математика одна и та же, состояние не
- * копится. Это позволяет покрыть всю математику юнит-тестами на записанных
- * фикстурах и использовать модуль и в ядре OpenCode, и в офлайн-калибровке (T8).
+ * All functions are pure except for the optional loading of a swappable scorer
+ * from `TRUTHPROBE_SCORER` (see scorer.ts): the math is the same and no state
+ * accumulates. This lets unit tests cover the whole math on recorded fixtures
+ * and lets the module serve both the OpenCode core and offline calibration (T8).
  */
 
 import { levelOf } from "./levels";
@@ -20,30 +20,30 @@ import {
 
 const PUNCT_ONLY = /^[\s\p{P}\p{S}]+$/u;
 
-/** Токен несёт смысл: не пробелы, не чистая пунктуация/символы. */
+/** A token carries meaning: not whitespace, not pure punctuation/symbols. */
 export function isContentToken(token: string, minChars = 2): boolean {
   if (!token) return false;
   if (!/\S/.test(token)) return false;
   if (PUNCT_ONLY.test(token)) return false;
   const visible = token.replace(/\s/g, "")
   if (visible.length >= minChars) return true
-  // Иероглиф/канa/хангыль — самостоятельное слово в один символ, его нельзя терять.
+  // A hieroglyph/kana/hangul is a whole word in one character and must not be dropped.
   return /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uac00-\ud7af]/.test(visible);
 }
 
 /**
- * Нормированная энтропия распределения на первом токене.
+ * Normalised entropy of the distribution over the first token.
  *
- * q_i = exp(lp_i) / Σ exp(lp_j) по доступному top-K; H = -Σ q_i ln q_i / ln K.
- * Если top-K нет (провайдер не вернул) — деградируем к 1 - p(token),
- * то есть φ = p(token).
+ * q_i = exp(lp_i) / Σ exp(lp_j) over the available top-K; H = -Σ q_i ln q_i / ln K.
+ * If there is no top-K (the provider did not return one) we degrade to 1 - p(token),
+ * that is φ = p(token).
  */
 export function normalizedEntropy(t: TokenLogprob, topK = 20): number {
   const top = (t.top ?? []).filter((x) => Number.isFinite(x.logprob));
   if (top.length < 2) return clamp01(1 - Math.exp(t.logprob));
 
-  // Энтропия и нормировка считаются по одному набору: если взять все альтернативы,
-  // а делить на ln(topK), H выходит за 1 и φ насыщается нулём на длинных top-K.
+  // Entropy and normalisation use one and the same set: taking every alternative
+  // while dividing by ln(topK) pushes H above 1 and saturates φ to zero on long top-K lists.
   const k = Math.max(2, Math.min(topK, top.length));
   const probs = top.slice(0, k).map((x) => Math.exp(x.logprob));
   const sum = probs.reduce((a, b) => a + b, 0);
@@ -57,7 +57,7 @@ export function normalizedEntropy(t: TokenLogprob, topK = 20): number {
   return clamp01(h / Math.log(k));
 }
 
-/** φ = уверенность по первому токену, 0..1. */
+/** φ = confidence in the first token, 0..1. */
 export function phi(t: TokenLogprob, topK = 20): number {
   return clamp01(1 - normalizedEntropy(t, topK));
 }
@@ -72,7 +72,7 @@ interface TokenWithOffset extends TokenLogprob {
   end: number;
 }
 
-/** Привязывает токены к символьным смещениям исходного текста. */
+/** Binds tokens to character offsets of the source text. */
 export function tokensWithOffsets(tokens: TokenLogprob[]): TokenWithOffset[] {
   const out: TokenWithOffset[] = [];
   let pos = 0;
@@ -85,12 +85,12 @@ export function tokensWithOffsets(tokens: TokenLogprob[]): TokenWithOffset[] {
 }
 
 /**
- * Привязка токенов к тексту с терпимостью к «внутренним» токенам.
+ * Binds tokens to the text, tolerating "internal" tokens.
  *
- * Провайдеры (и reasoning-модели особенно) отдают токены, у которых нет
- * видимого текста: `</think>`, служебные маркеры, обрезанные пробелы. Слепая
- * конкатенация ломает смещения, поэтому каждый токен либо находится в тексте
- * рядом с текущей позицией, либо пропускается.
+ * Providers (reasoning models especially) return tokens with no visible text:
+ * `</think>`, service markers, trimmed whitespace. Blind concatenation breaks
+ * offsets, so every token is either found in the text near the current position
+ * or skipped.
  */
 export function alignTokens(text: string, tokens: TokenLogprob[]): TokenWithOffset[] {
   const out: TokenWithOffset[] = [];
@@ -103,7 +103,7 @@ export function alignTokens(text: string, tokens: TokenLogprob[]): TokenWithOffs
       pos += tok.length;
       continue;
     }
-    // Токен мог потерять ведущий пробел/перенос: ищем его в пределах окна.
+    // A token may have lost its leading space/newline: look for it within a small window.
     const at = text.indexOf(tok, pos);
     if (at >= 0 && at - pos <= 8) {
       out.push({ ...t, start: at, end: at + tok.length });
@@ -119,17 +119,17 @@ export function alignTokens(text: string, tokens: TokenLogprob[]): TokenWithOffs
         continue;
       }
     }
-    // Внутренний токен без видимого текста — пропускаем, не ломая смещения.
+    // An internal token with no visible text — skip it without breaking offsets.
   }
   return out;
 }
 
 /**
- * Предложение, которому принадлежит диапазон токена.
+ * The sentence that owns a token's range.
  *
- * Токен может начинаться с пробела, который сегментатор уже «съел» как
- * хвост предыдущего предложения (например « Плохо» сразу после точки),
- * поэтому проверяем пересечение диапазонов, а не только начало токена.
+ * A token can start with a space the segmenter already consumed as the tail of
+ * the previous sentence (for example " Bad" right after a period), so we check
+ * range overlap rather than just the token start.
  */
 function sentenceAt(sentences: Sentence[], start: number, end: number): Sentence | null {
   for (const s of sentences) {
@@ -140,14 +140,14 @@ function sentenceAt(sentences: Sentence[], start: number, end: number): Sentence
 }
 
 /**
- * Доля символов, являющихся цифрами. Тот же признак считается в `scripts/collect.py`
- * по тексту ответа; в развилке «текст vs logprobs» это единственный текстовый сигнал,
- * который дал измеримый прирост (§15 VALIDATION).
+ * Fraction of characters that are digits. The same feature is computed in
+ * `scripts/collect.py` from the answer text; in the "text vs logprobs" fork it is
+ * the only text signal that produced a measurable gain (§15 VALIDATION).
  */
 export function digitDensity(text: string): number {
   if (!text) return 0;
-  // Числитель и знаменатель считаем в code points: `text.length` меряет UTF-16
-  // единицы, и на эмодзи или астральной CJK доля цифр занижалась.
+  // Count numerator and denominator in code points: `text.length` measures UTF-16
+  // units, and on emoji or astral CJK the digit share was understated.
   let digits = 0;
   let chars = 0;
   for (const ch of text) {
@@ -163,8 +163,8 @@ function geometricMean(lps: number[]): number {
 }
 
 /**
- * Минимум без `Math.min(...values)`: разворот длинного массива в аргументы падает
- * с `RangeError` на очень длинных ответах, а вызывается это синхронно в публикации.
+ * Minimum without `Math.min(...values)`: spreading a long array into arguments
+ * fails with `RangeError` on very long answers, and this runs synchronously on publish.
  */
 function minOf(values: number[]): number {
   if (values.length === 0) return 0;
@@ -173,20 +173,20 @@ function minOf(values: number[]): number {
   return min;
 }
 
-/** Ключ псевдопредложения, в которое складываются токены при дрейфе смещений. */
+/** Key of the pseudo-sentence that collects tokens when offsets drift. */
 const DRIFT_BUCKET = -1;
 
 /**
- * Считает уверенность по всему ответу.
+ * Computes confidence over the whole answer.
  *
- * @param text  финальный текст ответа (тот же, чьи токены пришли в `tokens`)
- * @param tokens logprobs по токенам в порядке генерации
+ * @param text  final answer text (the same one whose tokens arrived in `tokens`)
+ * @param tokens logprobs per token in generation order
  */
 export function scoreAnswer(
   text: string,
   tokens: TokenLogprob[],
   options: ScoreOptions = {},
-  /** `providerID/modelID` — чтобы сменный скорер мог взять веса именно этой модели. */
+  /** `providerID/modelID` — so the swappable scorer can use this model's weights. */
   model?: string,
 ): AnswerScore {
   const opt = { ...DEFAULT_SCORE_OPTIONS, ...envScoreOptions(), ...options };
@@ -208,8 +208,8 @@ export function scoreAnswer(
   const withOffsets = alignTokens(text, tokens);
   const sentences = splitSentences(text);
 
-  // Дрейф смещений: хвост ответа не покрыт токенами — привязка к предложениям
-  // ненадёжна, сигнализируем partial.
+  // Offset drift: the tail of the answer is not covered by tokens, so binding to
+  // sentences is unreliable and we signal partial.
   const totalLen = withOffsets.length ? withOffsets[withOffsets.length - 1].end : 0;
   const offsetDrift = totalLen < text.length - 2;
 
@@ -228,8 +228,8 @@ export function scoreAnswer(
       first: null,
       sentences: [],
       flagged: 0,
-      // Токены пришли, но ни один не нашёлся в тексте ответа: числа по такому
-      // потоку были бы выдумкой, честнее сказать «не могу сопоставить».
+      // Tokens arrived but none were found in the answer text: numbers over such a
+      // stream would be made up, so it is honest to say "cannot align".
       reason: withOffsets.length ? "no content tokens" : "tokens do not match the answer text",
     };
   }
@@ -241,12 +241,12 @@ export function scoreAnswer(
     token: firstToken.token,
   };
 
-  // Группировка по предложениям (если дрейф — всё в одно «предложение»).
+  // Group by sentence (with drift, everything goes into one "sentence").
   const buckets = new Map<number, TokenWithOffset[]>();
   if (offsetDrift) {
-    // Смещения уехали: привязать токены к предложениям нельзя, но пустой список
-    // предложений снаружи читается как «спорных нет». Держим всё в одном
-    // псевдопредложении с реальным диапазоном текста, чтобы оценка осталась видимой.
+    // Offsets drifted: tokens cannot be bound to sentences, but an empty sentence
+    // list reads as "nothing doubtful" from the outside. Keep everything in a single
+    // pseudo-sentence with the real text range so the score stays visible.
     buckets.set(DRIFT_BUCKET, content);
   } else {
     for (const t of content) {
@@ -265,11 +265,11 @@ export function scoreAnswer(
     const lps = arr.map((t) => t.logprob);
     const geo = geometricMean(lps);
     const startPhi = phi(arr[0], opt.topK);
-    // Встроенная оценка — только геометрическое среднее: замер (docs/VALIDATION.md §14)
-    // показал, что вес худшего токена и φ делают её хуже случайного.
+    // The built-in score is just the geometric mean: measurement (docs/VALIDATION.md §14)
+    // showed that worst-token and φ weighting make it worse than chance.
     const features = featuresOf({
-      // Сырой средний logprob: `log(max(geo, 1e-9))` схлопывал всё ниже 1e-9
-      // в одно значение −20.7, и линейная модель теряла разрешение на плохих ответах.
+      // Raw mean logprob: `log(max(geo, 1e-9))` collapsed everything below 1e-9
+      // into one value −20.7, and the linear model lost resolution on bad answers.
       meanLp: lps.reduce((a, b) => a + b, 0) / lps.length,
       minLp: minOf(lps),
       meanPhi: startPhi,
@@ -292,8 +292,8 @@ export function scoreAnswer(
       minLp: minOf(lps),
       phi: startPhi,
       tokens: arr.length,
-      // Строгое сравнение: ровно на границе (score 0.55, risk 0.45) уровень ещё
-      // `uncertain`, и помечать предложение спорным нельзя.
+      // Strict comparison: exactly on the boundary (score 0.55, risk 0.45) the level is
+      // still `uncertain`, and the sentence must not be flagged.
       flag: risk > opt.riskyThreshold,
       level: levelOf(score) ?? "unreliable",
     });
@@ -330,9 +330,9 @@ export function scoreAnswer(
 }
 
 /**
- * Пороги можно переопределить окружением, не дожидаясь конфига в opencode.jsonc.
- * Некорректное значение молча игнорируется: сломанная переменная не должна
- * менять числа.
+ * Thresholds can be overridden by the environment, without waiting for a config
+ * in opencode.jsonc. An invalid value is silently ignored: a broken variable must
+ * not change the numbers.
  */
 export function envScoreOptions(env: Record<string, string | undefined> = process.env): ScoreOptions {
   const num = (name: string) => {
@@ -342,7 +342,7 @@ export function envScoreOptions(env: Record<string, string | undefined> = proces
     return Number.isFinite(value) && value >= 0 && value <= 1 ? value : undefined;
   };
   const risky = num("TRUTHPROBE_RISKY_THRESHOLD");
-  // `TRUTHPROBE_SHAKY_THRESHOLD` убран: переменная разбиралась, но ни один скорер
-  // и ни один UI её не читал, поэтому она только обещала несуществующую настройку.
+  // `TRUTHPROBE_SHAKY_THRESHOLD` was removed: the variable was parsed but no scorer
+  // and no UI ever read it, so it only promised a setting that did not exist.
   return risky === undefined ? {} : { riskyThreshold: risky };
 }

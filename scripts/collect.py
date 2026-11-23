@@ -1,56 +1,56 @@
 #!/usr/bin/env python3
-"""Собирает калибровочные строки через любой OpenAI-совместимый эндпоинт.
+"""Collects calibration rows through any OpenAI-compatible endpoint.
 
-Один и тот же скрипт работает и с FreeLLMAPI (много моделей за одним baseURL),
-и с локальным шлюзом, и с обычным OpenAI-совместимым сервером. На выходе —
-JSONL ровно в том виде, который ест `scripts/calibrate.py --fit --by-model`:
+The same script works with FreeLLMAPI (many models behind one baseURL),
+with a local gateway, and with a regular OpenAI-compatible server. The output is
+JSONL in exactly the shape that `scripts/calibrate.py --fit --by-model` eats:
 
     {"model": "freepi/particle", "prompt": "...", "answer": "...",
      "meanLp": -0.0573, "minLp": -0.493, "phi": 0.88, "fracLow": 0.05,
      "label": 1, "tokens": 22}
 
-Признаки считаются **точно так же, как в рантайме** (`packages/core/src/truthprobe/score.ts`):
+The features are computed **exactly as at runtime** (`packages/core/src/truthprobe/score.ts`):
 
-  meanLp  = среднее logprob по содержательным токенам ответа
-  minLp   = худший logprob
-  phi     = 1 - нормированная энтропия по top_logprobs ПЕРВОГО токена
-  fracLow = доля токенов с exp(logprob) < 0.5, то есть logprob < ln 0.5
+  meanLp  = mean logprob over the content tokens of the answer
+  minLp   = worst logprob
+  phi     = 1 - normalized entropy over the top_logprobs of the FIRST token
+  fracLow = share of tokens with exp(logprob) < 0.5, i.e. logprob < ln 0.5
 
-Важная деталь про «содержательные токены»: у reasoning-моделей поток logprobs
-начинается с рассуждения (`<​/think>` и текст до него), а рантайм считает только
-токены, попавшие в видимый ответ. Поэтому `collect.py` отбрасывает префикс до
-начала текста ответа — иначе признаки и веса жили бы в разных мирах.
+An important detail about "content tokens": with reasoning models the logprobs stream
+starts with the reasoning (`</think>` and the text before it), while the runtime counts only
+the tokens that made it into the visible answer. That is why `collect.py` drops the prefix up to
+the start of the answer text — otherwise features and weights would live in different worlds.
 
-Разметка. Есть три способа:
-  1. `--auto-label data/qa-bank.jsonl` — банк вопросов с эталонными ответами
-     (`{"prompt": ..., "expect": ["canberra"]}`). Совпало — 1, ответила другим — 0,
-     пусто/отказ — строка без метки (в обучение не идёт).
-  2. `--prompts rows.jsonl`, где у строки уже есть `label`.
-  3. Вручную: собрать без метки и проставить 0/1 позже.
+Labeling. There are three ways:
+  1. `--auto-label data/qa-bank.jsonl` — a question bank with reference answers
+     (`{"prompt": ..., "expect": ["canberra"]}`). A match is 1, a different answer is 0,
+     an empty answer/refusal is a row without a label (it does not go into training).
+  2. `--prompts rows.jsonl`, where the row already has a `label`.
+  3. By hand: collect without a label and fill in 0/1 later.
 
-Примеры:
+Examples:
 
-    # много моделей, авторазметка по банку вопросов, 8 потоков
+    # many models, auto-labeling from the question bank, 8 workers
     python3 scripts/collect.py --url http://127.0.0.1:3001/v1 --key $FREELLMAPI_KEY \\
         --models auto,auto:fast,groq/llama-3.3-70b --prompts data/qa-bank.jsonl \\
         --auto-label data/qa-bank.jsonl --out data/rows.jsonl --resume --workers 8
 
-    # один промпт для проверки контракта
+    # a single prompt to check the contract
     python3 scripts/collect.py --url http://127.0.0.1:8790/v1 --key x \\
-        --model freepi/particle --prompt "Назови столицу Франции" --out data/rows.jsonl
+        --model freepi/particle --prompt "Name the capital of France" --out data/rows.jsonl
 
-    # только план, без сети
+    # plan only, no network
     python3 scripts/collect.py --prompts data/qa-bank.jsonl --models auto --dry-run
 
-    # несколько сэмплов на пару (модель, промпт): при temperature > 0 разные ответы
+    # several samples per (model, prompt) pair: with temperature > 0 the answers differ
     python3 scripts/collect.py --url http://127.0.0.1:8790/v1 --key x \\
         --models particle,deepseek-v4.1-flash --prompts data/qa-hard-bank.jsonl \\
         --auto-label data/qa-hard-bank.jsonl --temperature 0.8 --samples 4 \\
         --workers 4 --out data/rows-hard.jsonl --resume
 
-`--resume` пропускает пары (модель, промпт) — а при `--samples N` тройки
-(модель, промпт, сэмпл) — которые уже лежат в `--out`. Строки без поля
-`sample` считаются сэмплом 0, поэтому старые файлы остаются совместимыми.
+`--resume` skips the (model, prompt) pairs, and with `--samples N` the triples
+(model, prompt, sample), that are already present in `--out`. Rows without the
+`sample` field count as sample 0, so the old files stay compatible.
 """
 
 from __future__ import annotations
@@ -67,7 +67,7 @@ import time
 import urllib.error
 import urllib.request
 
-FRAC_LOW_CUTOFF = math.log(0.5)  # ровно тот порог, что в score.ts
+FRAC_LOW_CUTOFF = math.log(0.5)  # exactly the threshold used in score.ts
 
 
 def clamp01(x: float) -> float:
@@ -77,15 +77,15 @@ def clamp01(x: float) -> float:
 
 
 def phi(token: dict, top_k: int = 20) -> float:
-    """Уверенность по top_logprobs: 1 − нормированная энтропия, как `phi` в рантайме."""
+    """Confidence from top_logprobs: 1 - normalized entropy, like `phi` at runtime."""
     top = [
         item
         for item in (token.get("top_logprobs") or [])
         if isinstance(item.get("logprob"), (int, float)) and math.isfinite(item["logprob"])
     ]
     if len(top) < 2:
-        # Вырожденная ветка рантайма — это exp(logprob), а не 1 − exp(logprob):
-        # иначе тот же токен получает обратный знак, и вес `meanPhi` работает против ответа.
+        # The degenerate runtime branch is exp(logprob), not 1 - exp(logprob):
+        # otherwise the same token gets the opposite sign and the `meanPhi` weight works against the answer.
         return clamp01(math.exp(float(token["logprob"])))
     k = max(2, min(top_k, len(top)))
     probs = [math.exp(float(item["logprob"])) for item in top[:k]]
@@ -97,18 +97,18 @@ def phi(token: dict, top_k: int = 20) -> float:
         q = p / total
         if q > 0:
             h -= q * math.log(q)
-    # φ — уверенность, как в рантайме (`packages/core/src/truthprobe/score.ts`): 1 − H/ln K.
-    # Энтропия здесь давала бы обратный знак относительно живого скорера, и обученный
-    # вес `meanPhi` работал бы против ответа.
+    # phi is confidence, as at runtime (`packages/core/src/truthprobe/score.ts`): 1 - H/ln K.
+    # Entropy here would give the opposite sign relative to the live scorer, and the trained
+    # `meanPhi` weight would work against the answer.
     return clamp01(1.0 - h / math.log(k) if k > 1 else 1.0)
 
 
 def answer_tokens(tokens: list[dict], answer: str) -> list[dict]:
-    """Оставляет только токены, из которых состоит видимый ответ.
+    """Keeps only the tokens that make up the visible answer.
 
-    Стрим начинается с рассуждения; рантайм скорит лишь то, что попало в текст
-    ответа. Если ответ пуст или не найден в конкатенации токенов, возвращаем
-    весь поток — лучше честно посчитать по нему, чем потерять строку.
+    The stream starts with the reasoning; the runtime scores only what made it into the
+    answer text. If the answer is empty or is not found in the concatenated tokens, we return
+    the whole stream: better to honestly score over it than to lose the row.
     """
     if not tokens or not (answer or "").strip():
         return tokens
@@ -138,14 +138,14 @@ def features(tokens: list[dict], answer: str = "", top_k: int = 20) -> dict | No
         "meanLp": round(sum(lps) / len(lps), 6),
         "minLp": round(min(lps), 6),
         "phi": round(phi(scored[0], top_k), 6),
-        # Маркер полярности: `phi` здесь — уверенность (1 − энтропия), как в рантайме.
-        # В наборах до 22.11.2026 поля не было и `phi` была энтропией; `calibrate.py`
-        # инвертирует такие строки при загрузке. Без маркера он инвертировал бы и новые.
+        # Polarity marker: `phi` here is confidence (1 - entropy), as at runtime.
+        # In datasets from before 22.11.2026 there was no field and `phi` was entropy; `calibrate.py`
+        # inverts such rows on load. Without the marker it would invert the new ones too.
         "phiDef": "confidence",
         "fracLow": round(sum(1 for lp in lps if lp < FRAC_LOW_CUTOFF) / len(lps), 6),
-        # Тот же признак, что считает рантайм (`digitDensity` в score.ts): только ASCII-цифры
-        # и длина в UTF-16 code units (как `String.prototype.length`), иначе train и serve
-        # расходятся на арабских цифрах и эмодзи.
+        # The same feature the runtime computes (`digitDensity` in score.ts): ASCII digits only
+        # and the length in UTF-16 code units (like `String.prototype.length`), otherwise train and serve
+        # diverge on Arabic-Indic digits and emoji.
         "digitDensity": round(
             sum(1 for ch in answer if "0" <= ch <= "9") / (len(answer.encode("utf-16-le")) // 2), 6
         ) if answer else 0.0,
@@ -180,7 +180,7 @@ def read_prompts(path: str) -> list[dict]:
                 try:
                     item = json.loads(line)
                 except json.JSONDecodeError:
-                    print(f"{path}:{n}: не JSON, строка пропущена", file=sys.stderr)
+                    print(f"{path}:{n}: not JSON, line skipped", file=sys.stderr)
                     continue
                 prompt = item.get("prompt")
                 if not prompt:
@@ -192,7 +192,7 @@ def read_prompts(path: str) -> list[dict]:
 
 
 def read_bank(path: str) -> dict[str, list[str]]:
-    """Банк вопросов: prompt -> список принимаемых ответов (в нижнем регистре)."""
+    """Question bank: prompt -> list of accepted answers (lowercase)."""
     bank: dict[str, list[str]] = {}
     with open(path, encoding="utf-8") as handle:
         for line in handle:
@@ -214,7 +214,7 @@ WORD = re.compile(r"[a-zа-я0-9]+")
 
 
 def matches(answer: str, expect: list[str]) -> bool:
-    """Короткие эталоны сравниваем по границам слова, длинные — по вхождению."""
+    """Short references are compared on word boundaries, long ones by substring."""
     text = " ".join(WORD.findall(answer.lower()))
     words = text.split()
     for value in expect:
@@ -228,15 +228,15 @@ def matches(answer: str, expect: list[str]) -> bool:
 
 def autolabel(answer: str, expect: list[str]) -> int | None:
     if not (answer or "").strip():
-        return None  # отказ или пустой ответ: метки нет, в обучение не идёт
+        return None  # refusal or empty answer: no label, not used for training
     return 1 if matches(answer, expect) else 0
 
 
 def seen_pairs(path: str) -> set[tuple[str, str, int]]:
-    """Уже собранные тройки (модель, промпт, сэмпл).
+    """Triples (model, prompt, sample) collected so far.
 
-    Строки без поля `sample` — это сэмпл 0: старые наборы писались до
-    появления `--samples`, и после `--resume` их не нужно перезапрашивать.
+    Rows without the `sample` field are sample 0: the old datasets were written before
+    `--samples` appeared, and after `--resume` they must not be requested again.
     """
     if not path or not os.path.exists(path):
         return set()
@@ -261,27 +261,27 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--url", default=os.environ.get("COLLECT_URL", "http://127.0.0.1:3001/v1"))
     parser.add_argument("--key", default=os.environ.get("FREELLMAPI_KEY") or os.environ.get("OPENAI_API_KEY") or "")
-    parser.add_argument("--model", action="append", default=[], help="модель; можно повторять")
-    parser.add_argument("--models", help="список моделей через запятую (альтернатива --model)")
-    parser.add_argument("--all-models", action="store_true", help="взять весь каталог из GET /v1/models")
-    parser.add_argument("--prompt", action="append", default=[], help="промпт; можно повторять")
-    parser.add_argument("--prompts", help="файл промптов: txt (по строке) или JSONL {prompt,label}")
-    parser.add_argument("--auto-label", metavar="BANK", help="JSONL с expect-ответами: проставить label 0/1 автоматически")
+    parser.add_argument("--model", action="append", default=[], help="model; can be repeated")
+    parser.add_argument("--models", help="comma-separated model list (alternative to --model)")
+    parser.add_argument("--all-models", action="store_true", help="take the whole catalog from GET /v1/models")
+    parser.add_argument("--prompt", action="append", default=[], help="prompt; can be repeated")
+    parser.add_argument("--prompts", help="prompt file: txt (one per line) or JSONL {prompt,label}")
+    parser.add_argument("--auto-label", metavar="BANK", help="JSONL with expect answers: set label 0/1 automatically")
     parser.add_argument("--out", default="truthprobe-rows.jsonl")
     parser.add_argument("--max-tokens", type=int, default=160)
     parser.add_argument("--temperature", type=float, default=0.0)
     parser.add_argument("--top-logprobs", type=int, default=3)
-    parser.add_argument("--sleep", type=float, default=0.3, help="пауза между запросами, сек (на поток)")
-    parser.add_argument("--samples", type=int, default=1, help="сколько раз запросить каждую пару (модель, промпт)")
+    parser.add_argument("--sleep", type=float, default=0.3, help="pause between requests, sec (per worker)")
+    parser.add_argument("--samples", type=int, default=1, help="how many times to request each (model, prompt) pair")
     parser.add_argument(
         "--provider",
         default="",
-        help="префикс для поля model в строках (например freepi): в рантайме ключ весов — providerID/modelID",
+        help="prefix for the model field in rows (e.g. freepi): at runtime the weights key is providerID/modelID",
     )
-    parser.add_argument("--workers", type=int, default=1, help="сколько запросов держать в полёте")
-    parser.add_argument("--limit", type=int, help="не больше N запросов за запуск")
-    parser.add_argument("--resume", action="store_true", help="пропускать уже собранные (модель, промпт, сэмпл)")
-    parser.add_argument("--dry-run", action="store_true", help="только показать план, без сети")
+    parser.add_argument("--workers", type=int, default=1, help="how many requests to keep in flight")
+    parser.add_argument("--limit", type=int, help="no more than N requests per run")
+    parser.add_argument("--resume", action="store_true", help="skip already collected (model, prompt, sample)")
+    parser.add_argument("--dry-run", action="store_true", help="only show the plan, without network")
     args = parser.parse_args()
 
     models = list(args.model)
@@ -290,12 +290,12 @@ def main() -> int:
     if args.all_models:
         status, _, body = request(f"{args.url.rstrip('/')}/models", args.key)
         if status != 200:
-            print(f"каталог моделей недоступен: HTTP {status}", file=sys.stderr)
+            print(f"model catalog unavailable: HTTP {status}", file=sys.stderr)
             return 2
         try:
             models.extend(row["id"] for row in json.loads(body).get("data", []) if row.get("id"))
         except (json.JSONDecodeError, KeyError, TypeError):
-            print("не разобрал каталог моделей", file=sys.stderr)
+            print("could not parse the model catalog", file=sys.stderr)
             return 2
     if not models:
         models = ["auto"]
@@ -304,7 +304,7 @@ def main() -> int:
     if args.prompts:
         prompts.extend(read_prompts(args.prompts))
     if not prompts:
-        print("нет промптов: задай --prompt или --prompts", file=sys.stderr)
+        print("no prompts: pass --prompt or --prompts", file=sys.stderr)
         return 2
     if args.limit:
         prompts = prompts[: args.limit]
@@ -314,15 +314,15 @@ def main() -> int:
     samples = max(1, args.samples)
     plan = [(m, p["prompt"], p["label"], s) for m in models for p in prompts for s in range(samples)]
     print(
-        f"план: {len(models)} модел(ей) x {len(prompts)} промпт(ов) x {samples} сэмпл(ов) "
-        f"= {len(plan)} запросов -> {args.out}"
+        f"plan: {len(models)} model(s) x {len(prompts)} prompt(s) x {samples} sample(s) "
+        f"= {len(plan)} requests -> {args.out}"
     )
 
     if args.dry_run:
         for model, prompt, label, sample in plan[:20]:
             print(f"  {model} sample={sample} | label={label} | {prompt[:70]}")
         if len(plan) > 20:
-            print(f"  ... ещё {len(plan) - 20}")
+            print(f"  ... {len(plan) - 20} more")
         return 0
 
     done = seen_pairs(args.out) if args.resume else set()
@@ -347,8 +347,8 @@ def main() -> int:
         }
         status, headers, body = request(f"{base}/chat/completions", args.key, payload)
         routed = headers.get("X-Routed-Via") or headers.get("x-routed-via") or model
-        # Ключ весов в рантайме — `providerID/modelID`, поэтому запись в строке
-        # должна быть в том же виде, иначе per-model калибровка не найдёт модель.
+        # The weights key at runtime is `providerID/modelID`, so the record in the row
+        # must have the same shape, otherwise per-model calibration will not find the model.
         model_id = f"{args.provider}/{routed}" if args.provider else routed
         with lock:
             if status != 200:
@@ -370,15 +370,15 @@ def main() -> int:
                 choice = json.loads(body)["choices"][0]
             except (json.JSONDecodeError, KeyError, IndexError):
                 counters["failed"] += 1
-                print(f"[{index}/{len(plan)}] {model} sample={sample} -> не разобрал ответ")
+                print(f"[{index}/{len(plan)}] {model} sample={sample} -> could not parse the response")
                 time.sleep(args.sleep)
                 return
             answer = (choice.get("message") or {}).get("content") or ""
             tokens = ((choice.get("logprobs") or {}).get("content") or [])
             feats = features(tokens, answer, args.top_logprobs)
-            # Обрезанный по max_tokens ответ — это артефакт нашего лимита, а не ошибка
-            # модели. Такой ответ не должен становиться негативом, иначе веса учатся
-            # на собственной жадности.
+            # An answer truncated by max_tokens is an artifact of our own limit, not a model
+            # error. Such an answer must not become a negative, otherwise the weights learn
+            # from our own greediness.
             truncated = choice.get("finish_reason") == "length"
             if bank and prompt in bank:
                 label = autolabel(answer, bank[prompt])
@@ -397,7 +397,7 @@ def main() -> int:
             out.flush()
             if feats is None:
                 counters["failed"] += 1
-                print(f"[{index}/{len(plan)}] {routed} sample={sample} -> без logprobs")
+                print(f"[{index}/{len(plan)}] {routed} sample={sample} -> no logprobs")
             else:
                 counters["written"] += 1
                 print(
@@ -417,13 +417,13 @@ def main() -> int:
                 run_one(item)
 
     print(
-        f"готово: {counters['written']} строк с признаками, {counters['skipped']} пропущено (--resume), "
-        f"{counters['failed']} без logprobs/ошибок"
+        f"done: {counters['written']} rows with features, {counters['skipped']} skipped (--resume), "
+        f"{counters['failed']} without logprobs/errors"
     )
     if counters["written"]:
         print(
-            "дальше: python3 scripts/calibrate.py --fit --by-model --out weights.json "
-            f"{args.out}   (строки без label в обучение не попадут)"
+            "next: python3 scripts/calibrate.py --fit --by-model --out weights.json "
+            f"{args.out}   (rows without a label will not be used for training)"
         )
     return 0 if counters["written"] else 1
 

@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
-"""Досчитывает `digitDensity` в уже собранных строках.
+"""Backfills `digitDensity` in the rows that were already collected.
 
-Признак появился позже, чем часть наборов: `collect.py` теперь пишет его сам, но
-старые JSONL его не содержат. Пересчёт из поля `answer` — не выдумывание данных, а
-та же самая функция, что в рантайме (`packages/core/src/truthprobe/score.ts`):
+The feature appeared later than some datasets: `collect.py` now writes it itself, but
+the old JSONL files do not contain it. Recomputing it from the `answer` field is not inventing data but
+the very same function as at runtime (`packages/core/src/truthprobe/score.ts`):
 
-    digitDensity = число символов 0..9 в видимом ответе / длина ответа
+    digitDensity = number of characters 0..9 in the visible answer / answer length
 
-Поэтому скрипт идемпотентен: повторный запуск даёт те же числа. Строки, где
-`digitDensity` уже есть и совпадает, остаются нетронутыми.
+That is why the script is idempotent: a repeated run gives the same numbers. Rows where
+`digitDensity` is already present and matches are left untouched.
 
     python3 scripts/enrich-digits.py data/rows-*.jsonl
     python3 scripts/enrich-digits.py --check data/rows-lie-vs-truth.jsonl
@@ -23,7 +23,7 @@ import sys
 
 
 def digit_density(answer: str) -> float:
-    """Ровно как `digitDensity` в score.ts: ASCII-цифры на UTF-16 code unit."""
+    """Exactly like `digitDensity` in score.ts: ASCII digits per UTF-16 code unit."""
     if not answer:
         return 0.0
     units = len(answer.encode("utf-16-le")) // 2
@@ -31,7 +31,7 @@ def digit_density(answer: str) -> float:
 
 
 def process(path: str, check: bool) -> tuple[int, int]:
-    """Возвращает (сколько строк всего, сколько изменено или разошлось)."""
+    """Returns (total rows, rows changed or diverged)."""
     total = changed = 0
     rows: list[str] = []
     with open(path, encoding="utf-8") as handle:
@@ -67,18 +67,18 @@ def process(path: str, check: bool) -> tuple[int, int]:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("paths", nargs="+")
-    parser.add_argument("--check", action="store_true", help="только показать расхождения, не писать")
+    parser.add_argument("--check", action="store_true", help="only show divergences, do not write")
     args = parser.parse_args()
 
     exit_code = 0
     for path in args.paths:
         if not os.path.exists(path):
-            print(f"{path}: нет файла", file=sys.stderr)
+            print(f"{path}: no such file", file=sys.stderr)
             exit_code = 2
             continue
         total, changed = process(path, args.check)
-        verb = "разошлось" if args.check else "обновлено"
-        print(f"{path}: {total} строк, {verb} {changed}")
+        verb = "diverged" if args.check else "updated"
+        print(f"{path}: {total} rows, {verb} {changed}")
         if args.check and changed:
             exit_code = 1
     return exit_code

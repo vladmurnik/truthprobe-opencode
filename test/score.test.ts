@@ -9,7 +9,7 @@ import {
 import { codeRanges, splitSentences } from "../src/truthprobe/sentences.js"
 import type { TokenLogprob } from "../src/truthprobe/types.js"
 
-/** Токен с двумя альтернативами: сам токен и «шум» на дельту ниже. */
+/** A token with two alternatives: the token itself and "noise" one delta below. */
 const token = (text: string, logprob: number, delta = 1): TokenLogprob => ({
   token: text,
   logprob,
@@ -19,25 +19,25 @@ const token = (text: string, logprob: number, delta = 1): TokenLogprob => ({
   ],
 })
 
-/** Собирает токены из пар, как их вернул бы провайдер. */
+/** Builds tokens from pairs, the way a provider would return them. */
 const tokens = (values: Array<[string, number]>, delta = 1): TokenLogprob[] =>
   values.map(([text, logprob]) => token(text, logprob, delta))
 
-/** Нарезает текст на токены по границам слов, чтобы смещения совпадали. */
+/** Cuts the text into tokens on word boundaries so the offsets line up. */
 const slice = (text: string, size = 4): string[] => {
   const out: string[] = []
   for (let i = 0; i < text.length; i += size) out.push(text.slice(i, i + size))
   return out
 }
 
-/** Ровные токены с заданным logprob на весь текст. */
+/** Even tokens with the given logprob across the whole text. */
 const flat = (text: string, logprob: number): TokenLogprob[] =>
   slice(text).map((part) => token(part, logprob))
 
 describe("truthprobe.isContentToken", () => {
   test("keeps ordinary words", () => {
     expect(isContentToken("Paris")).toBe(true)
-    expect(isContentToken("Париж")).toBe(true)
+    expect(isContentToken("Berlin")).toBe(true)
     expect(isContentToken(" 13")).toBe(true)
   })
 
@@ -61,7 +61,7 @@ describe("truthprobe.isContentToken", () => {
 
 describe("truthprobe.normalizedEntropy / phi", () => {
   test("certain token has zero entropy and full phi", () => {
-    const certain = { token: "да", logprob: 0, top: [{ token: "да", logprob: 0 }] }
+    const certain = { token: "yes", logprob: 0, top: [{ token: "yes", logprob: 0 }] }
     expect(normalizedEntropy(certain)).toBe(0)
     expect(phi(certain)).toBe(1)
   })
@@ -72,7 +72,7 @@ describe("truthprobe.normalizedEntropy / phi", () => {
   })
 
   test("two equal alternatives give zero phi", () => {
-    const split = { token: "да", logprob: -0.7, top: [{ token: "да", logprob: -0.7 }, { token: "нет", logprob: -0.7 }] }
+    const split = { token: "yes", logprob: -0.7, top: [{ token: "yes", logprob: -0.7 }, { token: "no", logprob: -0.7 }] }
     expect(normalizedEntropy(split)).toBeCloseTo(1, 6)
     expect(phi(split)).toBeCloseTo(0, 6)
   })
@@ -131,7 +131,7 @@ describe("truthprobe.normalizedEntropy / phi", () => {
         { token: "c", logprob: Number.NEGATIVE_INFINITY },
       ],
     }
-    // После фильтра остаётся один кандидат → деградация к p(token).
+    // After filtering one candidate remains → degrade to p(token).
     expect(phi(noisy)).toBeCloseTo(Math.exp(-0.1), 6)
   })
 
@@ -195,7 +195,7 @@ describe("truthprobe.splitSentences", () => {
   })
 
   test("offsets match the source string", () => {
-    const text = "Первое. Второе.\n\nТретье — с тире!"
+    const text = "First one. Second one!\n\nThird — with a dash!"
     for (const sentence of splitSentences(text)) {
       expect(text.slice(sentence.start, sentence.end)).toBe(sentence.text)
     }
@@ -206,14 +206,21 @@ describe("truthprobe.splitSentences", () => {
   })
 
   test("does not split abbreviations", () => {
-    expect(texts("Это т.е. пример. Конец.")).toEqual(["Это т.е. пример.", "Конец."])
+    expect(texts("This is i.e. an example. The end.")).toEqual(["This is i.e. an example.", "The end."])
     expect(texts("Use e.g. this one. Fine.")).toEqual(["Use e.g. this one.", "Fine."])
     expect(texts("Apples, pears, etc. And more.")).toEqual(["Apples, pears, etc.", "And more."])
-    expect(texts("См. выше. Да.")).toEqual(["См. выше.", "Да."])
+    expect(texts("Fig. 2 shows this. Fine.")).toEqual(["Fig. 2 shows this.", "Fine."])
+  })
+
+  test("does not split Cyrillic abbreviations", () => {
+    // Russian abbreviations ("see above", "yes") are still supported; the input is written as
+    // escapes so this file stays ASCII-only.
+    const text = "\u0421\u043c. \u0432\u044b\u0448\u0435. \u0414\u0430."
+    expect(texts(text)).toEqual(["\u0421\u043c. \u0432\u044b\u0448\u0435.", "\u0414\u0430."])
   })
 
   test("supports the ellipsis and CJK terminators", () => {
-    expect(texts("Ждём… И вот.")).toEqual(["Ждём…", "И вот."])
+    expect(texts("We wait… And here.")).toEqual(["We wait…", "And here."])
     expect(texts("これは文です。次です。")).toEqual(["これは文です。", "次です。"])
   })
 
@@ -222,12 +229,12 @@ describe("truthprobe.splitSentences", () => {
   })
 
   test("code blocks are dropped entirely", () => {
-    const text = "Перед.\n```js\nconst a = 1;\n```\nПосле."
-    expect(texts(text)).toEqual(["Перед.", "После."])
+    const text = "Before.\n```js\nconst a = 1;\n```\nAfter."
+    expect(texts(text)).toEqual(["Before.", "After."])
   })
 
   test("unclosed code block swallows the rest", () => {
-    expect(texts("Перед.\n```js\nconst a = 1;")).toEqual(["Перед."])
+    expect(texts("Before.\n```js\nconst a = 1;")).toEqual(["Before."])
   })
 
   test("empty and whitespace-only input give nothing", () => {
@@ -236,11 +243,11 @@ describe("truthprobe.splitSentences", () => {
   })
 
   test("single line without terminator is one sentence", () => {
-    expect(texts("Просто строка без точки")).toEqual(["Просто строка без точки"])
+    expect(texts("Just a line without a dot")).toEqual(["Just a line without a dot"])
   })
 
   test("list items without terminators stay together", () => {
-    // Документируем поведение: одиночный перевод строки не является границей.
+    // Documenting the behaviour: a single newline is not a boundary.
     expect(texts("- one\n- two")).toEqual(["- one\n- two"])
   })
 
@@ -250,9 +257,9 @@ describe("truthprobe.splitSentences", () => {
   })
 })
 
-describe("truthprobe.scoreAnswer — деградация", () => {
-  test("без токенов возвращает unavailable", () => {
-    const result = scoreAnswer("Любой текст.", [])
+describe("truthprobe.scoreAnswer — degradation", () => {
+  test("without tokens it returns unavailable", () => {
+    const result = scoreAnswer("Any text.", [])
     expect(result.status).toBe("unavailable")
     expect(result.score).toBeNull()
     expect(result.risk).toBeNull()
@@ -262,21 +269,21 @@ describe("truthprobe.scoreAnswer — деградация", () => {
     expect(result.reason).toBe("no logprobs in response")
   })
 
-  test("только пунктуация — нет содержательных токенов", () => {
+  test("punctuation only — no content tokens", () => {
     const result = scoreAnswer("...", tokens([["...", -0.1], [" .", -0.2]]))
     expect(result.status).toBe("unavailable")
     expect(result.reason).toBe("no content tokens")
   })
 
-  test("minTokenChars можно ослабить", () => {
+  test("minTokenChars can be relaxed", () => {
     const text = "a b"
     const raw = tokens([["a", -0.1], [" b", -0.1]])
     expect(scoreAnswer(text, raw).status).toBe("unavailable")
     expect(scoreAnswer(text, raw, { minTokenChars: 1 }).status).toBe("ok")
   })
 
-  test("дрейф токенов относительно текста даёт unavailable, а не выдуманные числа", () => {
-    const result = scoreAnswer("Совсем другой текст, который не совпадает.", tokens([["Что-то", -0.1], [" иное", -0.2]]))
+  test("token drift relative to the text gives unavailable, not made-up numbers", () => {
+    const result = scoreAnswer("A completely different text that does not match.", tokens([["Something", -0.1], [" else", -0.2]]))
     expect(result.status).toBe("unavailable")
     expect(result.reason).toBe("tokens do not match the answer text")
     expect(result.score).toBeNull()
@@ -284,13 +291,13 @@ describe("truthprobe.scoreAnswer — деградация", () => {
   })
 })
 
-describe("truthprobe.scoreAnswer — арифметика", () => {
-  test("итог — взвешенная смесь общего скора и среднего по предложениям", () => {
-    const text = "Первое. Второе."
+describe("truthprobe.scoreAnswer — arithmetic", () => {
+  test("the total is a weighted mix of the global score and the sentence mean", () => {
+    const text = "First. Second."
     const raw = tokens([
-      ["Первое", -0.2],
+      ["First", -0.2],
       [".", -0.2],
-      [" Второе", -1.6],
+      [" Second", -1.6],
       [".", -1.6],
     ])
     const result = scoreAnswer(text, raw, { globalWeight: 0.6 })
@@ -299,24 +306,24 @@ describe("truthprobe.scoreAnswer — арифметика", () => {
     expect(result.score!).toBeCloseTo(0.6 * global + 0.4 * mean, 10)
   })
 
-  test("уверенный ответ выше сомнительного", () => {
-    const text = "Москва — столица России. Население около 13 миллионов человек."
+  test("a confident answer scores higher than a doubtful one", () => {
+    const text = "Moscow is the capital of Russia. Its population is about 13 million people."
     const confident = scoreAnswer(text, flat(text, -0.02))
     const hesitant = scoreAnswer(text, flat(text, -2.2))
     expect(confident.score!).toBeGreaterThan(hesitant.score!)
     expect(hesitant.flagged).toBeGreaterThan(0)
   })
 
-  test("первый токен — первый содержательный, пунктуация пропускается", () => {
-    const text = "«Париж» — столица."
-    const result = scoreAnswer(text, tokens([["«", -0.1], ["Париж", -0.5], ["»", -0.1], [" —", -0.1], [" столица", -0.2], [".", -0.1]]))
-    expect(result.first!.token).toBe("Париж")
-    expect(result.first!.score).toBeCloseTo(phi(token("Париж", -0.5)), 10)
+  test("the first token is the first content token, punctuation is skipped", () => {
+    const text = "«Paris» — the capital."
+    const result = scoreAnswer(text, tokens([["«", -0.1], ["Paris", -0.5], ["»", -0.1], [" —", -0.1], [" the", -0.1], [" capital", -0.2], [".", -0.1]]))
+    expect(result.first!.token).toBe("Paris")
+    expect(result.first!.score).toBeCloseTo(phi(token("Paris", -0.5)), 10)
   })
 
-  test("предложения не смешивают токены соседей", () => {
-    const text = "Хорошо. Плохо."
-    const raw = tokens([["Хорошо", -0.01], [".", -0.01], [" Плохо", -3.5], [".", -3.5]])
+  test("sentences do not mix tokens from their neighbours", () => {
+    const text = "Good. Bad."
+    const raw = tokens([["Good", -0.01], [".", -0.01], [" Bad", -3.5], [".", -3.5]])
     const result = scoreAnswer(text, raw)
     expect(result.sentences.length).toBe(2)
     const [good, bad] = result.sentences
@@ -327,17 +334,17 @@ describe("truthprobe.scoreAnswer — арифметика", () => {
     expect(bad.tokens).toBe(1)
   })
 
-  test("minLp и meanLp отражают худший и средний токен", () => {
-    const text = "Аа бб"
-    const raw = tokens([["Аа", -0.2], [" бб", -2.4]])
+  test("minLp and meanLp reflect the worst and the average token", () => {
+    const text = "Alpha beta"
+    const raw = tokens([["Alpha", -0.2], [" beta", -2.4]])
     const result = scoreAnswer(text, raw)
     const sentence = result.sentences[0]
     expect(sentence.minLp).toBe(-2.4)
     expect(sentence.meanLp).toBeCloseTo(Math.exp((-0.2 - 2.4) / 2), 10)
   })
 
-  test("порог риска настраивается", () => {
-    const text = "Средне сомнительно."
+  test("the risk threshold is configurable", () => {
+    const text = "Moderately doubtful."
     const raw = flat(text, -1.4)
     const lenient = scoreAnswer(text, raw, { riskyThreshold: 1 })
     const strict = scoreAnswer(text, raw, { riskyThreshold: 0 })
@@ -346,16 +353,16 @@ describe("truthprobe.scoreAnswer — арифметика", () => {
     expect(strict.flagged).toBeGreaterThan(0)
   })
 
-  test("globalWeight=1 даёт геометрическое среднее по всем токенам", () => {
-    const text = "Совершенно уверенно."
-    const raw = tokens([["Совер", -0.1], ["шенно", -0.3], [" уверен", -0.2], ["но", -0.4], [".", -0.1]])
+  test("globalWeight=1 gives the geometric mean over all tokens", () => {
+    const text = "Absolutely certain."
+    const raw = tokens([["Absol", -0.1], ["utely", -0.3], [" cert", -0.2], ["ain", -0.4], [".", -0.1]])
     const result = scoreAnswer(text, raw, { globalWeight: 1 })
-    const expected = Math.exp((-0.1 - 0.3 - 0.2 - 0.4) / 4) // пунктуация не в счёте
+    const expected = Math.exp((-0.1 - 0.3 - 0.2 - 0.4) / 4) // punctuation is not counted
     expect(result.score!).toBeCloseTo(expected, 10)
   })
 
-  test("повторный прогон на тех же токенах даёт те же числа", () => {
-    const text = "Повторяемый ответ. Тот же самый."
+  test("a repeated run on the same tokens gives the same numbers", () => {
+    const text = "A repeatable answer. The very same."
     const first = scoreAnswer(text, flat(text, -0.7))
     const second = scoreAnswer(text, flat(text, -0.7))
     expect(second.score).toBeCloseTo(first.score!, 12)
@@ -364,7 +371,7 @@ describe("truthprobe.scoreAnswer — арифметика", () => {
     )
   })
 
-  test("идеально уверенный ответ даёт score 1 и risk 0", () => {
+  test("a perfectly confident answer gives score 1 and risk 0", () => {
     const text = "ok"
     const result = scoreAnswer(text, [{ token: "ok", logprob: 0 }])
     expect(result.score).toBeCloseTo(1, 10)
@@ -372,15 +379,15 @@ describe("truthprobe.scoreAnswer — арифметика", () => {
     expect(result.flagged).toBe(0)
   })
 
-  test("крайне неуверенный ответ даёт risk около единицы", () => {
-    const text = "Что-то очень странное."
+  test("an extremely uncertain answer gives risk close to one", () => {
+    const text = "Something very strange."
     const result = scoreAnswer(text, flat(text, -12))
     expect(result.risk!).toBeGreaterThan(0.95)
     expect(result.flagged).toBe(1)
   })
 
-  test("границы предложений в оценке совпадают с сегментатором", () => {
-    const text = "Первое. Второе."
+  test("sentence boundaries in the score match the segmenter", () => {
+    const text = "First. Second."
     const result = scoreAnswer(text, flat(text, -0.3))
     const sentences = splitSentences(text)
     expect(result.sentences.map((s) => [s.start, s.end])).toEqual(sentences.map((s) => [s.start, s.end]))

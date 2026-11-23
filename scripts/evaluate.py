@@ -1,51 +1,51 @@
 #!/usr/bin/env python3
-"""Оценка confidence-скоров TruthProbe: AUROC, ECE, Brier и разбивка по уровням.
+"""Confidence scores of TruthProbe: AUROC, ECE, Brier and the breakdown by level.
 
-Скрипт читает JSONL, который пишут `scripts/collect.py` и подобные сборщики
-(`data/rows-*.jsonl`), считает score тремя способами и печатает одну таблицу:
+The script reads the JSONL written by `scripts/collect.py` and similar collectors
+(`data/rows-*.jsonl`), computes the score three ways and prints a single table:
 
-    geometric   встроенная формула рантайма (TRUTHPROBE_SCORER=geometric)
-    global      линейная модель по общим весам из `--weights`
-    per-model   веса `models[<model>]` из бандла, иначе global
+    geometric   built-in runtime formula (TRUTHPROBE_SCORER=geometric)
+    global      linear model over the global weights from `--weights`
+    per-model   weights from `models[<model>]` in the bundle, otherwise global
 
-Признаки берутся ровно те же, что в рантайме (`src/truthprobe/scorer.ts`):
+The features are exactly the same as at runtime (`src/truthprobe/scorer.ts`):
 
-    meanLp  = средний logprob по содержательным токенам ответа
-    minLp   = худший logprob
-    phi     = meanPhi, уверенность первого токена (1 - нормированная энтропия)
-    fracLow = доля токенов с logprob < ln 0.5
+    meanLp  = mean logprob over the content tokens of the answer
+    minLp   = worst logprob
+    phi     = meanPhi, confidence of the first token (1 - normalized entropy)
+    fracLow = share of tokens with logprob < ln 0.5
 
-Формулы:
+Formulas:
 
     geometric = clamp01(exp(meanLp))
     linear    = clamp01(sigmoid(bias + w1*meanLp + w2*minLp + w3*phi + w4*fracLow))
 
-Границы уровней — те же, что в `src/truthprobe/levels.ts`:
-safe >= 0.90, likely >= 0.75, uncertain >= 0.55, risky >= 0.35, иначе unreliable.
+The level boundaries are the same as in `src/truthprobe/levels.ts`:
+safe >= 0.90, likely >= 0.75, uncertain >= 0.55, risky >= 0.35, otherwise unreliable.
 
-Метрики:
+Metrics:
 
-    AUROC  ранговая статистика Манна—Уитни (связанным score — средний ранг)
-    ECE    sum(n_b/N * |acc_b - conf_b|) по равным интервалам [0,1]
+    AUROC  Mann-Whitney rank statistic (tied scores get the average rank)
+    ECE    sum(n_b/N * |acc_b - conf_b|) over equal intervals of [0,1]
     Brier  mean((p - y)^2)
 
-Строки без числовых признаков (у них обычно есть `error`) и строки без метки
-пропускаются, но их количество печатается по причинам: молча выбрасывать
-нельзя, иначе метрика смещается в сторону удачных запросов.
+Rows without numeric features (they usually carry `error`) and unlabeled rows
+are skipped, but their count is printed per reason: dropping them silently is
+not allowed, otherwise the metric skews towards the successful requests.
 
-Одноклассовые данные — не ошибка. Если все метки 1 или все 0, AUROC печатается
-как `n/a (one class)`, а ECE и Brier считаются. Так выглядит честная реальность
-`data/rows-all-models.jsonl`: там 96 строк с признаками и ни одного отрицания.
+Single-class data is not an error. If every label is 1 or every label is 0, AUROC is printed
+as `n/a (one class)`, and ECE and Brier are still computed. That is what the honest reality
+of `data/rows-all-models.jsonl` looks like: 96 rows with features and not a single negative.
 
-Примеры:
+Examples:
 
     python3 scripts/evaluate.py data/eval-fixture.jsonl
     python3 scripts/evaluate.py data/eval-fixture.jsonl --weights w.json --json
     python3 scripts/evaluate.py data/rows-all-models.jsonl --min-auroc 0.7
 
-`--min-auroc` — гейт для CI: код возврата 1, если лучший AUROC ниже порога или
-не измерим (в том числе на одноклассовых данных). `--json` печатает одну
-машиночитаемую строку с теми же числами и ничего больше.
+`--min-auroc` is the CI gate: exit code 1 if the best AUROC is below the threshold or
+is not measurable (including on single-class data). `--json` prints a single
+machine-readable line with the same numbers and nothing else.
 """
 
 from __future__ import annotations
@@ -57,15 +57,15 @@ import sys
 
 FEATURES = ("bias", "meanLp", "minLp", "meanPhi", "fracLow")
 
-# Порядок и границы — как в src/truthprobe/levels.ts.
+# Order and boundaries are the same as in src/truthprobe/levels.ts.
 LEVELS = ("safe", "likely", "uncertain", "risky", "unreliable")
 BOUNDS = {"safe": 0.90, "likely": 0.75, "uncertain": 0.55, "risky": 0.35}
 
 SKIP_TEXT = {
-    "bad_json": "битая строка JSON",
-    "no_features": "нет числовых признаков (ошибка сбора)",
-    "label_missing": "метка пустая (null / unverifiable)",
-    "label_invalid": "метка не 0/1",
+    "bad_json": "malformed JSON line",
+    "no_features": "no numeric features (collection error)",
+    "label_missing": "label is empty (null / unverifiable)",
+    "label_invalid": "label is not 0/1",
 }
 
 LABEL_TRUE = {"1", "true", "yes", "y", "correct", "ok"}
@@ -74,7 +74,7 @@ LABEL_EMPTY = {"", "null", "none", "nan", "unverifiable", "unknown", "?"}
 
 
 def number(value) -> float | None:
-    """Число из JSON или None. Строки вида "0.88" принимаются, bool — нет."""
+    """Number from JSON or None. Strings like "0.88" are accepted, bool is not."""
     if isinstance(value, bool):
         return None
     if isinstance(value, (int, float)):
@@ -90,7 +90,7 @@ def number(value) -> float | None:
 
 
 def label_of(value) -> tuple[bool | None, str | None]:
-    """Метка -> (True/False, причина пропуска). Поддерживает bool, 0/1 и строки."""
+    """Label -> (True/False, skip reason). Accepts bool, 0/1 and strings."""
     if isinstance(value, bool):
         return value, None
     if isinstance(value, (int, float)):
@@ -125,7 +125,7 @@ def sigmoid(z: float) -> float:
 
 
 def load_rows(path: str) -> tuple[list[dict], dict[str, int], int]:
-    """Читает JSONL. Возвращает (строки для оценки, счётчик причин пропуска, строк всего)."""
+    """Reads JSONL. Returns (rows to evaluate, skip-reason counters, total rows)."""
     rows: list[dict] = []
     skipped: dict[str, int] = {}
     total = 0
@@ -171,17 +171,17 @@ def load_rows(path: str) -> tuple[list[dict], dict[str, int], int]:
 
 
 def geometric_score(row: dict) -> float:
-    """Ровно формула geometricScorer() из src/truthprobe/scorer.ts: exp(meanLp).
+    """Exactly the geometricScorer() formula from src/truthprobe/scorer.ts: exp(meanLp).
 
-    phi и minLp в оценку по умолчанию НЕ входят: замер показал, что энтропия первого
-    токена разворачивает результат (`docs/VALIDATION.md` §14). Они остаются признаками
-    обученных весов (см. linear_score).
+    phi and minLp are NOT included in the default score: the measurement showed that the entropy of the first
+    token flips the result (`docs/VALIDATION.md` §14). They remain features of the
+    trained weights (see linear_score).
     """
     return clamp01(math.exp(row["meanLp"]))
 
 
 def linear_score(weights: dict, row: dict) -> float:
-    """Ровно linearScorer(): x = [1, meanLp, minLp, meanPhi, fracLow, digitDensity]."""
+    """Exactly linearScorer(): x = [1, meanLp, minLp, meanPhi, fracLow, digitDensity]."""
     z = (
         weights["bias"]
         + weights["meanLp"] * row["meanLp"]
@@ -196,34 +196,34 @@ def linear_score(weights: dict, row: dict) -> float:
 
 
 def parse_weights(node) -> tuple[dict | None, str | None]:
-    """Один набор весов. Понимает и голые веса, и обёртку {"weights": ...}."""
+    """A single weight set. Understands both bare weights and the {"weights": ...} wrapper."""
     if node is None:
-        return None, "null или отсутствует"
+        return None, "null or missing"
     if not isinstance(node, dict):
-        return None, "веса не объект"
+        return None, "weights are not an object"
     source = node.get("weights", node)
     if source is None:
         return None, "weights: null"
     if not isinstance(source, dict):
-        return None, "weights не объект"
+        return None, "'weights' is not an object"
     out: dict[str, float] = {}
     for key in FEATURES:
         value = number(source.get(key))
         if value is None:
-            return None, f"вес {key!r} отсутствует или не число"
+            return None, f"weight {key!r} is missing or not a number"
         out[key] = value
-    # digitDensity появился позже: в старых файлах весов его нет — читаем как 0.
+    # digitDensity appeared later: the old weight files do not have it, so read it as 0.
     optional = number(source.get("digitDensity"))
     out["digitDensity"] = 0.0 if optional is None else optional
     return out, None
 
 
 def load_weights(path: str) -> dict:
-    """Читает бандл `{global, models}` или плоский JSON — как parseWeightsBundle()."""
+    """Reads a `{global, models}` bundle or a flat JSON, like parseWeightsBundle()."""
     with open(path, encoding="utf-8") as handle:
         raw = json.load(handle)
     if not isinstance(raw, dict):
-        raise ValueError("ожидался JSON-объект с весами")
+        raise ValueError("expected a JSON object with weights")
 
     bundled = any(key in raw for key in ("global", "models", "features"))
     if bundled:
@@ -255,7 +255,7 @@ def load_weights(path: str) -> dict:
 
 
 def auroc(pairs: list[tuple[float, bool]]) -> float | None:
-    """Манн—Уитни через ранги: связанным score достаётся средний ранг."""
+    """Mann-Whitney via ranks: tied scores get the average rank."""
     positives = sum(1 for _, label in pairs if label)
     negatives = len(pairs) - positives
     if not positives or not negatives:
@@ -277,7 +277,7 @@ def auroc(pairs: list[tuple[float, bool]]) -> float | None:
 
 
 def ece(pairs: list[tuple[float, bool]], bins: int) -> float | None:
-    """sum(n_b/N * |acc_b - conf_b|) по равным интервалам [0,1]; score==1 идёт в последний."""
+    """sum(n_b/N * |acc_b - conf_b|) over equal intervals of [0,1]; score==1 goes to the last one."""
     if not pairs:
         return None
     totals = [0] * bins
@@ -340,7 +340,7 @@ def metrics(pairs: list[tuple[float, bool]], bins: int) -> dict | None:
 
 
 def build_modes(rows: list[dict], bundle: dict | None, bins: int) -> tuple[dict, dict]:
-    """Считает три режима. Возвращает (метрики по режимам, диагностика весов)."""
+    """Computes the three modes. Returns (metrics per mode, weights diagnostics)."""
     modes: dict[str, dict | None] = {}
     modes["geometric"] = metrics(
         [(geometric_score(row), row["label"]) for row in rows], bins
@@ -392,7 +392,7 @@ def print_table(modes: dict[str, dict | None], notes: dict[str, str]) -> None:
     for name in ("geometric", "global", "per-model"):
         entry = modes.get(name)
         if entry is None:
-            print(f"{name:10s} {'--':>4s} {'skipped':>7s}  {notes.get(name, 'нет данных')}")
+            print(f"{name:10s} {'--':>4s} {'skipped':>7s}  {notes.get(name, 'no data')}")
             continue
         print(
             f"{name:10s} {entry['rows']:4d} {fmt_metric(entry['auroc']):>7s} "
@@ -405,7 +405,7 @@ def print_levels(modes: dict[str, dict | None]) -> None:
         entry = modes.get(name)
         if entry is None:
             continue
-        print(f"\nуровни {name}:")
+        print(f"\nlevels {name}:")
         for level in LEVELS:
             info = entry["levels"][level]
             if info["rows"] == 0:
@@ -420,24 +420,24 @@ def main() -> int:
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    parser.add_argument("path", help="JSONL со строками: model, meanLp, minLp, phi, fracLow, label")
-    parser.add_argument("--weights", help="JSON с весами: бандл {global, models} или плоские веса")
-    parser.add_argument("--json", action="store_true", help="напечатать один JSON-объект вместо таблицы")
-    parser.add_argument("--min-auroc", type=float, help="порог для CI: код 1, если лучший AUROC ниже")
-    parser.add_argument("--bins", type=int, default=10, help="число интервалов ECE (по умолчанию 10)")
+    parser.add_argument("path", help="JSONL with rows: model, meanLp, minLp, phi, fracLow, label")
+    parser.add_argument("--weights", help="JSON with weights: a {global, models} bundle or flat weights")
+    parser.add_argument("--json", action="store_true", help="print a single JSON object instead of the table")
+    parser.add_argument("--min-auroc", type=float, help="CI threshold: exit 1 if the best AUROC is lower")
+    parser.add_argument("--bins", type=int, default=10, help="number of ECE intervals (default 10)")
     args = parser.parse_args()
 
     if args.bins < 1:
-        parser.error("--bins должен быть >= 1")
+        parser.error("--bins must be >= 1")
 
     try:
         rows, skipped, total = load_rows(args.path)
     except OSError as error:
-        print(f"ошибка: не читается {args.path}: {error}", file=sys.stderr)
+        print(f"error: cannot read {args.path}: {error}", file=sys.stderr)
         return 2
     if not rows:
         print(
-            f"ошибка: в {args.path} нет строк с числовыми meanLp/minLp/phi и меткой 0/1",
+            f"error: {args.path} has no rows with numeric meanLp/minLp/phi and a 0/1 label",
             file=sys.stderr,
         )
         return 2
@@ -447,22 +447,22 @@ def main() -> int:
         try:
             bundle = load_weights(args.weights)
         except (OSError, json.JSONDecodeError, ValueError) as error:
-            print(f"ошибка: не читаются веса {args.weights}: {error}", file=sys.stderr)
+            print(f"error: cannot read weights {args.weights}: {error}", file=sys.stderr)
             return 2
         if bundle["global"] is None and not bundle["models"]:
             print(
-                f"предупреждение: в {args.weights} нет пригодных весов ({bundle['global_reason']})",
+                f"warning: {args.weights} has no usable weights ({bundle['global_reason']})",
                 file=sys.stderr,
             )
 
     modes, details = build_modes(rows, bundle, args.bins)
 
     if bundle is None:
-        skip_notes = {"global": "нет файла весов", "per-model": "нет файла весов"}
+        skip_notes = {"global": "no weights file", "per-model": "no weights file"}
     else:
         skip_notes = {
-            "global": f"в весах нет global ({details['global_reason']})",
-            "per-model": "ни одна строка не получила весов",
+            "global": f"no global weights ({details['global_reason']})",
+            "per-model": "not a single row received weights",
         }
 
     positives = sum(1 for row in rows if row["label"])
@@ -472,19 +472,19 @@ def main() -> int:
     skipped_total = sum(skipped.values())
 
     gate_ok: bool | None = None
-    gate_reason = "порог не задан"
+    gate_reason = "threshold not set"
     if args.min_auroc is not None:
         if best is None:
             gate_ok = False
             gate_reason = (
-                "AUROC не измерим (один класс)" if one_class else "AUROC не измерим (нет строк)"
+                "AUROC is not measurable (one class)" if one_class else "AUROC is not measurable (no rows)"
             )
         elif best < args.min_auroc:
             gate_ok = False
-            gate_reason = f"лучший AUROC {best:.3f} ({best_mode}) < {args.min_auroc:.3f}"
+            gate_reason = f"best AUROC {best:.3f} ({best_mode}) < {args.min_auroc:.3f}"
         else:
             gate_ok = True
-            gate_reason = f"лучший AUROC {best:.3f} ({best_mode}) >= {args.min_auroc:.3f}"
+            gate_reason = f"best AUROC {best:.3f} ({best_mode}) >= {args.min_auroc:.3f}"
 
     payload = {
         "file": args.path,
@@ -531,39 +531,39 @@ def main() -> int:
     if args.json:
         print(json.dumps(payload, ensure_ascii=False))
     else:
-        print(f"== {args.path}: {len(rows)} строк в оценке, пропущено {skipped_total} из {total}")
+        print(f"== {args.path}: {len(rows)} rows evaluated, {skipped_total} of {total} skipped")
         for key in ("bad_json", "no_features", "label_missing", "label_invalid"):
             if skipped.get(key):
-                print(f"   пропуск: {SKIP_TEXT[key]} — {skipped[key]}")
-        print(f"классы: положительных {positives}, отрицательных {negatives}")
+                print(f"   skipped: {SKIP_TEXT[key]} — {skipped[key]}")
+        print(f"classes: positives {positives}, negatives {negatives}")
         if one_class:
             print("AUROC n/a (one class)")
         models_seen = len({row["model"] for row in rows if row["model"]})
-        print(f"моделей среди оценённых строк: {models_seen}")
+        print(f"models among the evaluated rows: {models_seen}")
 
         if bundle is not None:
-            weights_note = f"веса: {bundle['path']} — global "
-            weights_note += "есть" if bundle["global"] is not None else f"нет ({bundle['global_reason']})"
-            weights_note += f", моделей с весами {details['models']}"
+            weights_note = f"weights: {bundle['path']} — global "
+            weights_note += "present" if bundle["global"] is not None else f"missing ({bundle['global_reason']})"
+            weights_note += f", models with weights {details['models']}"
             if details["without_weights"]:
-                weights_note += f", без весов {len(details['without_weights'])}"
+                weights_note += f", without weights {len(details['without_weights'])}"
             print(weights_note)
             if details["models"]:
                 print(
-                    f"per-model: {details['matched']} из {len(rows)} строк получили свои веса "
-                    "(ключи models — <provider>/<model>)"
+                    f"per-model: {details['matched']} of {len(rows)} rows got their own weights "
+                    "(model keys are <provider>/<model>)"
                 )
 
         print_table(modes, skip_notes)
         print_levels(modes)
 
         if args.min_auroc is not None:
-            verdict = "ok" if gate_ok else "провал"
-            print(f"\nгейт --min-auroc {args.min_auroc:.3f}: {verdict} — {gate_reason}")
+            verdict = "ok" if gate_ok else "fail"
+            print(f"\ngate --min-auroc {args.min_auroc:.3f}: {verdict} — {gate_reason}")
 
     if gate_ok is False:
         if args.json:
-            print(f"гейт --min-auroc {args.min_auroc:.3f}: провал — {gate_reason}", file=sys.stderr)
+            print(f"gate --min-auroc {args.min_auroc:.3f}: fail — {gate_reason}", file=sys.stderr)
         return 1
     return 0
 

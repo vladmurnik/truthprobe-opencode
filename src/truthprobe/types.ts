@@ -1,127 +1,128 @@
 /**
- * TruthProbe — типы данных.
+ * TruthProbe — data types.
  *
- * Всё, что здесь описано, — контракт между слоем провайдера (который собирает
- * logprobs из стрима), слоем скоринга (чистые функции) и UI/плагинами.
+ * Everything defined here is the contract between the provider layer (which
+ * collects logprobs from the stream), the scoring layer (pure functions) and
+ * the UI/plugins.
  */
 
 import type { ConfidenceLevel } from "./levels.js"
 
-/** Один альтернативный токен из `top_logprobs`. */
+/** One alternative token from `top_logprobs`. */
 export interface TopLogprob {
   token: string;
   logprob: number;
 }
 
-/** Один сгенерированный токен с вероятностью (и, опционально, top-K). */
+/** One generated token with its probability (and, optionally, top-K). */
 export interface TokenLogprob {
   token: string;
   logprob: number;
   top?: TopLogprob[];
 }
 
-/** Оценка одного предложения. */
+/** Score of a single sentence. */
 export interface SentenceScore {
-  /** Порядковый номер предложения в ответе, с нуля. */
+  /** Ordinal number of the sentence in the answer, zero-based. */
   i: number;
-  /** Смещение начала в исходном тексте (включительно). */
+  /** Start offset in the source text (inclusive). */
   start: number;
-  /** Смещение конца (исключительно). */
+  /** End offset (exclusive). */
   end: number;
-  /** Исходный текст предложения. */
+  /** Source text of the sentence. */
   text: string;
-  /** 0..1, выше — увереннее. */
+  /** 0..1, higher is more confident. */
   score: number;
   /** 1 - score. */
   risk: number;
-  /** Геометрическое среднее вероятностей содержательных токенов. */
+  /** Geometric mean of the probabilities of the content tokens. */
   meanLp: number;
-  /** Минимальный logprob среди содержательных токенов (худший токен). */
+  /** Minimum logprob among content tokens (the worst token). */
   minLp: number;
-  /** Уверенность по первому содержательному токену предложения. */
+  /** Confidence in the first content token of the sentence. */
   phi: number;
-  /** Сколько содержательных токенов попало в предложение. */
+  /** How many content tokens landed in the sentence. */
   tokens: number;
   /** score < 1 - riskyThreshold. */
   flag: boolean;
-  /** Уровень уверенности по score: safe | likely | uncertain | risky | unreliable. */
+  /** Confidence level by score: safe | likely | uncertain | risky | unreliable. */
   level: ConfidenceLevel;
 }
 
-/** Итог по всему ответу. */
+/** Result over the whole answer. */
 export interface AnswerScore {
   status: "ok" | "partial" | "unavailable";
-  /** 0..1 или null, если сигнала нет. */
+  /** 0..1, or null when there is no signal. */
   score: number | null;
   risk: number | null;
-  /** Уровень уверенности по score; null, если сигнала нет. */
+  /** Confidence level by score; null when there is no signal. */
   level: ConfidenceLevel | null;
-  /** Уверенность по первому содержательному токену всего ответа. */
+  /** Confidence in the first content token of the whole answer. */
   first: { score: number; entropy: number; token: string } | null;
   sentences: SentenceScore[];
-  /** Количество предложений с flag = true. */
+  /** Number of sentences with flag = true. */
   flagged: number;
-  /** Причина недоступности (для UI). */
+  /** Reason for unavailability (for the UI). */
   reason?: string;
 }
 
 export interface ScoreOptions {
-  /** Размер top-K, по которому считалась энтропия. */
+  /** Size of the top-K over which entropy was computed. */
   topK?: number;
-  /** Порог риска для подсветки. */
+  /** Risk threshold for highlighting. */
   riskyThreshold?: number;
-  /** Минимальная длина содержательного токена, чтобы считать его значимым. */
+  /** Minimum length of a content token to count it as meaningful. */
   minTokenChars?: number;
-  /** Доля веса whole-answer, отданная глобальному геом. среднему. */
+  /** Share of the whole-answer weight given to the global geometric mean. */
   globalWeight?: number;
-  /** Скорер: null/undefined — встроенная формула (см. scorer.ts). */
+  /** Scorer: null/undefined — the built-in formula (see scorer.ts). */
   scorer?: Scorer | null;
 }
 
-/** Признаки, которые скорер получает по набору токенов. */
+/** Features the scorer receives for a set of tokens. */
 export interface ScorerFeatures {
-  /** ln геометрического среднего вероятностей. */
+  /** ln of the geometric mean of probabilities. */
   meanLp: number;
-  /** ln вероятности худшего токена. */
+  /** ln of the worst token probability. */
   minLp: number;
-  /** Средняя уверенность первого токена по top-K. */
+  /** Mean first-token confidence over top-K. */
   meanPhi: number;
-  /** Доля токенов с вероятностью ниже 0.5. */
+  /** Share of tokens with probability below 0.5. */
   fracLow: number;
   /**
-   * Доля символов текста, которые являются цифрами (0..1).
-   * Единственный текстовый признак, который измерен на реальных данных: в наборе
-   * заказанной лжи ответы короче и почти без цифр, поэтому признак добавляет AUROC
-   * (0.774 → 0.808 в обученной модели), но в оценку по умолчанию он не входит.
+   * Share of text characters that are digits (0..1).
+   * The only text feature measured on real data: in the commissioned-lie set the
+   * answers are shorter and almost digit-free, so the feature adds AUROC
+   * (0.774 → 0.808 in the trained model), but it is not part of the default score.
    */
   digitDensity: number;
-  /** Сколько токенов участвовало. */
+  /** How many tokens took part. */
   tokens: number;
 }
 
 export interface ScorerInput {
   features: ScorerFeatures;
-  /** Текст, к которому относятся токены (для моделей, смотрящих на текст). */
+  /** Text the tokens belong to (for models that look at the text). */
   text: string;
-  /** Модель, сгенерировавшая ответ (`providerID/modelID`); для весов «на модель». */
+  /** Model that generated the answer (`providerID/modelID`); for per-model weights. */
   model?: string;
 }
 
 export interface Scorer {
-  /** Имя для логов и диагностики. */
+  /** Name for logs and diagnostics. */
   name: string;
-  /** 0..1, выше — увереннее. */
+  /** 0..1, higher is more confident. */
   score(input: ScorerInput): number;
 }
 
-/** Веса линейной модели; готовит `scripts/calibrate.py --fit`. */
+/** Linear model weights; prepared by `scripts/calibrate.py --fit`. */
 export interface LinearWeights {
   bias: number;
   meanLp: number;
   minLp: number;
   meanPhi: number;
   fracLow: number;
-  /** Необязательный текстовый вес: старые файлы весов читаются как 0. */
+  /** Optional text weight: old weight files are read as 0. */
   digitDensity?: number;
 }
 

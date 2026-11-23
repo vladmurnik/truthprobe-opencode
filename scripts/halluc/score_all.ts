@@ -1,9 +1,9 @@
 import { appendFileSync, readFileSync, writeFileSync } from "node:fs"
 import path from "node:path"
 
-// Пути задаются окружением, чтобы прогон на исправленных файлах ничего не перезаписывал.
-// По умолчанию читаются восстановленные прогоны (`*f.jsonl`, см. repair.py): в исходных
-// у части строк пустой `answer` при живых токенах — текст терялся при сохранении.
+// Paths are set from the environment so that a run over the repaired files overwrites nothing.
+// By default the repaired runs are read (`*f.jsonl`, see repair.py): in the originals
+// some rows have an empty `answer` with live tokens — the text was lost on save.
 const HALLUC = process.env.HALLUC_DIR ?? path.dirname(new URL(import.meta.url).pathname)
 const OPENCODE = process.env.OPENCODE_DIR ?? "/home/adik/src/opencode"
 const scorerModule = process.env.SCORE_MODULE ?? path.join(OPENCODE, "packages/core/src/truthprobe/score.ts")
@@ -23,7 +23,7 @@ for (const [input, output] of runs) {
       .filter((line) => line.trim().length > 0)
       .map((line) => JSON.parse(line))
   } catch {
-    console.log(`${input}: нет файла, пропускаю`)
+    console.log(`${input}: no such file, skipping`)
     continue
   }
   const out: string[] = []
@@ -57,6 +57,6 @@ for (const [input, output] of runs) {
     )
   }
   writeFileSync(output, out.join("\n") + "\n", "utf8")
-  console.log(`${output}: ${out.length} строк`)
+  console.log(`${output}: ${out.length} rows`)
   appendFileSync(path.join(HALLUC, "score.log"), `${output}: ${out.length}\n`)
 }

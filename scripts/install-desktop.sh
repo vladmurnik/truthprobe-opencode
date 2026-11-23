@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# Ставит собранное desktop-приложение TruthProbe и сбрасывает кеш CLI.
+# Installs the built TruthProbe desktop app and resets the CLI cache.
 #
-#   bash scripts/install-desktop.sh --from <win-unpacked> [--to <каталог>] [--dry-run]
+#   bash scripts/install-desktop.sh --from <win-unpacked> [--to <directory>] [--dry-run]
 #
-# Зачем нужен сброс кеша: приложение кеширует встроенный CLI в
-# %APPDATA%\ai.truthprobe.desktop\cli\<version>-x64 и переиспользует его, пока строка версии
-# не изменится. Если штамп не пересобрали, установка молча продолжает работать старым CLI —
-# ровно это и случилось со сборкой 22.11.2026.
+# Why the cache reset is needed: the app caches the bundled CLI in
+# %APPDATA%\ai.truthprobe.desktop\cli\<version>-x64 and reuses it until the version line
+# changes. If the stamp was not rebuilt, the install silently keeps running the old CLI —
+# exactly what happened with the 22.11.2026 build.
 set -euo pipefail
 
 ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
@@ -40,7 +40,7 @@ if [ -z "$TO" ]; then
 fi
 
 [ -f "$FROM/TruthProbe.exe" ] || [ -f "$FROM/truthprobe" ] || {
-  echo "error: в $FROM нет собранного приложения — сначала bash scripts/build-desktop.sh --win" >&2
+  echo "error: no built app in $FROM — run bash scripts/build-desktop.sh --win first" >&2
   exit 1
 }
 
@@ -52,21 +52,21 @@ case "$WINPROFILE" in
     ;;
 esac
 
-STAMP=$( [ -f "$FROM/resources/opencode-cli.version" ] && tr -d '\r\n' <"$FROM/resources/opencode-cli.version" || echo "нет штампа" )
+STAMP=$( [ -f "$FROM/resources/opencode-cli.version" ] && tr -d '\r\n' <"$FROM/resources/opencode-cli.version" || echo "no stamp" )
 
-echo "== откуда: $FROM"
-echo "== куда:   $TO"
+echo "== from: $FROM"
+echo "== to:   $TO"
 echo "== CLI:    $STAMP"
-echo "== кеш CLI: ${CLI_CACHE:-не найден}"
+echo "== CLI cache: ${CLI_CACHE:-not found}"
 
 if [ "$DRY_RUN" -eq 1 ]; then
-  echo "== dry run: копирование и сброс кеша не выполнялись"
+  echo "== dry run: nothing was copied and the cache was not reset"
   exit 0
 fi
 
-# Приложение держит exe и resources открытыми, поэтому сначала закрываем его.
-# Одиночные слэши обязательны: WSL передаёт `//IM` в Windows буквально, и taskkill
-# отвечает «Invalid argument/option» — установка падала на заблокированных файлах.
+# The app keeps the exe and resources open, so close it first.
+# Single slashes are mandatory: WSL passes `//IM` to Windows literally, and taskkill
+# answers "Invalid argument/option" — the install used to fail on locked files.
 if command -v taskkill.exe >/dev/null 2>&1; then
   taskkill.exe /IM TruthProbe.exe /F >/dev/null 2>&1 || true
   for _ in 1 2 3 4 5 6 7 8 9 10; do
@@ -77,9 +77,9 @@ fi
 
 mkdir -p "$TO"
 cp -a "$FROM/." "$TO/"
-echo "== установлено: $(ls -la "$TO/TruthProbe.exe" 2>/dev/null || ls -la "$TO/truthprobe" 2>/dev/null)"
+echo "== installed: $(ls -la "$TO/TruthProbe.exe" 2>/dev/null || ls -la "$TO/truthprobe" 2>/dev/null)"
 
 if [ -n "$CLI_CACHE" ] && [ -d "$CLI_CACHE" ]; then
   rm -rf "$CLI_CACHE"/* || true
-  echo "== кеш CLI очищен: приложение развернёт $STAMP при следующем запуске"
+  echo "== CLI cache cleared: the app will unpack $STAMP on the next start"
 fi

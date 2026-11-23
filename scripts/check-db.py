@@ -1,7 +1,7 @@
-"""Показывает truthprobe из последних ответов opencode (Windows/Linux база).
+"""Shows truthprobe from the latest opencode answers (Windows/Linux database).
 
-Части сообщений в этой версии ядра лежат внутри session_message.data.content,
-поэтому читаем именно её.
+Message parts in this core version live inside session_message.data.content,
+so that is exactly what we read.
 """
 import json
 import os

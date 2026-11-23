@@ -17,19 +17,19 @@ def share(items, limit, below=True):
     return round(n / len(items), 3)
 
 
-print(f"ложных {len(bad)}, верных {len(good)}")
+print(f"lies {len(bad)}, truths {len(good)}")
 for limit in (0.55, 0.75, 0.90):
-    print(f"score < {limit}: ложных {share(bad, limit)}  верных {share(good, limit)}")
-print(f"score ≥ 0.90 (safe): ложных {share(bad, 0.90, below=False)}  верных {share(good, 0.90, below=False)}")
+    print(f"score < {limit}: lies {share(bad, limit)}  truths {share(good, limit)}")
+print(f"score >= 0.90 (safe): lies {share(bad, 0.90, below=False)}  truths {share(good, 0.90, below=False)}")
 
-print("\nпо категориям: ложных всего / из них score < 0.55")
+print("\nby category: total lies / of them score < 0.55")
 for cat in sorted({r["category"] for r in rows}):
     items = [r for r in bad if r["category"] == cat]
     if not items:
         continue
     print(f"{cat:14s} {len(items):3d} / {share(items, 0.55)}")
 
-print("\nпо моделям: ложных / score < 0.55 / медиана score ложных")
+print("\nby model: lies / score < 0.55 / median score of lies")
 for model in sorted({r["model"] for r in rows}):
     items = [r for r in bad if r["model"] == model]
     if not items:

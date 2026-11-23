@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Строит банк вопросов-счётчиков: модели плохо считают по длинному списку.
+"""Builds a bank of counting questions: models count badly over a long list.
 
-Каждый пункт — список из 30 чисел и вопрос «сколько из них больше N». Ответ
-проверяем арифметически, ошибиться легко, выдумать «правдоподобно» — тоже.
+Each item is a list of 30 numbers plus the question "how many of them are greater than N". The answer
+is verified arithmetically: it is easy to make a mistake, and just as easy to invent a "plausible" one.
 """
 import json
 import random
@@ -23,6 +23,6 @@ for i in range(8):
 with open("data/qa-count-bank.jsonl", "w", encoding="utf-8", newline="\n") as handle:
     for row in rows:
         handle.write(json.dumps(row, ensure_ascii=False) + "\n")
-print(f"написано {len(rows)} пунктов")
+print(f"wrote {len(rows)} items")
 for row in rows:
     print(" expect", row["expect"][0], "|", row["prompt"][:60].replace("\n", " "))

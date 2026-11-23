@@ -5,18 +5,18 @@
 [![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![opencode base](https://img.shields.io/badge/opencode-007afb1-informational)](patches/truthprobe-0001.patch)
 
-[English](README.en.md) · **Русский**
+**English** | [Русский](README.ru.md)
 
-**TruthProbe нужен, чтобы увидеть, где именно модель галлюцинирует или врёт.** Он не выносит
-вердикт «правда/ложь» за вас — он показывает **место в ответе**, где модель шла неуверенно:
-подсвечивает конкретные предложения и называет их уверенность, чтобы вы проверяли не весь ответ,
-а два-три подозрительных утверждения.
+**TruthProbe exists to show you where exactly the model hallucinates or lies.** It does not rule
+"true or false" for you — it shows the **place in the answer** where the model went unsure:
+it highlights specific sentences and names their confidence, so you check two or three doubtful
+claims instead of the whole answer.
 
-Показывает, **насколько модель уверена в своём ответе**, по логвероятностям первых токенов —
-без второго прохода, без самопроверки модели и без второй модели-судьи.
+Shows **how confident the model is in its own answer**, from the log-probabilities of the first
+tokens — no second pass, no self-check by the model, no second judge model.
 
-Патч ядра [opencode](https://github.com/sst/opencode): одно место сбора токенов, одно поле в схеме,
-один бейдж в TUI и один чип в сессионном UI desktop-приложения (Electron).
+A patch for the [opencode](https://github.com/sst/opencode) core: one place that collects tokens, one
+schema field, one badge in the TUI and one chip in the session UI of the desktop app (Electron).
 
 ```
    What is the capital of France and how many people live there?
@@ -28,57 +28,58 @@
      Build · Mock 1 · 59ms · 1333.3 tok/s
 ```
 
-## Зачем
+## Why
 
-Идея не наша: **«The First Token Knows: Single-Decode Confidence for Hallucination Detection»**
-(M. Gabriel, P. Wang, [arXiv 2605.05166](https://arxiv.org/abs/2605.05166)) показала, что
-нормированная энтропия распределения **первого** токена работает как self-consistency, но стоит
-одного жадного декода вместо 10+ сэмплов и кластеризации. В экосистеме opencode этого не было
-вообще: в дереве `sst/opencode` ноль упоминаний `logprob`, а хуки плагинов не дают доступа
-к токенам — поэтому и нужен патч ядра, а не плагин.
+The idea is not ours: **"The First Token Knows: Single-Decode Confidence for Hallucination
+Detection"** (M. Gabriel, P. Wang, [arXiv 2605.05166](https://arxiv.org/abs/2605.05166)) showed that
+the normalised entropy of the **first** token's distribution works like self-consistency but costs
+one greedy decode instead of 10+ samples and clustering. Nothing of this existed in the opencode
+ecosystem: the `sst/opencode` tree has zero mentions of `logprob`, and plugin hooks give no access to
+tokens — which is why this is a core patch and not a plugin.
 
-Обзор статей и инструментов — в [`docs/PRIOR-ART.md`](docs/PRIOR-ART.md).
-Что улучшаем дальше и по каким числам это проверяем — в [`docs/ROADMAP.md`](docs/ROADMAP.md).
+A survey of papers and tools is in [`docs/PRIOR-ART.md`](docs/PRIOR-ART.md).
+What we improve next, and by which numbers we judge it, is in [`docs/ROADMAP.md`](docs/ROADMAP.md).
 
-## Что показывает
+## What it shows
 
-| Уровень | Где | Что видно |
+| Level | Where | What you see |
 | --- | --- | --- |
-| **L1** | строка перед ответом | уверенность в **первом токене**: «сходу ли модель знает» |
-| **L2** | блок после ответа | уверенность по всему ответу, уровень и число спорных предложений |
-| **L3** | список под ответом (TUI и desktop) | каждое спорное предложение: номер, процент, уровень, начало текста |
+| **L1** | the line before the answer | confidence in the **first token**: does the model know this off the top of its head |
+| **L2** | the block after the answer | confidence over the whole answer, its level and the number of doubtful sentences |
+| **L3** | the list under the answer (TUI and desktop) | every doubtful sentence: number, percentage, level, start of the text |
 
-Уверенность — не приговор: бывает уверенная ложь (`docs/PRIOR-ART.md`, ECLIPSE 2512.03107).
-Поэтому в UI написано `confidence`, а не `truth`.
+Confidence is not a verdict: confident lies exist (`docs/PRIOR-ART.md`, ECLIPSE 2512.03107). That is
+why the UI says `confidence`, not `truth`.
 
-### Шкала уверенности
+### Confidence scale
 
-Число рядом с ответом — это уровень, а не просто процент: `answer confidence 71% · uncertain`.
+The number next to the answer carries a level, not just a percentage:
+`answer confidence 71% · uncertain`.
 
-| уровень | score | как читать |
+| level | score | how to read it |
 | --- | --- | --- |
-| `safe` | ≥ 90% | модель шла почти без колебаний |
-| `likely` | 75–90% | уверенный ответ |
-| `uncertain` | 55–75% | заметные колебания |
-| `risky` | 35–55% | шаткий ответ, стоит перепроверить |
-| `unreliable` | < 35% | модель фактически угадывала |
+| `safe` | ≥ 90% | the model never hesitated |
+| `likely` | 75–90% | confident answer |
+| `uncertain` | 55–75% | visible hesitation |
+| `risky` | 35–55% | shaky answer, worth double-checking |
+| `unreliable` | < 35% | the model was mostly guessing |
 
-`risky` и `unreliable` подсвечиваются плашкой: у `risky` янтарная левая граница и слабый фон,
-у `unreliable` — красная. Порог «спорного» предложения по умолчанию 45% риска; его можно
-сдвинуть `TRUTHPROBE_RISKY_THRESHOLD` (0..1, некорректное значение игнорируется).
-`TRUTHPROBE_SHAKY_THRESHOLD` удалена в 0.13.8: ни переменной, ни поля `shakyThreshold`
-больше нет (`docs/VALIDATION.md` §23, пункт 8).
+`risky` and `unreliable` get a tinted card: amber left border and a faint background for `risky`,
+red for `unreliable`. A sentence counts as doubtful at 45% risk by default; move that threshold with
+`TRUTHPROBE_RISKY_THRESHOLD` (0..1, invalid values are ignored). `TRUTHPROBE_SHAKY_THRESHOLD`
+was removed in 0.13.8: neither the variable nor the `shakyThreshold` field exists any more
+(`docs/VALIDATION.md` §23, item 8).
 
-**Важно:** проценты — уверенность модели в собственных токенах, а не вероятность того, что
-ответ правдив. Детерминированный шлюз (logprob ≈ −0.001) даёт `safe` на любом тексте,
-включая выдуманный.
+**Important:** these percentages are the model's confidence in its own tokens, not the probability
+that the answer is true. A deterministic gateway (logprob ≈ −0.001) yields `safe` on any text,
+including fabricated text.
 
-Какие модели отдают logprobs, а какие не покажут цифры никогда —
+Which models emit logprobs and which will never show numbers —
 [`docs/MODEL-SUPPORT.md`](docs/MODEL-SUPPORT.md).
 
-## Установка
+## Install
 
-Две команды, клонировать этот репозиторий не нужно:
+Two commands, no clone of this repository needed:
 
 ```bash
 # Linux / macOS
@@ -90,109 +91,110 @@ curl -fsSL https://raw.githubusercontent.com/vladmurnik/truthprobe-opencode/mast
 irm https://raw.githubusercontent.com/vladmurnik/truthprobe-opencode/master/install.ps1 | iex
 ```
 
-Оба установщика забирают `sst/opencode`, закреплённый на `007afb1`, применяют
-`patches/truthprobe-0001.patch`, ставят зависимости и печатают версию сборки. Нужны `git` и
-[`bun`](https://bun.sh); вне целевого каталога ничего не меняется — git-идентичность, если её нет,
-задаётся локально в нём. Каталог можно назвать своим: `bash install.sh my-opencode`
-(`.\install.ps1 -Dir my-opencode`).
+Both installers fetch `sst/opencode` pinned at `007afb1`, apply
+`patches/truthprobe-0001.patch`, install the dependencies and print the build version. Requirements:
+`git` and [`bun`](https://bun.sh); nothing outside the target directory is touched — the git identity,
+if missing, is set locally in that directory. The directory can be named your own way:
+`bash install.sh my-opencode` (`.\install.ps1 -Dir my-opencode`).
 
-Флаги установщика:
+Installer flags:
 
-| флаг | что делает |
+| flag | what it does |
 | --- | --- |
-| `--dir DIR` | куда ставить (`-Dir` в PowerShell) |
-| `--dry-run` | скачать и проверить, что патч ложится; зависимости не ставить |
-| `--uninstall` | снять коммиты патча и вернуть дерево к базовому коммиту |
-| `--scorer FILE` | положить свои веса скорера в `.truthprobe/weights.json` и напечатать строку `TRUTHPROBE_SCORER=linear:$PWD/.truthprobe/weights.json` (сам файл рантайм не читает: веса включаются только переменной окружения) |
+| `--dir DIR` | where to install (`-Dir` in PowerShell) |
+| `--dry-run` | download and check that the patch applies; do not install dependencies |
+| `--uninstall` | drop the patch commits and return the tree to the base commit |
+| `--scorer FILE` | put your own scorer weights into `.truthprobe/weights.json` and print the line `TRUTHPROBE_SCORER=linear:$PWD/.truthprobe/weights.json` (the runtime does not read the file itself: weights are enabled only by the environment variable) |
 
-### Сменный скорер
+### Swappable scorer
 
-По умолчанию оценку считает встроенная формула `geometric` — `exp(meanLp)`, геометрическое среднее
-вероятностей содержательных токенов. Прежняя эвристика `0.4·гео + 0.3·худший токен + 0.3·уверенность
-первого токена` давала AUROC 0.388 (хуже случайного) на наборе из 626 строк, поэтому из формулы она
-убрана и осталась только в признаках (`docs/VALIDATION.md` §14).
+By default the score is the built-in `geometric` formula — `exp(meanLp)`, the geometric mean of the
+content-token probabilities. The older heuristic `0.4·geo + 0.3·worst token + 0.3·first-token
+confidence` scored AUROC 0.388 (worse than chance) on a 626-row set, so it was dropped from the
+formula and survives only as a feature (`docs/VALIDATION.md` §14).
 
-Заменить формулу можно, не пересобирая патч:
+The formula can be replaced without rebuilding the patch:
 
 ```bash
-# 1. обучить линейную модель на размеченных предложениях
+# 1. fit a linear model on labelled sentences
 python3 scripts/calibrate.py labeled.jsonl --fit --out truthprobe-weights.json
 
-# 2. включить её
+# 2. turn it on
 export TRUTHPROBE_SCORER=linear:/path/to/truthprobe-weights.json
 ```
 
-Веса могут зависеть от модели: обучение с `--by-model` пишет бандл (`make weights` делает это на
-`data/rows-lie-vs-truth.jsonl`), а рантайм выбирает набор по `providerID/modelID` и падает обратно
-на формулу по умолчанию, если для этой модели весов нет.
+Weights can be per model: fitting with `--by-model` writes a bundle (`make weights` does that on
+`data/rows-lie-vs-truth.jsonl`), and the runtime picks the set by `providerID/modelID`, falling back
+to the default formula when the model has no weights of its own.
 
-Формат набора и метрики — [`docs/CALIBRATION.md`](docs/CALIBRATION.md). Веса проверяются при
-загрузке: нет файла, битый JSON или нечисловой коэффициент — печатается одно предупреждение и
-включается встроенная формула, оценка не ломается. Признаки, которые видит модель:
-`meanLp` (ln геом. среднего), `minLp` (ln худшего токена), `meanPhi` (уверенность первого токена
-по top-K), `fracLow` (доля токенов с вероятностью ниже 0.5), `digitDensity` (доля цифр в тексте).
+Set format and metrics — [`docs/CALIBRATION.md`](docs/CALIBRATION.md). Weights are validated on load:
+a missing file, broken JSON or a non-numeric coefficient prints one warning and switches to the
+built-in formula; scoring never breaks. Features the model sees: `meanLp` (ln of the geometric mean),
+`minLp` (ln of the worst token), `meanPhi` (first-token confidence over top-K), `fracLow` (share of
+tokens below 0.5 probability), `digitDensity` (share of digits in the text).
 
-Свой скорер на другом языке — либо `scripts/calibrate.py --fit` для весов, либо своя реализация
-интерфейса `Scorer` в `packages/core/src/truthprobe/scorer.ts`.
+A scorer in another language is either `scripts/calibrate.py --fit` for the weights, or your own
+implementation of the `Scorer` interface in `packages/core/src/truthprobe/scorer.ts`.
 
-### Проверка обученного детектора: отрицательный результат
+### The fitted detector: a negative result
 
-Мы собрали 265 размеченных ответов (76 выдумок, 189 верных, 4 модели, 68 вопросов) и попробовали
-обучить детектор на признаках, которые скорер и так считает. Результат отрицательный: OOF AUROC
-обученной логистики **0.783** (пять продуктовых признаков) и **0.815** (26 признаков без длины)
-против **0.799** у встроенной формулы `1 − exp(meanLp)`; доверительные интервалы на разницу
-накрывают ноль (`−0.057…+0.020` и `−0.036…+0.069`). Если убрать линейный вклад длины ответа,
-качество падает до случайного — **0.541**. Внутри отдельных категорий вопросов AUROC 0.33–0.47,
-то есть на уровне случая или хуже. Ранее опубликованные веса `data/weights-detector.json` отозваны:
-метрика 0.881 была посчитана на повреждённом наборе. Все числа и разбор —
+We collected 265 labelled answers (76 fabrications, 189 correct, 4 models, 68 questions) and tried to
+fit a detector on the features the scorer already computes. The result is negative: the OOF AUROC of
+the fitted logistic model is **0.783** (the five product features) and **0.815** (26 features without
+length) against **0.799** for the built-in `1 − exp(meanLp)`; the confidence intervals on the
+difference cover zero (`−0.057…+0.020` and `−0.036…+0.069`). Removing the linear contribution of
+answer length drops the quality to chance — **0.541**. Within individual question categories AUROC is
+0.33–0.47, i.e. at or below chance. The previously published `data/weights-detector.json` is
+withdrawn: its 0.881 was measured on a corrupted set. All numbers and the post-mortem —
 [`docs/LEARNED-WEIGHTS.md`](docs/LEARNED-WEIGHTS.md).
 
-#Готовый патч из релиза:
+#Patch from the published release:
 [`truthprobe-0001.patch`](https://github.com/vladmurnik/truthprobe-opencode/releases/download/v0.13.16/truthprobe-0001.patch)
-(347 540 Б, sha256 `381b37d0…4fe5`).
+(347 540 B, sha256 `381b37d0…4fe5`).
 
-## Патч вручную
+## Manual patch
 
 ```bash
 git clone https://github.com/sst/opencode && cd opencode
 git checkout 007afb1
-# identity только для этой команды: без неё git am падает с "empty ident name"
+# identity for this command only: without it git am fails with "empty ident name"
 git -c user.name=TruthProbe -c user.email=truthprobe@localhost am /path/to/patches/truthprobe-0001.patch
 bun install
 bun run --cwd packages/cli src/index.ts
 ```
 
-Ключи и провайдеры проверяются сами: при первом запросе к chat-completions модели ядро
-отправляет одну посылку на один токен с текстом `ping` и, если провайдер вернул `logprobs`,
-включает их для этой пары `провайдер/модель`. Переменные окружения не нужны.
+Keys and providers are checked automatically: on the first chat-completions request the core sends a
+single one-token probe with the text `ping`, and if the provider returns `logprobs` it turns them on
+for that `provider/model` pair. No environment variables are needed.
 
-### Готовый бинарь
+### Prebuilt binaries
 
-Публичных сборок **нет**: ни один бинарь не опубликован, скачивать нечего. Контрольная сумма
-есть только у той сборки, на которой снимались числа этого репозитория: полный `sha256`
-`396be271b40c96da602d208df35d27ec947b4716aa4b29de7a5afc9a15b1eb8d` записан в
-[`docs/BUILD.md`](docs/BUILD.md). Собирать надо из дерева, которое поставил `install.sh`:
+There are **no published builds**: no binary is hosted, so there is nothing to download. A checksum
+exists only for the build the numbers in this repository were taken on: the full `sha256`
+`396be271b40c96da602d208df35d27ec947b4716aa4b29de7a5afc9a15b1eb8d` is recorded in
+[`docs/BUILD.md`](docs/BUILD.md). Build from the tree that `install.sh` produced:
 
 ```bash
 cd opencode-truthprobe
 bun run --cwd packages/cli script/build.ts        # dist/cli-<target>/bin/opencode
 ```
 
-Кросс-сборка Windows из Linux и варианты таргетов — [`docs/BUILD.md`](docs/BUILD.md).
+Windows cross-builds and target variants — [`docs/BUILD.md`](docs/BUILD.md).
 
-### Desktop-приложение
+### Desktop app
 
-Тот же бейдж живёт и в Electron-приложении: чип `confidence` в футере ответа рисует общий компонент
-`@opencode/session-ui`, поэтому правка одна на desktop и на веб-интерфейс. Запуск из того же дерева:
+The same badge lives in the Electron app: the `confidence` chip in the answer footer is drawn by the
+shared `@opencode/session-ui` component, so desktop and the web UI get it from one edit. Start it from
+the same tree:
 
 ```bash
 bun run dev:desktop
 ```
 
-#### Отдельно от opencode
+#### As a standalone app
 
-Приложение можно собрать как самостоятельную программу — со своим именем, своим каталогом данных
-и без чужого автообновления. Достаточно двух переменных на сборке:
+The same tree builds a self-contained program with its own name, its own data directory and no
+upstream auto-update. Two build-time variables are enough:
 
 ```bash
 cd packages/desktop
@@ -202,56 +204,57 @@ bun x electron-vite build
 bun x electron-builder --win --x64 --publish never --dir --config electron-builder.config.ts
 ```
 
-`--config` обязателен: без него electron-builder берёт свои умолчания и исполняемый файл называется
-по имени npm-пакета. Результат — `dist/win-unpacked` (портативная папка, ≈877 MB: 246 MB приложение,
-279 MB вложенный CLI и остальное): её можно положить
-куда угодно и запускать `TruthProbe.exe`. Заголовок окна, AppUserModelID, каталог
-`%APPDATA%\ai.truthprobe.desktop` и имя установщика берутся из этих двух переменных; без них сборка
-остаётся обычным opencode.
+`--config` is required: without it electron-builder falls back to its defaults and names the executable
+after the npm package. The result is `dist/win-unpacked` (a portable folder, ≈877 MB: 246 MB app,
+279 MB bundled CLI and the rest): it can live anywhere and run `TruthProbe.exe`. The window title, the
+AppUserModelID, the `%APPDATA%\ai.truthprobe.desktop` directory and the installer name all come from
+those two variables; unset, the build stays plain opencode.
 
-**Сборка не подписана.** `TruthProbe.exe` собирается без сертификата: в свойствах файла
-`Signature: NotSigned`, и SmartScreen встретит первого пользователя предупреждением
-«неизвестный издатель». Метаданные при этом свои (`ProductName`, `CompanyName`,
-`LegalCopyright` — `TruthProbe`, `FileVersion` — версия продукта). Как собрать подписанную
-сборку — `docs/DEVELOPMENT.md`, раздел «Подпись».
+**The build is unsigned.** `TruthProbe.exe` is packed without a certificate: the file properties
+say `Signature: NotSigned`, and SmartScreen greets the first user with an "unknown publisher"
+warning. The metadata is still the fork's own (`ProductName`, `CompanyName`, `LegalCopyright`
+say `TruthProbe`, `FileVersion` is the product version). For a signed build see
+`docs/DEVELOPMENT.md`, section "Signing".
 
-### Включение
+### How it turns on
 
-Автоматически. Плагин `opencode.truthprobe` слушает `http.request` — единственное место, где
-одновременно видны модель и уже авторизованный URL, — и параллельно отправляет одну
-проверочную посылку: `{"messages":[{"role":"user","content":"ping"}], "max_tokens":1, "logprobs":true}`.
-Данные переписки в ней не участвуют. Ответ модели проверку не ждёт: хук только кладёт событие
-в очередь, сеть работает в отдельной fiber.
+Automatically. The `opencode.truthprobe` plugin listens on `http.request` — the only place where the
+model and the already-authorised URL are visible at the same time — and in parallel sends one probe:
+`{"messages":[{"role":"user","content":"ping"}], "max_tokens":1, "logprobs":true}`. Conversation data
+is never part of it. The model's answer does not wait for the probe: the hook only puts an event on a
+queue and the network runs in a separate fiber.
 
-Вердикт пишется в `<data>/truthprobe/capabilities.json` (Linux: `~/.local/share/opencode/truthprobe/`,
-Windows: `%APPDATA%\opencode\truthprobe\`) и живёт: `ok`/`ignored`/`rejected`/`unsupported` — 7 дней,
-`auth` — час (ключ могли добавить), сетевые и 5xx — не кэшируются вовсе.
+The verdict is written to `<data>/truthprobe/capabilities.json` (Linux:
+`~/.local/share/opencode/truthprobe/`, Windows: `%APPDATA%\opencode\truthprobe\`) and lives:
+`ok`/`ignored`/`rejected`/`unsupported` — 7 days, `auth` — one hour (a key may have been added since),
+network failures and 5xx are not cached at all.
 
-| Статус | Значит | Что делает бейдж |
+| Status | Meaning | What the badge does |
 | --- | --- | --- |
-| `ok` | в ответе реально был `logprobs.content` | включается и у следующих запросов |
-| `ignored` | 200, но поля нет — шлюз молча вырезал | не включается, повтор через 7 дней |
-| `rejected` | 400/422 с упоминанием `logprob` | не включается, повтор через 7 дней |
-| `auth` | 401/403 | не включается, перепроверка через час |
-| `unsupported` | 404/405/501 или иная 400 | не включается, повтор через 7 дней |
+| `ok` | the response really carried `logprobs.content` | turns on, and stays on for later requests |
+| `ignored` | 200 but the field is missing — the gateway silently dropped it | stays off, retried in 7 days |
+| `rejected` | 400/422 mentioning `logprob` | stays off, retried in 7 days |
+| `auth` | 401/403 | stays off, re-checked in an hour |
+| `unsupported` | 404/405/501 or another 400 | stays off, retried in 7 days |
 
-Ручные способы остаются и старше автоматики:
+Manual switches remain and take precedence over the automation:
 
-- `capabilities.logprobs: true` у модели в конфиге — решает пользователь, автопроверка не спорит;
-- `OPENCODE_TRUTHPROBE=1` — просим `logprobs` у всех chat-completions моделей;
-- `OPENCODE_TRUTHPROBE_PROBE=off` — выключить только автопроверку (сеть не трогаем).
+- `capabilities.logprobs: true` on a model in the config — the user decides, the probe does not argue;
+- `OPENCODE_TRUTHPROBE=1` — ask every chat-completions model for `logprobs`;
+- `OPENCODE_TRUTHPROBE_PROBE=off` — disable only the probe (no network calls at all).
 
-Посмотреть вердикты: `cat <data>/truthprobe/capabilities.json`.
+Inspect the verdicts: `cat <data>/truthprobe/capabilities.json`.
 
-## Как считается
+## How it is computed
 
-Одна формула, применённая дважды — к каждому предложению и ко всему ответу. Энтропия, худший токен
-и доля низких вероятностей остаются **признаками** для обученных весов, но в оценку по умолчанию
-не входят: замер показал, что энтропия первого токена разворачивает результат (`docs/VALIDATION.md` §14).
+One formula, applied twice — to every sentence and to the whole answer. Entropy, the worst token and
+the share of low probabilities stay **features** for fitted weights, but they are not part of the
+default score: the measurement showed that first-token entropy flips the result
+(`docs/VALIDATION.md` §14).
 
 <p align="center">
 <b><i>s</i><sub>i</sub> = exp(<i>ℓ̄</i><sub>i</sub>)</b>
-&nbsp;&nbsp;&nbsp;где&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;where&nbsp;&nbsp;&nbsp;
 <i>ℓ̄</i><sub>i</sub> = (ℓ<sub>i,1</sub> + ℓ<sub>i,2</sub> + … + ℓ<sub>i,n</sub>) / <i>n</i><sub>i</sub>
 </p>
 
@@ -263,206 +266,214 @@ Windows: `%APPDATA%\opencode\truthprobe\`) и живёт: `ok`/`ignored`/`reject
 <i>r</i> = 1 − <i>S</i>
 </p>
 
-| Обозначение | Что это |
+| Symbol | Meaning |
 | :--- | --- |
-| <i>s</i><sub>i</sub> | уверенность i-го предложения, от 0 до 1 |
-| <i>r</i><sub>i</sub> | риск i-го предложения, 1 − <i>s</i><sub>i</sub> |
-| ℓ<sub>i,k</sub> | `logprob` k-го содержательного токена предложения i |
-| <i>ℓ̄</i><sub>i</sub> | среднее ℓ<sub>i,k</sub> по содержательным токенам предложения |
-| <i>n</i><sub>i</sub> | число содержательных токенов в предложении i |
-| <i>m</i> | число предложений в ответе |
-| <i>S</i><sub>all</sub> | та же формула, но по всем содержательным токенам ответа |
-| <i>S</i>, <i>r</i> | итог по ответу и его риск; 0.6 / 0.4 — `globalWeight` |
+| <i>s</i><sub>i</sub> | confidence of sentence i, 0 to 1 |
+| <i>r</i><sub>i</sub> | risk of sentence i, 1 − <i>s</i><sub>i</sub> |
+| ℓ<sub>i,k</sub> | `logprob` of the k-th content token of sentence i |
+| <i>ℓ̄</i><sub>i</sub> | mean of ℓ<sub>i,k</sub> over the content tokens of the sentence |
+| <i>n</i><sub>i</sub> | number of content tokens in sentence i |
+| <i>m</i> | number of sentences in the answer |
+| <i>S</i><sub>all</sub> | the same formula over all content tokens of the answer |
+| <i>S</i>, <i>r</i> | answer-level score and its risk; 0.6 / 0.4 is `globalWeight` |
 
-Иначе говоря, **уверенность = средняя вероятность токенов**, а не «самый слабый токен». Порог
-плашки — <i>r</i> > 0.45; уровни — `safe ≥0.90`, `likely ≥0.75`, `uncertain ≥0.55`,
-`risky ≥0.35`, ниже — `unreliable`.
+In other words, **confidence is the average token probability**, not "the weakest token". The flag
+fires at <i>r</i> > 0.45; levels are `safe ≥0.90`, `likely ≥0.75`, `uncertain ≥0.55`,
+`risky ≥0.35`, below that `unreliable`.
 
-Признаки, которые считаются всегда и идут в обученные веса, если они подключены:
+Features that are always computed and feed the fitted weights when those are enabled:
 
-| Признак | Формула | Смысл |
+| Feature | Formula | Meaning |
 | :--- | :--- | --- |
-| φ | 1 − <i>H</i><sub>K</sub> / ln <i>K</i> | уверенность по первому токену, 0…1 |
-| <i>H</i><sub>K</sub> | −Σ<sub>i=1</sub><sup>K</sup> <i>q</i><sub>i</sub> · ln <i>q</i><sub>i</sub> | энтропия распределения top-K |
-| <i>q</i><sub>i</sub> | <i>e</i><sup>ℓᵢ</sup> / Σ<sub>j=1</sub><sup>K</sup> <i>e</i><sup>ℓⱼ</sup> | нормированная вероятность альтернативы i |
-| <i>K</i> | 20 | сколько альтернатив просим у провайдера |
-| <i>f</i><sub>low</sub> | #{<i>k</i> : ℓ<sub>k</sub> < ln 0.5} / <i>n</i> | доля токенов с вероятностью ниже 0.5 |
-| ℓ<sub>min</sub> | min<sub>k</sub> ℓ<sub>k</sub> | худший `logprob` |
-| <i>d</i> | #{цифры} / #{символы} | доля цифр в видимом ответе (`digitDensity`) |
+| φ | 1 − <i>H</i><sub>K</sub> / ln <i>K</i> | confidence of the first token, 0…1 |
+| <i>H</i><sub>K</sub> | −Σ<sub>i=1</sub><sup>K</sup> <i>q</i><sub>i</sub> · ln <i>q</i><sub>i</sub> | entropy of the top-K distribution |
+| <i>q</i><sub>i</sub> | <i>e</i><sup>ℓᵢ</sup> / Σ<sub>j=1</sub><sup>K</sup> <i>e</i><sup>ℓⱼ</sup> | normalised probability of alternative i |
+| <i>K</i> | 20 | how many alternatives we ask the provider for |
+| <i>f</i><sub>low</sub> | #{<i>k</i> : ℓ<sub>k</sub> < ln 0.5} / <i>n</i> | share of tokens below 0.5 probability |
+| ℓ<sub>min</sub> | min<sub>k</sub> ℓ<sub>k</sub> | the worst `logprob` |
+| <i>d</i> | #{digits} / #{chars} | share of digits in the visible answer (`digitDensity`) |
 
-Здесь <i>d</i> — единственный текстовый признак с измеримым вкладом (+0.014 AUROC поверх полного
-набора признаков, `docs/VALIDATION.md` §17). Хеджирование («probably», «I think») меряли — на текущем наборе
-разброс нулевой, вклад не измерен.
+Here <i>d</i> is the only textual feature with a measurable contribution (+0.014 AUROC on top of the
+full feature set, `docs/VALIDATION.md` §17). Hedging ("probably", "I think") was measured too — zero
+variance on the current set, so its contribution is not measured.
 
-Сегментация — по `. ! ? …` с учётом десятичных дробей, сокращений и CJK-терминаторов; блоки кода
-выбрасываются целиком. Состояния: `ok` — токены совпали с текстом; `partial` — дрейф смещений;
-`unavailable` — токенов нет.
+Segmentation is by `. ! ? …` with decimals, abbreviations and CJK terminators taken into account;
+code blocks are dropped entirely. States: `ok` — tokens matched the text; `partial` — offsets
+drifted; `unavailable` — no tokens.
 
-## Проверки
+## Verification
 
-| Что | Как | Результат |
+| What | How | Result |
 | --- | --- | --- |
-| Скоринг и сегментация | `bun test test/score.test.ts` | **44 pass / 0 fail**, 99 expect |
-| Логика автопроверки (TTL, классификация ответов, кэш) | `bun test test/capability.test.ts` | **35 pass / 0 fail**, 73 expect |
-| Список спорных предложений в desktop | `bun test src/message/doubtful.test.ts` из `packages/session-ui` | **9 pass / 0 fail**, 23 expect |
-| Протокол OpenAI (гейт, тело запроса, разбор `choices[i].logprobs`) | `test/opencode-tree/protocol.test.ts`: в этом репозитории **8 skip** — файл реально прогоняется только внутри пропатченного дерева (`packages/ai/test/`, CI ставит `TRUTHPROBE_REQUIRE_PROTOCOL_TESTS=1`) | **8 pass / 0 fail** в дереве; в этом репозитории все 8 пропущены |
-| Автовключение без переменных окружения | мок + два прогона подряд | RUN1: проба → `{"status":"ok"}`; RUN2: **2 из 2** запросов с `logprobs: true, top_logprobs: 20` |
-| Регрессия вокруг событий текста | `test/session*.test.ts test/projector*.test.ts test/message*.test.ts` | **811 pass / 0 fail** |
-| Полный прогон core | `bun test` в `packages/core` (7 713 тестов, 331 файл) | 7 300 pass / 351 skip / 62 fail — ни одного в truthprobe: `tool-search` качает ripgrep с github.com, `provider-gitlab-oauth` ходит на gitlab.com, `cross-spawn`/MCP зависят от spawn; в окружении зарезана исходящая сеть |
-| Тесты TruthProbe, этот репозиторий | `bun test test` | **92 pass / 8 skip / 0 fail**, 210 expect, 5 файлов, 100 тестов |
-| Тесты TruthProbe, пропатченное дерево | `bun test truthprobe` в `packages/core/test` | **129 pass / 0 fail**, 6 файлов |
-| Патч на чистом дереве | `git am` в worktree `007afb1` | применяется без конфликтов (identity задана локально), все truthprobe-тесты зелёные |
-| Типизация | schema / ai / core / client / tui | зелёная (132 / 357+322 / 2 036 / 181 / 1 947 файлов) |
-| Типизация UI-пакетов | session-ui / app / desktop | зелёная (384 / 2 447 / 3 571 файл, desktop — 2 проекта) |
-| Сквозной прогон | мок-провайдер с настоящими `logprobs` | `logprobs: true, top_logprobs: 20` в запросе, `truthprobe` в базе |
-| Живой TUI | pty-проба | бейдж и блок спорных предложений отрендерились |
-| Desktop UI | чип `confidence` в общем компоненте `@opencode/session-ui` | типизация desktop (3 571 файл) зелёная; чип `confidence NN%` и список спорных предложений в футере |
-| Отдельное desktop-приложение | сборка с `OPENCODE_DESKTOP_APP`/`OPENCODE_DESKTOP_APP_ID` | `TruthProbe.exe`, заголовок окна `TruthProbe`, userData `ai.truthprobe.desktop`, сайдкар CLI рядом, `app-update.yml` нет |
-| Windows-бинарь | `.exe` на моке | `status: "ok", score: 0.417, first 0.708, flagged: 1` |
+| Scoring and segmentation | `bun test test/score.test.ts` | **44 pass / 0 fail**, 99 expect |
+| Probe logic (TTL, response classification, cache) | `bun test test/capability.test.ts` | **35 pass / 0 fail**, 73 expect |
+| Doubtful sentences in desktop | `bun test src/message/doubtful.test.ts` from `packages/session-ui` | **9 pass / 0 fail**, 23 expect |
+| OpenAI protocol (gate, request body, `choices[i].logprobs` parsing) | `test/opencode-tree/protocol.test.ts`: in this repository **8 skip** — the file only really runs inside a patched opencode tree (`packages/ai/test/`, CI sets `TRUTHPROBE_REQUIRE_PROTOCOL_TESTS=1`) | **8 pass / 0 fail** in the tree; all 8 skipped here |
+| Auto-enable without environment variables | mock + two consecutive runs | RUN1: probe → `{"status":"ok"}`; RUN2: **2 of 2** requests with `logprobs: true, top_logprobs: 20` |
+| Regression around text events | `test/session*.test.ts test/projector*.test.ts test/message*.test.ts` | **811 pass / 0 fail** |
+| Full core run | `bun test` in `packages/core` (7 713 tests, 63 files) | 7 300 pass / 351 skip / 62 fail — none in truthprobe: `tool-search` downloads ripgrep from github.com, `provider-gitlab-oauth` calls gitlab.com, `cross-spawn`/MCP depend on spawn; the harness blocks outbound network |
+| TruthProbe tests, this repository | `bun test test` | **92 pass / 8 skip / 0 fail**, 210 expect, 5 files, 100 tests |
+| TruthProbe tests, patched tree | `bun test truthprobe` in `packages/core/test` | **129 pass / 0 fail**, 6 files |
+| Patch on a clean tree | `git am` in a `007afb1` worktree | applies without conflicts (identity configured locally), all truthprobe tests green |
+| Typecheck | schema / ai / core / client / tui | green (132 / 357+322 / 2 036 / 181 / 1 947 files) |
+| Typecheck of the UI packages | session-ui / app / desktop | green (384 / 2 447 / 3 571 files, desktop 2 projects) |
+| End-to-end run | mock provider with real `logprobs` | `logprobs: true, top_logprobs: 20` in the request, `truthprobe` in the database |
+| Live TUI | pty probe | badge and the doubtful-sentence block rendered |
+| Desktop UI | `confidence` chip in the shared `@opencode/session-ui` component | green typecheck of desktop (3 571 files); `confidence NN%` chip and the doubtful-sentence list in the footer |
+| Standalone desktop app | build with `OPENCODE_DESKTOP_APP`/`OPENCODE_DESKTOP_APP_ID` | `TruthProbe.exe`, window title `TruthProbe`, userData `ai.truthprobe.desktop`, CLI sidecar beside it, no `app-update.yml` |
+| Windows binary | `.exe` against the mock | `status: "ok", score: 0.417, first 0.708, flagged: 1` |
 
-Воспроизвести без ключей:
+Reproduce without keys:
 
-Блок ниже запускается **внутри пропатченного дерева opencode** (`.worktree/opencode` после
-`make setup` или дерево, которое поставил `install.sh`), а не в этом репозитории: здесь нет
-`packages/`, поэтому `bun run --cwd packages/cli` из корня репозитория не найдёт пакет.
+The block below runs **inside the patched opencode tree** (`.worktree/opencode` after `make setup`, or
+the tree `install.sh` produced), not in this repository: there is no `packages/` here, so
+`bun run --cwd packages/cli` from the repo root finds no package.
 
 ```bash
 python3 scripts/mock-openai-logprobs.py 8899 &
 OPENCODE_CONFIG=scripts/mock-opencode.json \
   bun run --cwd packages/cli src/index.ts run --model mock/mock-1 "capital of France?"
-python3 scripts/check-db.py                  # что попало в базу
+python3 scripts/check-db.py                  # what landed in the database
 python3 scripts/tui-probe.py && python3 scripts/screen-dump.py /tmp/tui-probe.log
 ```
 
-Полные числа и история решений — [`docs/VALIDATION.md`](docs/VALIDATION.md),
-пошаговое воспроизведение — [`docs/SMOKE-E2E.md`](docs/SMOKE-E2E.md).
+Full numbers and the decision log — [`docs/VALIDATION.md`](docs/VALIDATION.md), step-by-step
+reproduction — [`docs/SMOKE-E2E.md`](docs/SMOKE-E2E.md).
 
-## Что реально проверено (статистика на 19.11.2026)
+## What was actually verified (statistics as of 19.11.2026)
 
-Срез сделан на сборке `0.0.0-dev-202611191814`, Windows 11, локальный шлюз free-pi.
-Всё в таблице — замеры, а не ожидания.
+The snapshot was taken on build `0.0.0-dev-202611191814`, Windows 11, the local free-pi gateway.
+Everything in the table is a measurement, not an expectation.
 
-| Что | Как проверяли | Результат |
+| What | How it was checked | Result |
 | --- | --- | --- |
-| Тесты truthprobe | `bun test` шести файлов в `packages/core/test` | **129 pass, 0 fail** (пропатченное дерево; в этом репозитории — **92 pass / 8 skip**) |
-| Тесты всего монорепо | `bun test` в `packages/core` — 7713 тестов, 331 файл | **7300 pass, 351 skip, 62 fail** |
-| Ответ `freepi/particle` | живой запрос через боевой бинарь | `score 0.7595 · likely`, предложение `#0 0.603 · uncertain` |
-| Ответ `freepi/deepseek-v4.1-flash` | живой запрос | `score 0.6893`, первый флаг `0.4849` |
-| Сменный скорер | `TRUTHPROBE_SCORER=linear:weights.json` | score сместился с `0.7595` до `0.9992` — подмена реально работает |
-| Установщик Windows | `install.ps1 -Dir <пусто> -DryRun` | клон, `git apply --check`, все коммиты патча применились, ошибок нет; CI повторяет это на каждом пуше |
-| Сборка desktop | electron-builder | приложение 246 МБ, вложенный CLI 279 МБ |
-| CI на чужих машинах | GitHub Actions, прогоны [`44593481931`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44593481931), [`44678633546`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44678633546) , [`44736706708`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44736706708) , [`44761971781`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44761971781) и [`44784920180`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44784920180), [`44787911144`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44787911144) и [`44918215420`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44918215420) и [`45161855972`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45161855972) (0.13.12), [`45163760974`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45163760974) (0.13.13), [`45165859105`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45165859105) (0.13.14), [`45169068249`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45169068249) (0.13.15) | **все 7 job'ов success** в каждом, на hosted-раннерах ubuntu-latest и windows-latest |
-| Веса на модель в рантайме | два прогона на моке с разными бандлами, один и тот же ответ | `0.9997 · safe`, когда веса есть для `mock/mock-1`, и `0.0003 · unreliable`, когда они только у `other/model` — выбор по `providerID/modelID` реально работает |
-| `collect.py` на живом шлюзе | 2 промпта, `freepi/particle` | строки с `meanLp -0.063 / -0.125`, `minLp -0.409 / -0.945`, `fracLow 0.00 / 0.06` — признаки считаются той же формулой, что в рантайме |
-| Аудит банка вопросов | `python3 scripts/audit-bank.py data/qa-hard-bank.jsonl data/rows-hard.jsonl` | нашёл **4** пункта, где ошибается не модель, а эталон; после чистки набора — `AUROC n/a (one class)`, 739 верных / **0 неверных** |
-| Сбор негативов | 47 вопросов × 4 модели × 4 сэмпла при `T=0.8` и `T=1.0`, затем ещё три банка (34 вопроса, классические провалы LLM, счёт по списку) | 1504 строки (47 × 4 × 4 × 2 температуры) + 688 строк на трёх дополнительных банках; настоящих негативов **0** — модели либо отвечают верно, либо молчат |
-| Заказанная ложь: видит ли скорер | `scripts/measure-lies.py` на 626 строках (544 правды / 82 лжи) | прежняя формула — AUROC **0.388** (хуже случайного), ECE 0.368; обученные веса — 0.800 out-of-fold (групповая CV) |
-| Встроенная формула переписана | те же 626 строк + 739 верных строк как контроль | `exp(meanLp)` вместо `0.4·geo + 0.3·worst + 0.3·φ`: AUROC **0.388 → 0.597**, ECE **0.368 → 0.098**, а на верных ответах ECE **0.493 → 0.160** |
+| TruthProbe tests | `bun test` of six files in `packages/core/test` | **129 pass, 0 fail** (patched tree; in this repository — **92 pass / 8 skip**) |
+| Whole-monorepo tests | `bun test` in `packages/core` — 7713 tests, 63 files | **7300 pass, 351 skip, 62 fail** |
+| Answer from `freepi/particle` | live request through the production binary | `score 0.7595 · likely`, sentence `#0 0.603 · uncertain` |
+| Answer from `freepi/deepseek-v4.1-flash` | live request | `score 0.6893`, first flag `0.4849` |
+| Swappable scorer | `TRUTHPROBE_SCORER=linear:weights.json` | score moved from `0.7595` to `0.9992` — the swap really works |
+| Windows installer | `install.ps1 -Dir <empty> -DryRun` | clone, `git apply --check`, all 30 patch commits applied, no errors; CI repeats this on every push |
+| Desktop build | electron-builder | app 246 MB, bundled CLI 279 MB |
+| CI on foreign machines | GitHub Actions, runs [`44593481931`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44593481931), [`44678633546`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44678633546) , [`44736706708`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44736706708) , [`44761971781`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44761971781) and [`44784920180`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44784920180), [`44787911144`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44787911144) and [`44918215420`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44918215420) and [`45161855972`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45161855972) (0.13.12), [`45163760974`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45163760974) (0.13.13), [`45165859105`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45165859105) (0.13.14), [`45169068249`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45169068249) (0.13.15) | **all 7 jobs success** in each, on hosted `ubuntu-latest` and `windows-latest` runners |
+| Per-model weights at runtime | two mock runs with different bundles, same answer | `0.9997 · safe` when weights exist for `mock/mock-1`, `0.0003 · unreliable` when they only exist for `other/model` — selection by `providerID/modelID` really works |
+| `collect.py` at scale | 7 models, 576 requests | 120 rows with logprobs; 108 requests refused with `HTTP 403 premium credits`; 348 answers came back without logprobs — the local gateway `127.0.0.1:8790` returns them only for the models it routes |
+| `collect.py` against a live gateway | 2 prompts, `freepi/particle` | rows with `meanLp -0.063 / -0.125`, `minLp -0.409 / -0.945`, `fracLow 0.00 / 0.06` — features computed by the same formula as in the runtime |
+| Question-bank audit | `python3 scripts/audit-bank.py data/qa-hard-bank.jsonl data/rows-hard.jsonl` | found **4** items where the reference answer, not the model, was wrong; after cleaning the set — `AUROC n/a (one class)`, 739 correct / **0 wrong** |
+| Negative harvesting | 47 hard questions × 4 models × 4 samples at `T=0.8` and `T=1.0`, then three more banks (34 questions, classic LLM failures, list counting) | 1504 rows (47 × 4 × 4 × 2 temperatures) + 688 rows from the three extra banks; **0** genuine negatives — the models either answer correctly or stay silent |
+| Instructed lies: can the scorer see them | `scripts/measure-lies.py` on 626 rows (544 truthful / 82 lies) | previous formula gave AUROC **0.388** (worse than chance), ECE 0.368; fitted weights give 0.800 out-of-fold (grouped CV) |
+| Built-in formula rewritten | same 626 rows + 739 correct rows as a control | `exp(meanLp)` instead of `0.4·geo + 0.3·worst + 0.3·φ`: AUROC **0.388 → 0.597**, ECE **0.368 → 0.098**, and on correct answers ECE **0.493 → 0.160** |
 
-**Про 62 падения в монорепо:** ни одно не относится к truthprobe. Причины видны в логе и не связаны
-с патчем: `tool-search` тянет ripgrep с github.com, `provider-gitlab-oauth` ходит на gitlab.com,
-`cross-spawn` и MCP-тесты зависят от spawn — в этом окружении исходящая сеть для тестов зарезана
+**About the 62 failures in the monorepo:** none of them relates to truthprobe. The causes are visible
+in the log and unrelated to the patch: `tool-search` pulls ripgrep from github.com,
+`provider-gitlab-oauth` calls gitlab.com, `cross-spawn` and the MCP tests depend on spawn — in this
+environment outbound network is blocked for tests
 (`test attempted network request: GET https://github.com/...`).
 
-Чего мы **не** проверяли, и врать об этом не будем:
+What we did **not** check, and will not pretend otherwise:
 
-- **Чистые виртуальные машины — теперь проверено в CI.** GitHub Actions поднимает раннеры
-  `ubuntu-latest` и `windows-latest` с нуля: прогоны
-  [`44593481931`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44593481931) и
+- **Clean virtual machines — now verified in CI.** GitHub Actions brings up `ubuntu-latest` and
+  `windows-latest` runners from scratch: runs
+  [`44593481931`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44593481931) and
   [`44678633546`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44678633546)
-  (уже с per-model весами) подтвердили, что установщики проходят `--dry-run` на обеих ОС, патч
-  применяется к чистому дереву и ведёт себя одинаково. Это не ручная установка на десктоп, но это чистая ОС.
-- **Linux и macOS.** `install.sh` теперь проверяется в CI на ubuntu-latest (dry-run, без установки
-  в систему). macOS-раннер в матрице установщика не участвует — там проверялись только юнит-тесты.
-- **Облачные провайдеры с ключами.** OpenAI, Anthropic, Gemini не проверялись — только локальный
-  шлюз free-pi и мок-провайдер в e2e. Вывод об их поддержке основан на формате протокола, а не на замерах.
-- **Калибровка — пока не измерена, и это выяснилось честным путём.** `calibrate.py --demo --fit`
-  даёт `AUROC 1.000 / ECE 0.039` на синтетике — свойство синтетики, а не качество скорера.
-  Первый замер на реальных данных (`data/rows-hard.jsonl`) дал `per-model 0.866`, но потом
-  выяснилось, что все 40 «негативов» — брак: 23 ответа на двусмысленный вопрос («Saturn or Neptune»
-  при эталоне `jupiter`) и 17 обрывов по `max_tokens`. После чистки в наборе **739 верных и 0
-  неверных**, `evaluate.py` печатает `AUROC n/a (one class)`. Поэтому числа 0.538/0.683/0.866
-  отозваны, а вместо них появился `scripts/audit-bank.py`, который ловит такой брак банка до
-  обучения. Подробности — `docs/VALIDATION.md` §12.
+  (already with per-model weights) confirmed that the installers pass `--dry-run` on both OSes, the
+  patch applies to a clean tree and behaves identically. This is not a manual install on a desktop,
+  but it is a clean OS.
+- **Linux and macOS.** `install.sh` is now exercised in CI on ubuntu-latest (dry-run, without
+  installing into the system). The macOS runner does not take part in the installer matrix — only
+  unit tests were checked there.
+- **Cloud providers with keys.** OpenAI, Anthropic, Gemini were not checked — only the local free-pi
+  gateway and the mock provider in e2e. The support claim rests on the protocol shape, not on
+  measurements.
+- **Calibration — not measured yet, and we found that out honestly.** `calibrate.py --demo --fit`
+  reports `AUROC 1.000 / ECE 0.039` on synthetic data — a property of the synthetic set, not the
+  quality of the scorer. The first real measurement (`data/rows-hard.jsonl`) gave `per-model 0.866`,
+  but then it turned out that all 40 "negatives" were defects: 23 answers to an ambiguous question
+  ("Saturn or Neptune" with `jupiter` as the reference) and 17 cut-offs by `max_tokens`. After
+  cleaning, the set holds **739 correct and 0 wrong** rows, and `evaluate.py` prints
+  `AUROC n/a (one class)`. So the numbers 0.538/0.683/0.866 are withdrawn, and instead
+  `scripts/audit-bank.py` appeared, which catches that class of bank defect before training.
+  Details — `docs/VALIDATION.md` §12.
 
-## Устройство патча
+## Anatomy of the patch
 
-53 файла, +3626/−55, тридцать коммитов поверх `007afb1`. Шов тонкий и аддитивный:
+53 files, +3625/−55, 508 953 B, thirty-one commits on top of `007afb1`. The seam is thin and additive:
 
-| Слой | Файл | Что делает |
+| Layer | File | What it does |
 | --- | --- | --- |
-| схема | `packages/schema/src/truthprobe.ts` | `Truthprobe.Info` — единственный новый тип |
-| схема | `session-message.ts`, `session-event.ts` | optional-поле `truthprobe` в текстовом парте и в `session.text.ended` |
-| протокол | `packages/ai/src/protocols/openai-chat.ts` | просит `logprobs`, парсит `choices[i].logprobs` в `providerMetadata` |
-| протокол | `packages/ai/src/protocols/truthprobe-capability.ts` | читает кэш вердиктов, чтобы включить сбор без конфига |
-| ядро | `plugin/truthprobe.ts` + `truthprobe/capability.ts` | автопроверка провайдера по `http.request`, кэш вердиктов |
-| ядро | `model.ts` | `mergeCapabilities` больше не теряет `logprobs` |
-| ядро | `session/runner/publish-llm-event.ts` | копит токены, считает score, кладёт в durable-событие |
-| ядро | `session/message-updater.ts` | переносит поле в парт сообщения |
-| клиент | `client/src/solid/data.ts` | **не теряет** поле при живом обновлении стора |
-| desktop | `desktop/src/main/constants.ts`, `electron.vite.config.ts`, `electron-builder.config.ts` | брэнд сборки: имя, AppUserModelID, userData, установщик, отказ от чужого updater'а |
-| app | `app/src/brand.ts`, `app.tsx`, `session/route.tsx` | заголовок окна и вкладки из того же значения |
-| TUI | `tui/src/routes/session/message-parts.tsx` | бейдж + блок спорных предложений |
-| desktop | `session-ui/src/message/message-content.tsx` | чип `confidence` в футере ответа — общий для desktop-приложения и веба |
-| desktop | `session-ui/src/message/doubtful.ts` | список спорных предложений: нумерация, процент, обрезка до 96 символов |
-| скоринг | `core/src/truthprobe/*` | чистые функции, ноль внешних зависимостей |
+| schema | `packages/schema/src/truthprobe.ts` | `Truthprobe.Info` — the only new type |
+| schema | `session-message.ts`, `session-event.ts` | optional `truthprobe` on the text part and on `session.text.ended` |
+| protocol | `packages/ai/src/protocols/openai-chat.ts` | asks for `logprobs`, parses `choices[i].logprobs` into `providerMetadata` |
+| protocol | `packages/ai/src/protocols/truthprobe-capability.ts` | reads the verdict cache to enable collection without config |
+| core | `plugin/truthprobe.ts` + `truthprobe/capability.ts` | probes the provider on `http.request`, caches verdicts |
+| core | `model.ts` | `mergeCapabilities` no longer drops `logprobs` |
+| core | `session/runner/publish-llm-event.ts` | accumulates tokens, computes the score, puts it on the durable event |
+| core | `session/message-updater.ts` | moves the field onto the message part |
+| client | `client/src/solid/data.ts` | **does not drop** the field on live store updates |
+| desktop | `desktop/src/main/constants.ts`, `electron.vite.config.ts`, `electron-builder.config.ts` | build branding: name, AppUserModelID, userData, installer, no upstream updater |
+| app | `app/src/brand.ts`, `app.tsx`, `session/route.tsx` | window and tab title from the same value |
+| TUI | `tui/src/routes/session/message-parts.tsx` | badge and the doubtful-sentence block |
+| desktop | `session-ui/src/message/message-content.tsx` | `confidence` chip in the answer footer, shared by the desktop app and the web UI |
+| desktop | `session-ui/src/message/doubtful.ts` | doubtful-sentence list: numbering, percentage, 96-char truncation |
+| scoring | `core/src/truthprobe/*` | pure functions, zero external dependencies |
 
-Почему именно так и что можно было сломать — в [`PLAN.md`](PLAN.md) §11 «жизнь патча при
-обновлениях»: 6 точек, которые придётся rebase-ить, и 15–30 минут на релиз upstream.
+Why it is shaped this way and what could break — [`PLAN.md`](PLAN.md) §11 "the life of the patch
+across upgrades": 6 places that will need rebasing, 15–30 minutes per upstream release.
 
-## Структура
+## Layout
 
 ```
-src/truthprobe/           эталонная математика (типы, сегментация, скоринг) и логика автопроверки
-src/opencode-tree/        эталонные копии файлов, которые живут в дереве opencode
-test/score.test.ts        44 теста без сети и без зависимостей
-test/capability.test.ts   35 тестов статусов, TTL и кэша автопроверки
-test/opencode-tree/       тесты, которые живут в дереве opencode
-patches/                  готовый git-am патч и python-патчеры для точечных правок
-scripts/                  мок-провайдер, probe, pty-проба TUI, эмулятор экрана, сборка
-install.sh / install.ps1  установка в две команды: патч поверх sst/opencode @ 007afb1
-docs/                     приоритет, план встроенных моделей, валидация, сборка
+src/truthprobe/           reference math (types, segmentation, scoring) and the probe logic
+src/opencode-tree/        reference copies of the files that live in the opencode tree
+test/score.test.ts        44 tests without network and without dependencies
+test/capability.test.ts   35 tests for statuses, TTL and the probe cache
+test/opencode-tree/       tests that live in the opencode tree
+patches/                  the ready-to-apply git-am patch and python patchers for spot edits
+scripts/                  mock provider, probe, TUI pty probe, screen emulator, builds
+install.sh / install.ps1  two-command install: the patch on top of sst/opencode @ 007afb1
+docs/                     prior art, built-in model plan, validation, build
 ```
 
-## Ограничения
+## Limitations
 
-- Только провайдеры с `logprobs` (семейство chat-completions). Responses API, Anthropic messages,
-  Gemini generate-content — пока нет; план есть в [`docs/PLAN-BUILTIN.md`](docs/PLAN-BUILTIN.md).
-- Первый запрос к новому провайдеру ещё идёт без `logprobs`: вердикт появляется после пробы,
-  то есть со второго запроса. Первый ответ бейджа не получит.
-- Реальный шлюз `opencode.ai/inference` не проверен: нет ключа. Автопроверка справится сама —
-  `scripts/probe-logprobs.py` нужен только чтобы посмотреть вердикт вручную.
-- Границы уровней `0.90 / 0.75 / 0.55 / 0.35` выбраны по здравому смыслу, а не по размеченным
-  данным: на живых длинных ответах их стоит перепроверить. Переопределяется
-  `TRUTHPROBE_RISKY_THRESHOLD`. Переменная `TRUTHPROBE_SHAKY_THRESHOLD` удалена в 0.13.8: она
-  ничего не настраивала (`docs/VALIDATION.md` §23, пункт 8).
-- Известная слабость подхода: уверенная ложь. Лечится не порогом, а вторым независимым сигналом.
+- Only providers with `logprobs` (the chat-completions family). Responses API, Anthropic messages,
+  Gemini generate-content — not yet; the plan is in [`docs/PLAN-BUILTIN.md`](docs/PLAN-BUILTIN.md).
+- The first request to a new provider still goes without `logprobs`: the verdict appears after the
+  probe, that is from the second request on. The first answer gets no badge.
+- The real `opencode.ai/inference` gateway has not been verified: no key. The probe handles it on its
+  own — `scripts/probe-logprobs.py` is only there to look at the verdict by hand.
+- The `0.90 / 0.75 / 0.55 / 0.35` level bounds were chosen by common sense, not from labelled data:
+  they need re-checking on real long answers. Override with `TRUTHPROBE_RISKY_THRESHOLD`.
+  `TRUTHPROBE_SHAKY_THRESHOLD` was removed in 0.13.8 — it configured nothing
+  (`docs/VALIDATION.md` §23, item 8).
+- A known weakness of the approach: confident lies. It is cured not by a threshold but by a second
+  independent signal.
 
-## Лицензия
+## License
 
-MIT — см. [LICENSE](LICENSE). `opencode` остаётся под своей лицензией; здесь только патч.
+MIT — see [LICENSE](LICENSE). `opencode` stays under its own license; this repository is only the
+patch.
 
-## Что ещё не сделано (честный список)
+## Still open (honest list)
 
-План работ на 0.5 — [`docs/ROADMAP.md`](docs/ROADMAP.md): шкала уровней, заметная подсветка,
-матрица поддерживаемых моделей, установка одним скриптом, сменный ML-скоринг.
+The 0.5 work plan — [`docs/ROADMAP.md`](docs/ROADMAP.md): the level scale, prominent highlighting, a
+supported-model matrix, one-script install, swappable ML scoring.
 
-Эти пункты из ревью закрыты **не** были (кроме отмеченных), и мы не делаем вид, что они закрыты:
+These review points were **not** closed (except the marked ones), and we do not pretend they were:
 
-- **Калибровка на настоящих галлюцинациях.** AUROC и ECE измерены, но на наборе «заказанной лжи»:
-  626 строк, из них 82 негатива получены просьбой «соври». Самопроизвольных ошибок модели в наборе
-  нет — 1504 запроса на четырёх моделях шлюза (47 вопросов × 4 модели × 4 сэмпла × 2 температуры)
-  дали ноль негативов. Второго независимого набора
-  тоже нет, поэтому CI-гейта по AUROC не будет, пока он не появится. Протокол и скрипт —
-  [`docs/CALIBRATION.md`](docs/CALIBRATION.md) и `scripts/calibrate.py`.
-- **Исправлено 22.11.2026. Поддержка logprobs проверяется по модели, а не по провайдеру.** Кэш
-  автопроверки адресуется парой `provider/model`: подтверждённая `particle` больше не включает
-  `logprobs` для `deepseek-*`, и провайдер, у которого часть моделей поле не знает, не получает 400
-  на весь запрос. Плата — один пробный запрос на каждую новую модель, дальше вердикт кэшируется.
-- **`temperature > 0`.** `top_logprobs` при ненулевой температуре — сглаженное распределение, а не
-  уверенность модели. Мы это не блокируем и не помечаем `partial`; числа остаются числами, но
-  трактовать их как «уверенность» при `temperature > 0` нельзя.
-- **`top_logprobs` не настраивается.** `PROBE_TOP_K = 20` в `plugin-truthprobe.ts` — константа,
-  уменьшить трафик нельзя; тот же размер в скорере задаёт `DEFAULT_SCORE_OPTIONS.topK`.
-- **Два экземпляра TTL.** `core/src/truthprobe/capability.ts` и `ai/src/protocols/truthprobe-capability.ts`
-  дублируют логику свежести; теста на рассинхрон нет.
+- **Calibration on spontaneous hallucinations.** AUROC and ECE are measured, but on a set of
+  *commissioned* lies: 626 rows, 82 of them negatives obtained by asking the model to lie. There are no
+  spontaneous model errors in it — 1504 requests across four gateway models (47 questions × 4 models ×
+  4 samples × 2 temperatures) produced zero negatives. There is no second independent set either, so no
+  AUROC gate can go into CI until there is one. The
+  protocol and the script live in [`docs/CALIBRATION.md`](docs/CALIBRATION.md) and `scripts/calibrate.py`.
+- **Fixed 22.11.2026. Logprobs support is checked per model, not per provider.** The capability cache
+  is keyed by `provider/model`: confirming `particle` no longer turns logprobs on for `deepseek-*`, and
+  a provider whose other models reject the field no longer gets a 400 for the whole request. The cost
+  is one probe per new model, after which the verdict is cached.
+- **`temperature > 0`.** `top_logprobs` at non-zero temperature is a smoothed distribution, not the
+  model's confidence. We neither block it nor mark it `partial`; the numbers stay numbers, but they
+  cannot be read as "confidence" at `temperature > 0`.
+- **`top_logprobs` is not configurable.** `PROBE_TOP_K = 20` in `plugin-truthprobe.ts` is a constant;
+  the traffic cannot be reduced; the same size in the scorer is `DEFAULT_SCORE_OPTIONS.topK`.
+- **Two TTL implementations.** `core/src/truthprobe/capability.ts` and
+  `ai/src/protocols/truthprobe-capability.ts` duplicate freshness logic without a drift test.

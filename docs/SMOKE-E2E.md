@@ -1,45 +1,47 @@
-# Сквозная проверка TruthProbe без внешних ключей
+> Русская версия: [docs/ru/SMOKE-E2E.md](ru/SMOKE-E2E.md)
 
-Мок-сервер отдаёт OpenAI-совместимый стрим с настоящими `logprobs`, поэтому весь путь
-«запрос → парсинг → скоринг → durable-событие → парт сообщения» проверяется локально.
+# End-to-end check of TruthProbe without external keys
 
-## Как воспроизвести
+The mock server serves an OpenAI-compatible stream with real `logprobs`, so the whole path
+"request → parsing → scoring → durable event → message part" is checked locally.
+
+## How to reproduce
 
 ```bash
-# 1. мок в отдельном терминале
+# 1. mock in a separate terminal
 python3 scripts/mock-openai-logprobs.py 8899
 
-# 2. прогон opencode из исходников: TruthProbe включается сам
+# 2. run opencode from source: TruthProbe turns itself on
 cd ~/src/opencode
 OPENCODE_CONFIG=/path/to/opencode-truthprobe/scripts/mock-opencode.json \
 bun run --cwd packages/cli src/index.ts run --model mock/mock-1 \
   "What is the capital of France? Answer in two sentences."
 
-# 3. (опционально) что решила автопроверка
+# 3. (optional) what the auto-check decided
 cat ~/.local/share/opencode/truthprobe/capabilities.json
 ```
 
-Первый прогон на чистом кэше: сам запрос идёт без `logprobs`, параллельно уходит проверочная
-посылка `{"model":"mock-1","messages":[{"role":"user","content":"ping"}],"max_tokens":1,
-"logprobs":true,"top_logprobs":20,"stream":false}`, и вердикт `ok` ложится в кэш. Со второго
-прогона все запросы к этому провайдеру идут уже с `logprobs: true, top_logprobs: 20` —
-измерено: 2 из 2 streaming-запросов, 0 новых проб.
+The first run on a clean cache: the request itself goes out without `logprobs`, in parallel a probe
+request `{"model":"mock-1","messages":[{"role":"user","content":"ping"}],"max_tokens":1,
+"logprobs":true,"top_logprobs":20,"stream":false}` is sent, and the `ok` verdict lands in the cache. From the second
+run on, all requests to this provider go out already with `logprobs: true, top_logprobs: 20` —
+measured: 2 of 2 streaming requests, 0 new probes.
 
-## Измеренный результат (прогон в VM)
+## Measured result (a run in a VM)
 
-Вывод CLI:
+CLI output:
 
 ```
 The capital of France is Paris. It is home to about 2 million people.
 ```
 
-Запрос, который увидел мок-сервер (`/tmp/mock/requests.jsonl`):
+The request the mock server saw (`/tmp/mock/requests.jsonl`):
 
 ```json
 {"path": "/v1/chat/completions", "model": "mock-1", "logprobs": true, "top_logprobs": 20, "stream": true}
 ```
 
-Сохранённый парт ассистента (таблица `session_part` в `~/.local/share/opencode/opencode-local.db`):
+The stored assistant part (the `session_part` table in `~/.local/share/opencode/opencode-local.db`):
 
 ```json
 {"type":"text","text":"The capital of France is Paris. It is home to about 2 million people.",
@@ -53,23 +55,23 @@ The capital of France is Paris. It is home to about 2 million people.
    "flagged":1}}
 ```
 
-Что это доказывает:
+What this proves:
 
-1. `logprobs: true, top_logprobs: 20` реально уходит в тело запроса — без переменных окружения,
-   только за счёт вердикта автопроверки.
-2. Стрим-чанки с `choices[].logprobs.content[]` разбираются, токены накапливаются по блоку текста.
-3. Скоринг считает первое предложение уверенным (0.967, риск 0.033), второе — спорным (0.158, риск 0.842), φ первого токена 0.708. Оценка по умолчанию — вероятность геометрического среднего `exp(meanLp)`, без φ и без веса худшего токена (см. `docs/VALIDATION.md` §14).
-4. Скоринг доезжает до хранилища через `session.text.ended`, без отдельного события `session.text.scored`
-   (первоначальный вариант с отдельным durable-событием блокировался на шине и был заменён — см. `docs/VALIDATION.md`).
+1. `logprobs: true, top_logprobs: 20` really go into the request body — with no environment variables,
+   purely thanks to the auto-check verdict.
+2. Stream chunks with `choices[].logprobs.content[]` are parsed, tokens are accumulated per text block.
+3. Scoring counts the first sentence as confident (0.967, risk 0.033) and the second as doubtful (0.158, risk 0.842), φ of the first token is 0.708. The default score is the geometric-mean probability `exp(meanLp)`, without φ and without the worst-token weight (see `docs/VALIDATION.md` §14).
+4. Scoring reaches storage via `session.text.ended`, without a separate `session.text.scored` event
+   (the initial variant with a separate durable event was blocked on the bus and was replaced — see `docs/VALIDATION.md`).
 
-## Тот же сценарий в живом TUI
+## The same scenario in a live TUI
 
 ```bash
-python3 scripts/tui-probe.py          # поднимает TUI в pty, печатает запрос, снимает экран
+python3 scripts/tui-probe.py          # starts the TUI in a pty, prints the request, captures the screen
 python3 scripts/screen-dump.py /tmp/tui-probe.log
 ```
 
-Результат (см. `docs/VALIDATION.md`, §6 «Живой рендер TUI (pty)»):
+Result (see `docs/VALIDATION.md`, §6 "Live TUI render (pty)"):
 
 ```
    first-token confidence 71%
@@ -78,7 +80,7 @@ python3 scripts/screen-dump.py /tmp/tui-probe.log
      ▌ #2 ▰░░░░ 16% · unreliable: It is home to about 2 million people.
 ```
 
-## Что это НЕ проверяет
+## What this does NOT check
 
-- Настоящий шлюз `opencode.ai/inference` (нужен ключ): отдаёт ли он logprobs и не вырезает ли поле.
-- Поведение на длинных реальных ответах (все прогоны — на моке с двумя предложениями).
+- The real `opencode.ai/inference` gateway (a key is needed): whether it returns logprobs and does not cut the field.
+- Behaviour on long real answers (all the runs are on the mock with two sentences).

@@ -1,155 +1,157 @@
-# План развития
+> Русская версия: [docs/ru/ROADMAP.md](ru/ROADMAP.md)
 
-Документ фиксирует, что уже сделано, что делаем дальше и по какому числу поймём, что стало лучше.
-Правило то же, что и в `CONTRIBUTING.md`: **любое изменение проверяется замером**, а не ощущением.
+# Development plan
 
-Статус на 20.11.2026.
+The document records what has already been done, what we do next and by which number we will understand that things have got better.
+The rule is the same as in `CONTRIBUTING.md`: **any change is verified by a measurement**, not by a feeling.
 
-## Что уже готово
+Status as of 20.11.2026.
 
-| Что | Доказательство |
+## What is already done
+
+| What | Evidence |
 | --- | --- |
-| Оценка ответа по logprobs (первый токен + весь ответ) | `packages/core/src/truthprobe/*`, 129 тестов, `docs/VALIDATION.md` |
-| Веса калибровки на модель (`WeightsBundle`, `bundleScorer`, `scoreAnswer(..., model)`) | мок-прогон: `0.99966 · safe` при весах для `mock/mock-1`, `0.000335 · unreliable` при весах только у `other/model` |
-| Читаемый вердикт в UI | `packages/session-ui/src/message/confidence.tsx`, маркеры `confidence-meter`/`doubtful-list` в собранном `app.asar` |
-| Сбор калибровочных строк | `scripts/collect.py` (признаки считаются ровно как в рантайме, reasoning-префикс вырезается) |
-| CI на чужих машинах | 7/7 job'ов на ubuntu и windows, прогоны `44593481931`, `44678633546`, `44736706708`, `44761971781` |
-| DX: одна команда на setup/preview/patch/desktop | `Makefile`, `scripts/dev-setup.sh`, `scripts/preview.sh`, `CONTRIBUTING.md` |
-| Оценка качества на одном файле | `scripts/evaluate.py` + `make eval`: AUROC/ECE/Brier и доля верных по уровням для `geometric`/`global`/`per-model` |
-| Встроенная формула = `exp(meanLp)` | 626 строк (544 правды / 82 заказанной лжи): AUROC **0.388 → 0.597**, ECE **0.368 → 0.098**; на 739 верных строках ECE 0.493 → 0.160 (§14 VALIDATION) |
-| Пороги уровней проверены замером, а не на глаз | `safe ≥0.90` даёт 35.6% правды и 15.9% лжи; понижение до 0.85 добавило бы лжи больше, чем правды — оставлено как есть |
-| Защита от брака в разметке | `scripts/audit-bank.py` находит пункты, где согласились модели, а не эталон (нашёл 4 таких); `collect.py` не ставит `label=0` обрезанному ответу |
-| Первые данные для калибровки | `data/rows-hard.jsonl` / `rows-hard-t1.jsonl` — 752 строки каждая, 739/741 верных, **0 неверных** после чистки; `data/rows-lie-vs-truth.jsonl` — 544 правды + 82 заказанной лжи |
+| Scoring an answer by logprobs (first token + the whole answer) | `packages/core/src/truthprobe/*`, 129 tests, `docs/VALIDATION.md` |
+| Calibration weights per model (`WeightsBundle`, `bundleScorer`, `scoreAnswer(..., model)`) | mock run: `0.99966 · safe` with weights for `mock/mock-1`, `0.000335 · unreliable` with weights only for `other/model` |
+| A readable verdict in the UI | `packages/session-ui/src/message/confidence.tsx`, the markers `confidence-meter`/`doubtful-list` in the built `app.asar` |
+| Collection of calibration rows | `scripts/collect.py` (the features are computed exactly as in the runtime, the reasoning prefix is cut out) |
+| CI on other people's machines | 7/7 jobs on ubuntu and windows, runs `44593481931`, `44678633546`, `44736706708`, `44761971781` |
+| DX: one command for setup/preview/patch/desktop | `Makefile`, `scripts/dev-setup.sh`, `scripts/preview.sh`, `CONTRIBUTING.md` |
+| Quality evaluation on a single file | `scripts/evaluate.py` + `make eval`: AUROC/ECE/Brier and the share of correct answers by level for `geometric`/`global`/`per-model` |
+| The built-in formula = `exp(meanLp)` | 626 rows (544 truths / 82 ordered lies): AUROC **0.388 → 0.597**, ECE **0.368 → 0.098**; on 739 correct rows ECE 0.493 → 0.160 (§14 VALIDATION) |
+| Level thresholds verified by measurement, not by eye | `safe ≥0.90` gives 35.6% of truths and 15.9% of lies; lowering to 0.85 would have added more lies than truths — left as is |
+| Protection against defective labelling | `scripts/audit-bank.py` finds items where the models agreed but the reference did not (it found 4 such); `collect.py` does not set `label=0` for a truncated answer |
+| First data for calibration | `data/rows-hard.jsonl` / `rows-hard-t1.jsonl` — 752 rows each, 739/741 correct, **0 incorrect** after cleaning; `data/rows-lie-vs-truth.jsonl` — 544 truths + 82 ordered lies |
 
-## Чего пока нет — и почему это важно
+## What is still missing — and why it matters
 
-**Самопроизвольных негативов нет.** 1504 собранные строки после аудита дали **ноль** настоящих
-ошибок: 40 прежних «негативов» оказались браком наших же данных — 23 ответа на двусмысленный вопрос
-(«Saturn or Neptune» при эталоне `jupiter`) и 17 обрывов по `max_tokens`. Поэтому AUROC `per-model
-0.866` отозван: считать его было не на чем. Негативы, которые есть (82 строки), получены **заказом** —
-модель просили соврать (`scripts/make-liar-bank.py`); это другой класс ошибок: послушное исполнение
-инструкции, а не уверенная выдумка.
+**There are no spontaneous negatives.** The 1504 collected rows after the audit gave **zero** real
+errors: the 40 former "negatives" turned out to be defects in our own data — 23 answers to an ambiguous question
+("Saturn or Neptune" with the reference `jupiter`) and 17 truncations by `max_tokens`. Therefore `per-model`
+AUROC `0.866` is withdrawn: there was nothing to compute it on. The negatives that exist (82 rows) were obtained **on order** —
+the model was asked to lie (`scripts/make-liar-bank.py`); this is a different class of errors: obedient
+execution of an instruction, not confident fabrication.
 
-**AUROC в CI.** Первое число есть: `0.597` у встроенной формулы на 626 строках. Но это 82 негатива
-одного типа (заказанная ложь) и 17 вопросов, поэтому гейт пока не включаем: любая правка порогов даст
-скачок на одном промпте, а не улучшение скорера. Гейт включим, когда появится второй независимый
-набор негативов.
+**AUROC in CI.** The first number exists: `0.597` for the built-in formula on 626 rows. But that is 82 negatives
+of one type (ordered lies) and 17 questions, so for now we do not enable the gate: any change of thresholds would give
+a jump on one prompt, not an improvement of the scorer. We will enable the gate when a second independent
+set of negatives appears.
 
-**Разметки по предложениям.** Строки размечены на уровне ответа, а рантайм подсвечивает
-предложения. Пока нет набора, где внутри одного ответа часть предложений верна, а часть — нет,
-утверждать «подсветка попадает в ложное утверждение» нельзя.
+**Sentence-level labelling.** The rows are labelled at the answer level, while the runtime highlights
+sentences. As long as there is no set where within one answer some sentences are correct and some are not,
+one cannot claim "the highlighting lands on the false statement".
 
-## Фаза 0. Измерение
+## Phase 0. Measurement
 
-- [x] `scripts/evaluate.py`: AUROC (с усреднением по связкам), ECE, Brier, доля верных внутри
-      каждого уровня; сравнение `geometric` / `global` / `per-model` (сделано 20.11.2026).
-- [x] `make eval` на фикстуре, лежащей в репозитории (`data/eval-fixture.jsonl`).
-- [x] Сверка инструмента с рантаймом: `evaluate.py` считает ту же формулу, что `geometricScorer`
-      (`exp(meanLp)`). Расхождение нашлось — инструмент продолжал считать старую формулу и занижал
-      AUROC до 0.388; исправлено 20.11.2026.
-- [x] Пороги уровней проверены распределением оценок на 1 283 правдивых и 82 ложных ответах:
-      менять не нужно. `safe ≥0.90` — верхняя ступень, а не «90% шанс быть верным»:
-      ECE 0.098 измерен на заказанной лжи, и score остаётся сигналом уверенности токенов
+- [x] `scripts/evaluate.py`: AUROC (with averaging over ties), ECE, Brier, the share of correct answers within
+      each level; comparison of `geometric` / `global` / `per-model` (done 20.11.2026).
+- [x] `make eval` on the fixture lying in the repository (`data/eval-fixture.jsonl`).
+- [x] Reconciliation of the tool with the runtime: `evaluate.py` computes the same formula as `geometricScorer`
+      (`exp(meanLp)`). A discrepancy was found — the tool kept computing the old formula and understated
+      AUROC down to 0.388; fixed 20.11.2026.
+- [x] Level thresholds verified by the distribution of scores on 1 283 truthful and 82 false answers:
+      no need to change. `safe ≥0.90` is the top step, not "a 90% chance of being right":
+      ECE 0.098 was measured on ordered lies, and score remains a signal of token confidence
       (`docs/CALIBRATION.md`).
-- [ ] CI-job `eval`, который падает при падении AUROC ниже зафиксированного порога —
-      **отложено**: набор негативов узкий (один вопрос), порог даст шум, а не защиту.
+- [ ] The CI job `eval` that fails when AUROC drops below a fixed threshold —
+      **postponed**: the set of negatives is narrow (one question), the threshold will give noise, not protection.
 
-Критерий выполнен: на реальном файле таблица печатается; на синтетике из двух классов
-AUROC = 1.0 при идеальном разделении; на одноклассовом файле — `AUROC n/a`, без падения.
+The criterion is met: on a real file the table is printed; on synthetics of two classes
+AUROC = 1.0 with ideal separation; on a single-class file — `AUROC n/a`, without a crash.
 
-## Фаза 1. Негативы
+## Phase 1. Negatives
 
-Четыре подхода, все проверяемые машинно:
+Four approaches, all machine-verifiable:
 
-1. **Многосэмплирование с температурой** (`--temperature 0.8 --samples 4`): разнообразие ответов
-   даёт естественные ошибки, метка ставится автоматически по банку эталонов.
-2. **Каверзные, но проверяемые вопросы**: единицы измерения, точные даты и издания, длины рек,
-   атомные номера, многошаговые задачи.
-3. **Урезанный контекст / короткий `max_tokens`**: модель уверенно договаривает неверное.
-4. **Слабые модели**: `gpt-oss-20b`, `ling-3.1-flash`, `qwen3.7-flash` ошибаются чаще.
+1. **Multi-sampling with temperature** (`--temperature 0.8 --samples 4`): the variety of answers
+   gives natural errors, the label is set automatically by the bank of references.
+2. **Tricky but verifiable questions**: units of measure, exact dates and editions, river lengths,
+   atomic numbers, multi-step tasks.
+3. **Truncated context / short `max_tokens`**: the model confidently finishes the wrong thing.
+4. **Weak models**: `gpt-oss-20b`, `ling-3.1-flash`, `qwen3.7-flash` err more often.
 
-Критерий: ≥ 200 строк, из них ≥ 30% `label=0`, и `calibrate.py --fit --by-model` реально обучает
-веса с out-of-fold AUROC/ECE.
+Criterion: ≥ 200 rows, of which ≥ 30% `label=0`, and `calibrate.py --fit --by-model` actually trains
+weights with out-of-fold AUROC/ECE.
 
-**Итог на 20.11.2026: критерий не выполнен.** Проверены все четыре подхода и ещё один
-(счёт по списку): 2192 строки на четырёх банках — 1504 на банке из 47 вопросов (× 4 модели ×
-4 сэмпла × 2 температуры) и 688 на трёх дополнительных, — настоящих негативов **ноль**. Доступные модели
-шлюза либо отвечают верно, либо возвращают пустой content. Слабые модели (`gpt-oss-20b` и т.п.)
-через роутер отдают `HTTP 403 premium credits`, а у тех, что отвечают, logprobs вырождены.
+**Result as of 20.11.2026: the criterion is not met.** All four approaches were checked plus one more
+(counting by list): 2192 rows on four banks — 1504 on a bank of 47 questions (× 4 models ×
+4 samples × 2 temperatures) and 688 on three additional ones — real negatives: **zero**. The available models
+of the gateway either answer correctly or return empty content. Weak models (`gpt-oss-20b` and the like)
+return `HTTP 403 premium credits` through the router, and those that do answer have degenerate logprobs.
 
-Пятый подход, который сработал: **заказанная ложь** (`scripts/make-liar-bank.py`) — модель просят
-ответить неправильно, метка «ложь» известна из постановки задачи. Это даёт 82 негатива и первое
-измерение на классе «ложь». Встроенная формула после переписывания (§14 VALIDATION) даёт AUROC
-**0.597**, ECE **0.098**; обученные веса на тех же признаках — **0.786**, с `digitDensity` — **0.800** (`scripts/measure-lies.py`).
-Переобучать веса по умолчанию на заказанной лжи нельзя — это не тот класс ошибок.
+The fifth approach that worked: **ordered lies** (`scripts/make-liar-bank.py`) — the model is asked
+to answer incorrectly, the "lie" label is known from the task statement. This gives 82 negatives and the first
+measurement on the "lie" class. The built-in formula after the rewrite (§14 VALIDATION) gives AUROC
+**0.597**, ECE **0.098**; learned weights on the same features — **0.786**, with `digitDensity` — **0.800** (`scripts/measure-lies.py`).
+Retraining the default weights on ordered lies is not allowed — that is not the right class of errors.
 
-**Сделано частично (20.11.2026).** 1504 строки по 47 вопросам и 4 моделям при `T=0.8` и `T=1.0`
-дали **40 «негативов», и все они оказались браком**: 23 ответа на двусмысленный вопрос («Saturn or
-Neptune» при эталоне `jupiter` — модели ответили на заданный вопрос правильно) и 17 обрывов по
-`max_tokens`. После аудита банка и пересбора с `max_tokens 220` в наборе **739 верных и 0 неверных**.
-Критерий «≥ 30% `label=0`» не выполнен: неверных нет вообще.
+**Partially done (20.11.2026).** 1504 rows across 47 questions and 4 models at `T=0.8` and `T=1.0`
+gave **40 "negatives", and all of them turned out to be defects**: 23 answers to an ambiguous question ("Saturn or
+Neptune" with the reference `jupiter` — the models answered the question asked correctly) and 17 truncations by
+`max_tokens`. After auditing the bank and re-collecting with `max_tokens 220` the set has **739 correct and 0 incorrect**.
+The criterion "≥ 30% `label=0`" is not met: there are no incorrect ones at all.
 
-Главный вывод поэтому не про модели, а про данные: **прежде чем объяснять метрику поведением
-модели, надо проверить, что эталон и вопрос вообще осмысленны**. Для этого добавлен
-`scripts/audit-bank.py` (кросс-модельное согласие против эталона + проверка «X or Y»), а
-`collect.py` больше не ставит `label=0` обрезанному ответу. Следующая попытка добыть негативы
-должна идти через слабые модели и вопросы с однозначным эталоном.
+The main conclusion therefore is not about models but about data: **before explaining a metric by the behaviour of
+the model, one must check that the reference and the question are meaningful at all**. For this
+`scripts/audit-bank.py` was added (cross-model agreement against the reference + the "X or Y" check), and
+`collect.py` no longer sets `label=0` for a truncated answer. The next attempt to obtain negatives
+must go through weak models and questions with an unambiguous reference.
 
-Чего **не** делаем: не спрашиваем про выдуманные сущности — на этом шлюзе такие промпты дают
-пустой ответ, то есть ноль сигнала (проверено).
+What we do **not** do: we do not ask about invented entities — on this gateway such prompts give
+an empty answer, that is, zero signal (verified).
 
-## Фаза 2. Качество сигнала
+## Phase 2. Signal quality
 
-Сейчас скорер смотрит только на logprobs и игнорирует текст.
+Right now the scorer looks only at logprobs and ignores the text.
 
-**Первый текстовый признак внедрён: `digitDensity`** (доля цифр в видимом ответе) — **+0.014**
-AUROC поверх полного набора признаков (0.786 → 0.800 out-of-fold при групповой CV,
-`docs/VALIDATION.md` §17). Считается одинаково в рантайме и во всех python-инструментах;
-`scripts/enrich-digits.py` досчитывает его в старых наборах.
+**The first text feature has been introduced: `digitDensity`** (the share of digits in the visible answer) — **+0.014**
+AUROC on top of the full feature set (0.786 → 0.800 out-of-fold with grouped CV,
+`docs/VALIDATION.md` §17). It is computed identically in the runtime and in all python tools;
+`scripts/enrich-digits.py` backfills it into old sets.
 
-- Хеджирование в тексте («probably», «I think», «примерно») — измерено, но на текущем наборе
-  разброс нулевой: признак остался непроверенным, а не «отклонённым».
-- Плотность проверяемых сущностей: числа уже покрыты `digitDensity`; даты и единицы — впереди.
-- Энтропия не только первого токена: средняя по содержательным токенам и «самый неопределённый».
-- Self-consistency как опциональный «глубокий режим» (k сэмплов при `T>0`) — дорого, только по запросу.
-- Объяснение оценки через `w_i · x_i` — для линейной модели бесплатно.
+- Hedging in the text ("probably", "I think", "approximately") — measured, but on the current set
+  the spread is zero: the feature remained unverified, rather than "rejected".
+- Density of verifiable entities: numbers are already covered by `digitDensity`; dates and units are ahead.
+- Entropy not only of the first token: the mean over content-bearing tokens and the "most uncertain" one.
+- Self-consistency as an optional "deep mode" (k samples at `T>0`) — expensive, only on request.
+- Explaining the score through `w_i · x_i` — free for the linear model.
 
-Жёсткое требование: новая фича обязана считаться **одинаково** в `collect.py` и в рантайме, иначе
-веса применяются к другим числам (на этом уже обожглись с `fracLow` и `phi`).
+Hard requirement: a new feature must be computed **identically** in `collect.py` and in the runtime, otherwise
+the weights are applied to other numbers (we have already been burned by this with `fracLow` and `phi`).
 
-Базовая линия, которую надо побить: AUROC **0.597** / ECE **0.098** на `data/rows-lie-vs-truth.jsonl`
-(626 строк) у формулы `exp(meanLp)` без текста; с признаками fitted OOF — **0.800**. Всё, что
-добавляем, меряется на этом же файле и на `data/rows-hard.jsonl` (739 верных строк) — вторая нужна,
-чтобы улучшение AUROC не покупалось ценой ложных тревог.
+The baseline to beat: AUROC **0.597** / ECE **0.098** on `data/rows-lie-vs-truth.jsonl`
+(626 rows) for the `exp(meanLp)` formula without text; with fitted OOF features — **0.800**. Everything we
+add is measured on the same file and on `data/rows-hard.jsonl` (739 correct rows) — the second is needed
+so that an AUROC improvement is not bought at the price of false alarms.
 
-## Фаза 3. Интерфейс
+## Phase 3. Interface
 
-- TUI: шкала и метка уровня уже рисуются (`answer confidence 44% ▰▰░░░ · risky`); в плане —
-  раскрытие «почему» (топ-3 вклада признаков) по клавише.
-- Desktop: раскрытие «почему» — топ-3 вклада признаков, альтернативы для худшего токена.
-- `unavailable` объяснять действием («провайдер не вернул logprobs — включите `OPENCODE_TRUTHPROBE=1`»),
-  а не фразой «нет сигнала».
-- Пороги (`safe ≥0.90`, плашка `risk >0.45`) вынести в конфиг, чтобы подбирать под модель.
+- TUI: the scale and the level label are already drawn (`answer confidence 44% ▰▰░░░ · risky`); in the plan —
+  expanding "why" (top-3 feature contributions) by key.
+- Desktop: expanding "why" — top-3 feature contributions, alternatives for the worst token.
+- `unavailable` should be explained by an action ("the provider did not return logprobs — enable `OPENCODE_TRUTHPROBE=1`"),
+  not by the phrase "no signal".
+- Thresholds (`safe ≥0.90`, flag `risk >0.45`) should be moved into the config, so as to tune them per model.
 
-## Фаза 4. Надёжность
+## Phase 4. Reliability
 
-- [x] Unicode/эмодзи/CJK: проверено — выравнивание по кодовым единицам не ломается на кириллице,
-  CJK, эмодзи, combining-знаках и арабском; поведение закреплено `truthprobe-unicode.test.ts`
+- [x] Unicode/emoji/CJK: verified — alignment by code units does not break on Cyrillic,
+  CJK, emoji, combining marks and Arabic; the behaviour is pinned by `truthprobe-unicode.test.ts`
   (`docs/VALIDATION.md` §16).
-- Мультитёрн: убедиться, что токены предыдущих сообщений не подмешиваются.
-- Стоимость: замер оверхеда на ответе в 4 000 токенов (оценка идёт на каждом дельта-событии).
-- Бандл с сотнями моделей: ленивая компиляция скореров вместо создания всех сразу.
+- Multi-turn: make sure the tokens of previous messages are not mixed in.
+- Cost: measurement of the overhead on a 4 000-token answer (scoring runs on every delta event).
+- A bundle with hundreds of models: lazy compilation of scorers instead of creating all of them at once.
 
-## Фаза 5. Распространение
+## Phase 5. Distribution
 
-- `truthprobe-weights.json` в GitHub Release вместе с AUROC/ECE в описании.
+- `truthprobe-weights.json` in the GitHub Release together with AUROC/ECE in the description.
 - `install.sh --weights <url>`.
-- `make data` / `make weights` — сбор и обучение одной командой.
-- Scheduled-CI: еженедельный прогон оценки с падением при деградации.
+- `make data` / `make weights` — collection and training with one command.
+- Scheduled-CI: a weekly evaluation run that fails on degradation.
 
-## Что считаем регрессией
+## What we consider a regression
 
-- Любой тест truthprobe краснеет (сейчас 129 pass в пропатченном дереве, 92 pass / 8 skip — в этом репозитории).
-- `scripts/evaluate.py` перестаёт считать ту же формулу, что рантайм (уже случалось: 0.388 против 0.597).
-- `git am` патча перестаёт давать побайтово то же дерево, что dev-ветка.
-- Ответ без logprobs начинает показывать число вместо `unavailable`.
+- Any truthprobe test turns red (currently 129 pass in the patched tree, 92 pass / 8 skip — in this repository).
+- `scripts/evaluate.py` stops computing the same formula as the runtime (this has already happened: 0.388 versus 0.597).
+- `git am` of the patch stops producing a byte-for-byte identical tree to the dev branch.
+- An answer without logprobs starts showing a number instead of `unavailable`.
