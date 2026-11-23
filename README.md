@@ -66,8 +66,8 @@
 `risky` и `unreliable` подсвечиваются плашкой: у `risky` янтарная левая граница и слабый фон,
 у `unreliable` — красная. Порог «спорного» предложения по умолчанию 45% риска; его можно
 сдвинуть `TRUTHPROBE_RISKY_THRESHOLD` (0..1, некорректное значение игнорируется).
-`TRUTHPROBE_SHAKY_THRESHOLD` разбирается и кладётся в опции, но пока ни на что не влияет:
-запасной порог «шатко» в скоринге не используется.
+`TRUTHPROBE_SHAKY_THRESHOLD` удалена в 0.13.8: ни переменной, ни поля `shakyThreshold`
+больше нет (`docs/VALIDATION.md` §23, пункт 8).
 
 **Важно:** проценты — уверенность модели в собственных токенах, а не вероятность того, что
 ответ правдив. Детерминированный шлюз (logprob ≈ −0.001) даёт `safe` на любом тексте,
@@ -152,7 +152,8 @@ export TRUTHPROBE_SCORER=linear:/path/to/truthprobe-weights.json
 ```bash
 git clone https://github.com/sst/opencode && cd opencode
 git checkout 007afb1
-git am /path/to/patches/truthprobe-0001.patch
+# identity только для этой команды: без неё git am падает с "empty ident name"
+git -c user.name=TruthProbe -c user.email=truthprobe@localhost am /path/to/patches/truthprobe-0001.patch
 bun install
 bun run --cwd packages/cli src/index.ts
 ```
@@ -264,7 +265,7 @@ Windows: `%APPDATA%\opencode\truthprobe\`) и живёт: `ok`/`ignored`/`reject
 | <i>S</i>, <i>r</i> | итог по ответу и его риск; 0.6 / 0.4 — `globalWeight` |
 
 Иначе говоря, **уверенность = средняя вероятность токенов**, а не «самый слабый токен». Порог
-плашки — <i>r</i> ≥ 0.45; уровни — `safe ≥0.90`, `likely ≥0.75`, `uncertain ≥0.55`,
+плашки — <i>r</i> > 0.45; уровни — `safe ≥0.90`, `likely ≥0.75`, `uncertain ≥0.55`,
 `risky ≥0.35`, ниже — `unreliable`.
 
 Признаки, которые считаются всегда и идут в обученные веса, если они подключены:
@@ -300,12 +301,12 @@ Windows: `%APPDATA%\opencode\truthprobe\`) и живёт: `ok`/`ignored`/`reject
 | Полный прогон core | `bun test` в `packages/core` (7 713 тестов, 331 файл) | 7 300 pass / 351 skip / 62 fail — ни одного в truthprobe: `tool-search` качает ripgrep с github.com, `provider-gitlab-oauth` ходит на gitlab.com, `cross-spawn`/MCP зависят от spawn; в окружении зарезана исходящая сеть |
 | Тесты TruthProbe, этот репозиторий | `bun test test` | **92 pass / 8 skip / 0 fail**, 210 expect, 5 файлов, 100 тестов |
 | Тесты TruthProbe, пропатченное дерево | `bun test truthprobe` в `packages/core/test` | **129 pass / 0 fail**, 6 файлов |
-| Патч на чистом дереве | `git am` в worktree `007afb1` | применяется без конфликтов, все truthprobe-тесты зелёные |
+| Патч на чистом дереве | `git am` в worktree `007afb1` | применяется без конфликтов (identity задана локально), все truthprobe-тесты зелёные |
 | Типизация | schema / ai / core / client / tui | зелёная (132 / 357+322 / 2 030 / 181 / 1 942 файла) |
-| Типизация UI-пакетов | session-ui / app / desktop | зелёная (382 / 2 445 / 3 569 файлов, desktop — 2 проекта) |
+| Типизация UI-пакетов | session-ui / app / desktop | зелёная (382 / 2 445 / 3 571 файлов, desktop — 2 проекта) |
 | Сквозной прогон | мок-провайдер с настоящими `logprobs` | `logprobs: true, top_logprobs: 20` в запросе, `truthprobe` в базе |
 | Живой TUI | pty-проба | бейдж и блок спорных предложений отрендерились |
-| Desktop UI | чип `confidence` в общем компоненте `@opencode/session-ui` | типизация desktop (3 567 файлов) зелёная; чип `confidence NN%` и список спорных предложений в футере |
+| Desktop UI | чип `confidence` в общем компоненте `@opencode/session-ui` | типизация desktop (3 571 файл) зелёная; чип `confidence NN%` и список спорных предложений в футере |
 | Отдельное desktop-приложение | сборка с `OPENCODE_DESKTOP_APP`/`OPENCODE_DESKTOP_APP_ID` | `TruthProbe.exe`, заголовок окна `TruthProbe`, userData `ai.truthprobe.desktop`, сайдкар CLI рядом, `app-update.yml` нет |
 | Windows-бинарь | `.exe` на моке | `status: "ok", score: 0.417, first 0.708, flagged: 1` |
 
@@ -376,7 +377,7 @@ python3 scripts/tui-probe.py && python3 scripts/screen-dump.py /tmp/tui-probe.lo
 
 ## Устройство патча
 
-53 файлов, +7290/−55, двадцать семь коммитов поверх `007afb1`. Шов тонкий и аддитивный:
+52 файла, +3555/−55, двадцать семь коммитов поверх `007afb1`. Шов тонкий и аддитивный:
 
 | Слой | Файл | Что делает |
 | --- | --- | --- |
@@ -423,8 +424,8 @@ docs/                     приоритет, план встроенных мо
   `scripts/probe-logprobs.py` нужен только чтобы посмотреть вердикт вручную.
 - Границы уровней `0.90 / 0.75 / 0.55 / 0.35` выбраны по здравому смыслу, а не по размеченным
   данным: на живых длинных ответах их стоит перепроверить. Переопределяется
-  `TRUTHPROBE_RISKY_THRESHOLD`; `TRUTHPROBE_SHAKY_THRESHOLD` разбирается в опции, но ни на что
-  не влияет — запасной порог «шатко» в скоринге не используется.
+  `TRUTHPROBE_RISKY_THRESHOLD`. Переменная `TRUTHPROBE_SHAKY_THRESHOLD` удалена в 0.13.8: она
+  ничего не настраивала (`docs/VALIDATION.md` §23, пункт 8).
 - Известная слабость подхода: уверенная ложь. Лечится не порогом, а вторым независимым сигналом.
 
 ## Лицензия

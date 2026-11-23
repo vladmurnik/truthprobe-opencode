@@ -41,6 +41,17 @@ git -C "$DEV" cat-file -e "$BASE^{commit}" 2>/dev/null || {
   exit 1
 }
 
+# Гейт против посторонних файлов: патч должен трогать только `packages/**` и
+# `bun.lock`. Иначе в него уезжает артефакт вроде копии самого патча — так и
+# вышло в 0.13.8: 3 735 строк самого себя внутри коммита 10/27.
+STRAY=$(git -C "$DEV" diff --name-only "$BASE..HEAD" | grep -v '^packages/' | grep -v '^bun\.lock$' || true)
+if [ -n "$STRAY" ]; then
+  echo "error: патч трогает пути вне packages/ и bun.lock:" >&2
+  printf '  %s\n' $STRAY >&2
+  echo "уберите их из истории $BASE..HEAD и повторите" >&2
+  exit 1
+fi
+
 mkdir -p "$(dirname "$OUT")"
 git -C "$DEV" format-patch "$BASE..HEAD" --stdout >"$OUT"
 

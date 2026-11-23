@@ -66,8 +66,9 @@ The number next to the answer carries a level, not just a percentage:
 
 `risky` and `unreliable` get a tinted card: amber left border and background for `risky`, red for
 `unreliable`. A sentence counts as doubtful at 45% risk by default; move that threshold with
-`TRUTHPROBE_RISKY_THRESHOLD` (0..1, invalid values are ignored). `TRUTHPROBE_SHAKY_THRESHOLD` is
-parsed into the options but has no effect: the spare "shaky" threshold is not used by the scorer.
+`TRUTHPROBE_RISKY_THRESHOLD` (0..1, invalid values are ignored). `TRUTHPROBE_SHAKY_THRESHOLD`
+was removed in 0.13.8: neither the variable nor the `shakyThreshold` field exists any more
+(`docs/VALIDATION.md` §23, item 8).
 
 **Important:** these percentages are the model's confidence in its own tokens, not the probability
 that the answer is true. A deterministic gateway (logprob ≈ −0.001) yields `safe` on any text,
@@ -143,7 +144,8 @@ was measured on a corrupted set. All numbers and the post-mortem —
 ```bash
 git clone https://github.com/sst/opencode && cd opencode
 git checkout 007afb1
-git am /path/to/patches/truthprobe-0001.patch
+# identity for this command only: without it git am fails with "empty ident name"
+git -c user.name=TruthProbe -c user.email=truthprobe@localhost am /path/to/patches/truthprobe-0001.patch
 bun install
 bun run --cwd packages/cli src/index.ts
 ```
@@ -263,7 +265,7 @@ default score: measurement showed that first-token entropy flips the result
 | <i>S</i>, <i>r</i> | answer-level score and its risk; 0.6 / 0.4 is `globalWeight` |
 
 In other words, **confidence is the average token probability**, not "the weakest token". The flag
-fires at <i>r</i> ≥ 0.45; levels are `safe ≥0.90`, `likely ≥0.75`, `uncertain ≥0.55`,
+fires at <i>r</i> > 0.45; levels are `safe ≥0.90`, `likely ≥0.75`, `uncertain ≥0.55`,
 `risky ≥0.35`, below that `unreliable`.
 
 Features that are always computed and feed the fitted weights when those are enabled:
@@ -299,12 +301,12 @@ drifted; `unavailable` — no tokens.
 | Full core run | `bun test` in `packages/core` (7 713 tests, 331 files) | 7 300 pass / 351 skip / 62 fail — none in truthprobe: `tool-search` downloads ripgrep from github.com, `provider-gitlab-oauth` calls gitlab.com, `cross-spawn`/MCP depend on spawn; the harness blocks outbound network |
 | TruthProbe tests, this repository | `bun test test` | **92 pass / 8 skip / 0 fail**, 210 expect, 5 files, 100 tests |
 | TruthProbe tests, patched tree | `bun test truthprobe` in `packages/core/test` | **129 pass / 0 fail**, 6 files |
-| Patch on a clean tree | `git am` in a `007afb1` worktree | applies without conflicts, all truthprobe tests green |
+| Patch on a clean tree | `git am` in a `007afb1` worktree | applies without conflicts (identity configured locally), all truthprobe tests green |
 | Typecheck | schema / ai / core / client / tui | green (132 / 357+322 / 2 030 / 181 / 1 942 files) |
-| Typecheck of the UI packages | session-ui / app / desktop | green (382 / 2 445 / 3 569 files, desktop 2 projects) |
+| Typecheck of the UI packages | session-ui / app / desktop | green (382 / 2 445 / 3 571 files, desktop 2 projects) |
 | End-to-end run | mock provider with real `logprobs` | `logprobs: true, top_logprobs: 20` in the request, `truthprobe` in the database |
 | Live TUI | pty probe | badge and the doubtful-sentence block rendered |
-| Desktop UI | session-ui chip in the shared Electron component | green typecheck of desktop (3 567 files); `confidence NN%` chip and the doubtful-sentence list in the footer |
+| Desktop UI | session-ui chip in the shared Electron component | green typecheck of desktop (3 571 files); `confidence NN%` chip and the doubtful-sentence list in the footer |
 | Standalone desktop app | build with `OPENCODE_DESKTOP_APP`/`OPENCODE_DESKTOP_APP_ID` | `TruthProbe.exe`, window title `TruthProbe`, userData `ai.truthprobe.desktop`, CLI sidecar beside it, no `app-update.yml` |
 | Windows binary | `.exe` against the mock | `status: "ok", score: 0.417, first: 0.708, flagged: 1` |
 
@@ -332,7 +334,7 @@ reproduction — [`docs/SMOKE-E2E.md`](docs/SMOKE-E2E.md).
 | Live answer, `freepi/particle` | `score 0.7595 · likely`, sentence `#0 0.603 · uncertain` |
 | Live answer, `freepi/deepseek-v4.1-flash` | `score 0.6893`, first doubtful sentence `0.4849` |
 | Scorer swap `TRUTHPROBE_SCORER=linear:weights.json` | score moved `0.7595 → 0.9992`, so the custom scorer is really used |
-| Windows installer, `install.ps1 -Dir <empty> -DryRun` | clean clone, `git apply --check` passed, 17 commits applied |
+| Windows installer, `install.ps1 -Dir <empty> -DryRun` | clean clone, `git apply --check` passed, all 27 patch commits applied |
 | Desktop build | app 246 MB, bundled CLI 279 MB |
 | CI on foreign machines | GitHub Actions [run `44593481931`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44593481931), [run `44678633546`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44678633546) , [run `44736706708`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44736706708) , [run `44761971781`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44761971781) and [run `44784920180`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44784920180), [run `44787911144`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44787911144) and [run `44918215420`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44918215420) | **all 7 jobs success** in each, on hosted `ubuntu-latest` and `windows-latest` runners |
 | Per-model weights at runtime | two mock runs with different bundles, same answer | `0.9997 · safe` when weights exist for `mock/mock-1`, `0.0003 · unreliable` when they only exist for `other/model` — selection by `providerID/modelID` really works |
@@ -366,7 +368,7 @@ reproduction — [`docs/SMOKE-E2E.md`](docs/SMOKE-E2E.md).
 
 ## Anatomy of the patch
 
-53 files, +7290/−55, twenty-seven commits on top of `007afb1`. The seam is thin and additive:
+52 files, +3555/−55, twenty-seven commits on top of `007afb1`. The seam is thin and additive:
 
 | Layer | File | What it does |
 | --- | --- | --- |
@@ -411,9 +413,9 @@ docs/                     prior art, built-in model plan, validation, build
 - The real `opencode.ai/inference` gateway has not been verified: no key. The probe handles it on its
   own — `scripts/probe-logprobs.py` is only there to look at the verdict by hand.
 - The `0.90 / 0.75 / 0.55 / 0.35` level bounds were chosen by common sense, not from labelled data;
-  they need re-checking on real long answers. Override with `TRUTHPROBE_RISKY_THRESHOLD`;
-  `TRUTHPROBE_SHAKY_THRESHOLD` is parsed into the options but has no effect — the spare "shaky"
-  threshold is not used by the scorer.
+  they need re-checking on real long answers. Override with `TRUTHPROBE_RISKY_THRESHOLD`.
+  `TRUTHPROBE_SHAKY_THRESHOLD` was removed in 0.13.8 — it configured nothing
+  (`docs/VALIDATION.md` §23, item 8).
 - A known weakness of the approach: confident lies. It is cured not by a threshold but by a second
   independent signal.
 

@@ -130,7 +130,7 @@ TRUTHPROBE_SCORER=linear:data/weights.json bun run --cwd .worktree/opencode/pack
 ```bash
 make verify                        # тесты репо + патч на чистой базе
 cd .worktree/opencode
-bun test truthprobe                # юнит-тесты патча (127 на сейчас)
+bun test truthprobe                # юнит-тесты патча (129 на сейчас)
 ```
 (реальный прогон — `make preview`; вердикт смотрите в `scripts/inspect-db.py` или
 `make preview` выведет сам.)
