@@ -12,25 +12,37 @@ comments, JSDoc, messages and test names, into English. Scripts, `Makefile`, the
 installers were rewritten the same way, with identical insert and delete counts per file, so behaviour
 did not move.
 
-**Intentional semantic change.** `sentences.ts` no longer carries Russian abbreviations or Cyrillic
-regex ranges; it knows `i.e.`, `e.g.`, `etc.`, `cf.` and matches `[A-Za-z]`. Sentence splitting of
-Russian text may be worse than before; Latin text behaves as before.
+**One slip, and its repair.** That rewrite also dropped the Cyrillic abbreviations and the Cyrillic
+character ranges from `sentences.ts`, so Russian answers were split after `г.`, `т.е.` and `см.`; the
+test that pinned that behaviour was rewritten to a Latin case instead of being kept. The thirty-second
+commit (`5e8cee4`) restored the abbreviation list and the three character classes and added explicit
+tests — `does not split Cyrillic abbreviations` and a Cyrillic case next to the Greek one in the
+unicode matrix. The core suite is now 131 pass / 379 expect in 6 files.
 
 **Also in this release**
 
-- `install.sh` and `install.ps1` retry three times and fall back to the release asset. Run
+- `install.sh` and `install.ps1` retry the patch download three times and, if
+  `raw.githubusercontent.com` keeps answering `503 Backend.max_conn reached` (run
   [`45184432491`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45184432491) failed
-  because `raw.githubusercontent.com` answered `503 Backend.max_conn reached`: a transient CDN error no
-  longer kills an install.
+  that way), fall back to the release asset. The fallback is served from `releases/latest/download`,
+  so it depends on the current tag being published: with `v0.13.18` published it returns the same
+  514 039 bytes as the patch, and the pinned checksum still decides whether the bytes are trusted.
 - `install.ps1` was stored in cp1251 and read as UTF-8 (mojibake); the rewrite removed the last such
   lines.
 
-**Measured.** Patch: 31 commits, 53 files, 508 953 B, sha256
-`8d6d23eb8089649f21cab4911775aff9df9889dc6921ec1274a3bb7c4578d124`; `bun test test` → 93 pass / 9 skip /
-0 fail, 211 expect, 102 tests; the core suite in the patched tree → 129 pass / 0 fail.
+**Measured.** Patch: 32 commits, 53 files, `+3638/−55`, 514 039 B, sha256
+`4436386b5457eb2cb2187054c064187e7e70e8bcda3d99c4214ee392df606f34`; `bun test test` → 93 pass / 9 skip /
+0 fail, 211 expect, 102 tests; the core suite in the patched tree → 131 pass / 0 fail, 379 expect.
+CI run [`45207888021`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45207888021) on
+`c1214eb` (the thirty-first commit) — 7 of 7 jobs success; the thirty-second commit is verified
+locally only. The release `v0.13.18` is published (id `455929364`, asset 514 039 B,
+`digest: sha256:4436386b…6f34`), and `releases/latest/download/truthprobe-0001.patch` was
+downloaded and hashed by hand: 514 039 bytes, the same `sha256` — it matches the pin in both
+installers.
 
 **What this does not prove.** The translations were verified against numbers, links and heading counts,
-not by a native speaker. The live UI run was not repeated.
+not by a native speaker. The live UI run was not repeated. The installer fallback was exercised by
+hand against the published asset, not by CI: no job downloads the fallback URL.
 
 # 0.13.17 — 2026-11-23
 
@@ -41,7 +53,7 @@ executed end-to-end for the first time with a real token.
 `published_at: 2026-11-23T13:28:34Z`, asset `truthprobe-0001.patch`, `size: 347540`,
 `state: uploaded`; GitHub itself computed
 `digest: sha256:381b37d02024f6e30a43c1bd0002b360da55c4affe70309ac4f3ed387ccc4fe5` — it matches
-the local `sha256sum` and the `PATCH_SHA256` pin in `install.sh:30`. The release description is 948 characters
+the local `sha256sum` and the `PATCH_SHA256` pin in `install.sh:31`. The release description is 948 characters
 from the 0.13.16 entry in `CHANGELOG.md`.
 
 **How it was done.** Not with `curl`: in WSL requests to `api.github.com` aborted with
@@ -249,7 +261,7 @@ affect"; the `git am` recipe contains a local identity (without it `empty ident 
 128); the flag threshold is a strict `r > 0.45`; 127 tests replaced with 129; the section map of
 `VALIDATION.md` brought up to §24; desktop typecheck — 3 571 files.
 
-**Verified:** `bun test test` 92 pass / 8 skip / 0 fail, 210 expect, 100 tests;
+**Verified:** `bun test test` 93 pass / 9 skip / 0 fail, 211 expect, 102 tests;
 `git apply --check` on a clean worktree `007afb1` passes; `git am` with a local identity
 applies all 28 commits. The application was not launched (verified by code and logs).
 
@@ -388,7 +400,7 @@ metrics of the trained detector were computed. The numbers are withdrawn, the we
   `AppData/Local/Programs/TruthProbe`, closing the running application and **clearing the CLI cache**;
   `--dry-run` shows what will be done.
 
-# 0.13.6 — 2026-11-22 (числа отозваны, см. 0.13.7)
+# 0.13.6 — 2026-11-22 (numbers withdrawn, see 0.13.7)
 
 The trained weights for the auxiliary fabrication detector now live in the repository in a format
 that the patch can already load.
@@ -605,7 +617,7 @@ behaviour and was deliberately left unchanged.
 Nineteen commits, `46 files, +7023/−40`, 431 079 B, `git am` on `007afb1` yields
 the same tree byte for byte.
 
-**CI**: run [`44787911144`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44787911144) on `92f1c65` — **7 of 7 jobs**: a patch of 19
+**CI**: run `44787911144` on `92f1c65` — **7 of 7 jobs**: a patch of 19
 commits applies on ubuntu and windows, 119 truthprobe tests are green, the installers
 apply 19 commits, e2e puts the verdict into the base, the CLI builds. After the repository was recreated (21.11.2026) the first run [`44918215420`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44918215420) on `69b0b4e` also gave **7/7**, and the Contributors API shows only `vladmurnik`.
 
@@ -694,7 +706,7 @@ Brier — from 0.269 to **0.044**: the previous formula systematically understat
 - Level thresholds are not recalibrated for the new scale: the same answers now get a higher
   level, which is expected, but was not separately checked on live sessions.
 
-- CI [`44761971781`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44761971781) on `128b5f4`: **7 of 7 jobs success** — the patched tree
+- CI `44761971781` on `128b5f4`: **7 of 7 jobs success** — the patched tree
   (110 truthprobe tests) on ubuntu and windows, the installers, the e2e verdict, the CLI build.
 
 # 0.10.0 — 2026-11-20
@@ -828,9 +840,9 @@ The confidence verdict became visible to the eye, not just a number in the meta 
 - `cd packages/core && bun test test/truthprobe`: **109 pass / 0 fail**.
 - Patch: **15 commits**, `45 files, +6875/−40`, 406 664 B, `git am` on `007afb1`
   yields the same tree byte for byte (`WT_TREE == DEV_TREE`, 0 differences).
-- CI [`44736706708`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44736706708):
+- CI `44736706708`:
   **7 of 7 jobs success** on hosted ubuntu-latest and windows-latest, including `cli build`.
-- Desktop rebuilt and installed: `TruthProbe.exe` 246 246 624 768 B, build 15:39,
+- Desktop rebuilt and installed: `TruthProbe.exe` 246 624 768 B, build 15:39,
   `app.asar` contains `confidence-meter` and `doubtful-list` — the new verdict is in the build.
 
 # 0.7.0 — 2026-11-20
@@ -866,7 +878,7 @@ Calibration weights now work per model, not "for all at once", and there is some
   schema/ai/core/client green; the repository `bun test test` — **90 pass / 8 skip / 0 fail**.
 - A live run on the mock: the same answer gets `0.99966 · safe` when the bundle contains
   weights for `mock/mock-1`, and `0.000335 · unreliable` when only `other/model` has weights.
-- CI [`44736706708`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44736706708):
+- CI `44736706708`:
   **7 of 7 jobs success** on hosted ubuntu-latest and windows-latest.
 - Patch regenerated (`28 commits`, 342 760 B) and verified by `git am` on `007afb1`: the tree
   matches the dev branch byte for byte.
@@ -914,7 +926,7 @@ The patch was verified on someone else's clean machines.
   Matrix: `patched tree` (clone opencode at `007afb1` → `git am` → `bun install` → typecheck of four
   packages → truthprobe tests), `installer dry-run` (both installers), `repo tests`, `end-to-end verdict`
   through a mock provider with logprobs, `cli build`.
-- Run [`44593481931`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44593481931):
+- Run `44593481931`:
   **all 7 jobs success**.
 
 **Fixed**

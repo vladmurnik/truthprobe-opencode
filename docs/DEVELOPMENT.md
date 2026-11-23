@@ -171,7 +171,7 @@ OPENCODE_REPO=$HOME/src/opencode bash scripts/build-desktop.sh --win
 
 `WIN_CSC_LINK` accepts a path to a `.pfx` or an HTTPS link; `WIN_CSC_KEY_PASSWORD` — the password for it.
 `scripts/build-desktop.sh` prints the signing state at the end: if the certificate is not set, it plainly
-writes `ВНИМАНИЕ: WIN_CSC_LINK не задан — … не подписан (NotSigned)`, rather than pretending the build
+writes `WARNING: WIN_CSC_LINK is not set - <path> is unsigned (NotSigned)`, rather than pretending the build
 is ready for distribution.
 
 **Verify the result** (Windows, the same file through `\\wsl$`):

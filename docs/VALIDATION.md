@@ -9,7 +9,7 @@ the live gateway (18–19) were written later than 11–17 and stand before them
 go in a row. The numbers were not renamed because both READMEs, `docs/ROADMAP.md` and
 `docs/CALIBRATION.md` reference them.
 
-Base: `sst/opencode` @ `007afb1`. Branch `feat/truthprobe`, thirty commits; below are the first
+Base: `sst/opencode` @ `007afb1`. Branch `feat/truthprobe`, thirty-two commits; below are the first
 fourteen, the rest are visible in `git log 007afb1..HEAD`:
 
 | Commit | What |
@@ -29,7 +29,7 @@ fourteen, the rest are visible in `git log 007afb1..HEAD`:
 | `d153658` | fix(truthprobe): make the patched tree typecheck clean |
 | `3b720f0` | feat(truthprobe): per-model calibration weights |
 
-Total: **53 files, +3625 / −55**, thirty-one commits. The patch is `patches/truthprobe-0001.patch` (508 953 B, `git am`).
+Total: **53 files, +3638 / −55**, thirty-two commits. The patch is `patches/truthprobe-0001.patch` (514 039 B, `git am`).
 
 ## 1. Layers of the patch
 
@@ -63,15 +63,15 @@ Total: **53 files, +3625 / −55**, thirty-one commits. The patch is `patches/tr
 ## 2. Tests
 
 ```
-129 pass / 0 fail   6 truthprobe files in packages/core/test (patched tree)
+131 pass / 0 fail   6 truthprobe files in packages/core/test (patched tree)
   8 pass / 0 fail    26 expect   packages/ai/test/truthprobe.test.ts
   9 pass / 0 fail    23 expect   packages/session-ui/src/message/doubtful.test.ts
- 92 pass / 8 skip   210 expect   test/ of the repository itself (5 files, 100 tests)
+ 93 pass / 9 skip   211 expect   test/ of the repository itself (5 files, 102 tests)
 ```
 
 The first line is not this repository but the patched tree `packages/core/test`: only reference
-copies live here. In this repository `bun test test` gives 92 pass / 8 skip / 0 fail and 210 expect;
-the 8 skips are `test/opencode-tree/protocol.test.ts`, it runs only inside the opencode tree
+copies live here. In this repository `bun test test` gives 93 pass / 9 skip / 0 fail and 211 expect;
+the 9 skips are `test/opencode-tree/protocol.test.ts`, it runs only inside the opencode tree
 (CI sets `TRUTHPROBE_REQUIRE_PROTOCOL_TESTS=1` and fails if the sources were not found).
 
 What is covered:
@@ -127,7 +127,7 @@ Both typecheck rows were taken in one run on 2026-11-23 (`bun run typecheck` in 
 patched tree `90e894d`); earlier revisions of the table mixed two runs.
 
 The core row is an earlier run (328 files, before the schema fix) and is kept as history; the current
-full measurement of `packages/core` is §19: 7 713 tests, 63 files, **7 300 pass / 351 skip / 62 fail**.
+full measurement of `packages/core` is §19: 7 713 tests, 331 files, **7 300 pass / 351 skip / 62 fail**.
 The two numbers do not argue with each other: these are two different runs, and the current one is §19.
 
 Separately it was verified that **the patch is self-contained**: on a clean worktree `007afb1` (then, in the 0.3.0 era:
@@ -368,16 +368,19 @@ outbound network is blocked (`test attempted network request: GET https://github
 ## 11. CI on other people's clean machines (checked)
 
 On 19.11.2026 a GitHub Actions run
-[`44593481931`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44593481931)
+`44593481931`
 (commit `9011dfe`) finished as **success**: 7 jobs out of 7 on hosted runners.
 On 20.11.2026 the same was repeated on the patch with per-model weights —
-[`44593481931`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44593481931)
+`44593481931`
 (commit `7bf2eed`), also **7 out of 7**: the build, the installers and the truthprobe tests did not break
 from the changes in the scorer.
 The third run — already on the patch with the new UI and rebuilt weights —
-[`44593481931`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44593481931)
+`44593481931`
 (commit `83bb9a2`, 15 commits in the patch): again **7 out of 7 success**, that is, `ConfidenceLine`
 and `DoubtfulList` in `packages/session-ui` broke neither typecheck nor the CLI build.
+
+These three runs predate the 21.11.2026 recreation of the repository, so their run ids no
+longer resolve; what remains verifiable is the commit hash, the date and the job matrix below.
 
 | Job | Runner | What it proves |
 | --- | --- | --- |
@@ -390,18 +393,18 @@ and `DoubtfulList` in `packages/session-ui` broke neither typecheck nor the CLI 
 These are clean OSes, but not a manual interactive installation: no human watched the installer
 work through clicks. There are still no local Hyper-V/VirtualBox/VMware/Windows Sandbox on the developer's machine.
 
-The run [`44761971781`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44761971781) on `128b5f4` (a patch of 17 commits, where the default formula
+The run `44761971781` on `128b5f4` (a patch of 17 commits, where the default formula
 was rewritten to `exp(meanLp)`) again gave **7 jobs out of 7**: the patched tree on ubuntu and
 windows builds and passes 110 truthprobe tests, the installers apply 17 commits,
 the e2e run through the mock provider puts the verdict into the database, the CLI builds.
 
-The run [`44784920180`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44784920180)
+The run `44784920180`
 on `ec2e0ab` — a patch of 18 commits with the `digitDensity` feature — also **7 out of 7**: 111 truthprobe tests,
 the installers apply 18 commits, e2e puts the verdict into the database, the CLI builds. It was preceded by
 a red run `44784193788`, where `patched tree` failed typecheck because of a fixture without the new field
 (7 × TS2741) — the failure was a real signal, not flakiness, and was fixed in the patch code.
 
-The run [`44787911144`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44787911144) on `92f1c65` (19 commits: a Unicode test, `make data`/
+The run `44787911144` on `92f1c65` (19 commits: a Unicode test, `make data`/
 `make weights`, staging the CLI in `build-desktop.sh`) — again **7 out of 7**: 127 truthprobe tests on
 both OSes, the installers apply 19 commits, e2e puts the verdict into the database, the CLI builds.
 
@@ -637,7 +640,7 @@ No code had to be changed. So that the behaviour does not drift from a future ed
 `packages/core/test/truthprobe-unicode.test.ts` was added: the same five scenarios plus a check that
 completely foreign tokens give `unavailable` rather than a fabricated score. The truthprobe test set
 in the patched tree grew to **129** (6 files); in this repository the same code is checked by
-92 pass / 8 skip (see §2).
+93 pass / 9 skip (see §2).
 
 Caveat: `alignTokens` looks for a token in a window of 8 characters, so one common ideograph in a
 completely different text still gives a match. This is known behaviour of the heuristic; the test
@@ -1009,7 +1012,7 @@ $ cd packages/session-ui && bun test src/message/doubtful.test.ts
 $ bun run typecheck   # core / session-ui / tui
 ✓ No type errors in 2,036 files across 2 projects
 ✓ No type errors in 384 files across 1 project
-✓ No type errors in 2,036 files across 2 projects
+✓ No type errors in 1,947 files across 1 project
 ```
 
 Two new tests pin behaviour that did not exist before: on offset drift the score stays
@@ -1025,7 +1028,7 @@ visible (`sentences.length === 1`, the text and the token count are in place), a
 
 ```
 $ bash scripts/make-patch.sh --from ~/src/opencode
-  commits: 28, files: 52, bytes: 342760     # measurement 0.13.11; the current numbers are in §28
+  commits: 28, files: 52, bytes: 342760     # measurement 0.13.11; the current numbers are in §32
 $ git apply --check -p1 patches/truthprobe-0001.patch   # on the worktree 007afb1
 apply --check ok
 
@@ -1060,7 +1063,8 @@ with the service, the whole string is the stage directory key. `Resolved` carrie
 `background-service.ts` and `sidecar-probe.ts` use them separately. `build-desktop.sh` takes the version
 from the output of `opencode-cli --version` — the file next to it contains a truncated `0.0.0-dev`.
 
-**Proof** (log `logs/20261123T100624/main.log`, excerpts):
+**Proof** (desktop log `main.log` of the 0.13.9-era build, log folder `20261123T100624`; the file
+is not committed — `*.log` is ignored — the excerpts are reproduced verbatim):
 
 ```
 v2 CLI version bundled          version: '0.0.0-dev-202611231000', stage: '0.0.0-dev-202611231000+c3c4a36e358e'
@@ -1072,7 +1076,8 @@ v2 CLI background service ready version/runningVersion: '0.0.0-dev-202611231000'
 3 571 files without errors, `cli-version`/`cli-stages` tests — 22 pass (after 0.13.14).
 
 **What this does not prove.** It is checked that the service comes up and the version matches; a full
-scenario run of the UI after the fix was not done — the application was launched only to check the log.
+scenario run of the UI after the fix was not done — the log is the only artifact, and it was
+produced before the ban on launching the application.
 
 ## 25. The patch carried a copy of itself
 
@@ -1176,14 +1181,14 @@ together — 22 pass / 31 expect; typecheck — 3 571 files, 0 errors.
 
 **Measurements for the docs.** `git diff --shortstat 007afb1..HEAD` → `53 files changed, 3626 insertions(+),
 55 deletions(-)`; the patch `patches/truthprobe-0001.patch` — 347 540 B, sha256
-`ff9312863c16d79e1e7064462a286bf25cebe57fe75c80ca76ea45e184ce43c1`; base
+`381b37d02024f6e30a43c1bd0002b360da55c4affe70309ac4f3ed387ccc4fe5`; base
 `007afb1b0c8a36dff93d7945909d4e976545ba95`. Regeneration and comparison with the docs:
 
 ```
 $ bash scripts/make-patch.sh --from ~/src/opencode
   commits: 30, files: 53, bytes: 347540
 $ sha256sum patches/truthprobe-0001.patch
-ff9312863c16d79e1e7064462a286bf25cebe57fe75c80ca76ea45e184ce43c1  patches/truthprobe-0001.patch
+381b37d02024f6e30a43c1bd0002b360da55c4affe70309ac4f3ed387ccc4fe5  patches/truthprobe-0001.patch
 $ make docs-check
 docs match the patch: commits 30, files 53, bytes 347540
 ```
@@ -1241,7 +1246,8 @@ launched at the user's request.
 
 ## 30. The release was not a procedure
 
-There are four tags on GitHub, but not a single release with the patch: `v0.13.12`–`v0.13.15` were placed manually
+At the time of 0.13.16 there were four tags on GitHub and not a single release with the patch:
+`v0.13.12`–`v0.13.15` were placed manually
 via `git tag`, and the attachment `patches/truthprobe-0001.patch` was never put into a release.
 
 **Fix.** `scripts/release.sh` + `make release`. The script refuses to work if the patch checksum
@@ -1275,7 +1281,7 @@ token in the sandbox. Creating a release, uploading the asset and removing the d
 **Measured (`GET /releases/tags/v0.13.16`):** id `455465241`, `draft: false`,
 `published_at: 2026-11-23T13:28:34Z`; asset `truthprobe-0001.patch`, `size: 347540`,
 `state: uploaded`, `digest: sha256:381b37d02024f6e30a43c1bd0002b360da55c4affe70309ac4f3ed387ccc4fe5`.
-The checksum matches `sha256sum patches/truthprobe-0001.patch` and the pin `PATCH_SHA256` in `install.sh:30`.
+The checksum matches `sha256sum patches/truthprobe-0001.patch` and the pin `PATCH_SHA256` in `install.sh:31`.
 
 **What this was done with.** Not `curl`: in WSL the requests to `api.github.com` dropped
 (`curl: (56) Proxy CONNECT aborted`, code `000`), while `Invoke-RestMethod` from Windows answered `200`.
@@ -1302,11 +1308,12 @@ JSDoc, user-facing strings and test names became English, and this rewrite is th
 the patch (`d54ac9f`). Scripts, `Makefile`, the CI workflow and both installers were rewritten the same
 way, with identical insert and delete counts per file, so behaviour did not move.
 
-**One intentional semantic change.** `packages/core/src/truthprobe/sentences.ts` used to know Russian
-abbreviations (`т.е.`, `см.`) and the Cyrillic ranges of three regexes. All of that is gone: the
-abbreviation list now holds `i.e.`, `e.g.`, `etc.`, `cf.`, and the regexes are `[A-Za-z]`-based.
-Splitting *Russian* text at abbreviations can now behave worse than before; Latin text is unchanged, and
-the abbreviation test asserts the same four cases as before.
+**One slip, and its repair.** The same rewrite dropped the Russian abbreviations (`т.е.`, `см.`, `г.`,
+`др.`) and the Cyrillic ranges of three regexes from `sentences.ts`, so Russian answers were split
+mid-phrase, and the test that pinned that behaviour was rewritten to a Latin case instead of being kept.
+The thirty-second commit (`5e8cee4`) restored the abbreviation list and the three character classes and
+added tests: `does not split Cyrillic abbreviations` and a Cyrillic case next to the Greek one. Latin
+behaviour never changed, and the core suite went from 129 pass / 361 expect to 131 pass / 379 expect.
 
 **A defect the rewrite removed by itself.** Lines 91-155 of `install.ps1` were stored in cp1251 and read
 as UTF-8, so a Windows user saw mojibake. The English rewrite left no such lines; the file is ASCII now.
@@ -1314,13 +1321,16 @@ as UTF-8, so a Windows user saw mojibake. The English rewrite left no such lines
 **Measured.**
 
 ```
-commits: 31, files: 53, bytes: 508953
-sha256: 8d6d23eb8089649f21cab4911775aff9df9889dc6921ec1274a3bb7c4578d124
+commits: 32, files: 53, bytes: 514039
+sha256: 4436386b5457eb2cb2187054c064187e7e70e8bcda3d99c4214ee392df606f34
 bun test test                                   93 pass / 9 skip / 0 fail, 211 expect, 102 tests
-bun test test/truthprobe (patched tree, core)   129 pass / 0 fail, 361 expect, 6 files
+bun test test/truthprobe (patched tree, core)   131 pass / 0 fail, 379 expect, 6 files
 grep -rnP '[\x{0400}-\x{04FF}]' src test        0
+GET /releases/tags/v0.13.18                     release 455929364, draft false, asset 514039 B
+GET /releases/latest/download/...               514039 B, sha256 4436386b… — matches the pin
 ```
 
 **What this does not prove.** The Russian translations were checked for numbers, links and heading
-counts, not by a native speaker. `scripts/collect.py` keeps one Cyrillic range on purpose: it tokenises
+counts, not by a native speaker. The installer fallback was exercised by hand against the published
+asset (bytes and digest match the pin), but no CI job downloads it. `scripts/collect.py` keeps one Cyrillic range on purpose: it tokenises
 reference answers (`[a-zа-я0-9]+`), and changing it would change behaviour.

@@ -1,6 +1,6 @@
 # TruthProbe for opencode
 
-[![unit tests](https://img.shields.io/badge/unit%20tests-92%20pass-brightgreen)](docs/VALIDATION.md)
+[![unit tests](https://img.shields.io/badge/unit%20tests-93%20pass-brightgreen)](docs/VALIDATION.md)
 [![CI](https://github.com/vladmurnik/truthprobe-opencode/actions/workflows/verify.yml/badge.svg)](https://github.com/vladmurnik/truthprobe-opencode/actions/workflows/verify.yml)
 [![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![opencode base](https://img.shields.io/badge/opencode-007afb1-informational)](patches/truthprobe-0001.patch)
@@ -147,9 +147,9 @@ export TRUTHPROBE_SCORER=linear:/path/to/truthprobe-weights.json
 метрика 0.881 была посчитана на повреждённом наборе. Все числа и разбор —
 [`docs/LEARNED-WEIGHTS.md`](docs/LEARNED-WEIGHTS.md).
 
-#Готовый патч из релиза:
-[`truthprobe-0001.patch`](https://github.com/vladmurnik/truthprobe-opencode/releases/download/v0.13.16/truthprobe-0001.patch)
-(347 540 Б, sha256 `381b37d0…4fe5`).
+**Готовый патч из релиза:**
+[`truthprobe-0001.patch`](https://github.com/vladmurnik/truthprobe-opencode/releases/download/v0.13.18/truthprobe-0001.patch)
+(514 039 Б, sha256 `4436386b…6f34`).
 
 ## Патч вручную
 
@@ -309,8 +309,8 @@ Windows: `%APPDATA%\opencode\truthprobe\`) и живёт: `ok`/`ignored`/`reject
 | Автовключение без переменных окружения | мок + два прогона подряд | RUN1: проба → `{"status":"ok"}`; RUN2: **2 из 2** запросов с `logprobs: true, top_logprobs: 20` |
 | Регрессия вокруг событий текста | `test/session*.test.ts test/projector*.test.ts test/message*.test.ts` | **811 pass / 0 fail** |
 | Полный прогон core | `bun test` в `packages/core` (7 713 тестов, 331 файл) | 7 300 pass / 351 skip / 62 fail — ни одного в truthprobe: `tool-search` качает ripgrep с github.com, `provider-gitlab-oauth` ходит на gitlab.com, `cross-spawn`/MCP зависят от spawn; в окружении зарезана исходящая сеть |
-| Тесты TruthProbe, этот репозиторий | `bun test test` | **92 pass / 8 skip / 0 fail**, 210 expect, 5 файлов, 100 тестов |
-| Тесты TruthProbe, пропатченное дерево | `bun test truthprobe` в `packages/core/test` | **129 pass / 0 fail**, 6 файлов |
+| Тесты TruthProbe, этот репозиторий | `bun test test` | **93 pass / 9 skip / 0 fail**, 211 expect, 5 файлов, 102 теста |
+| Тесты TruthProbe, пропатченное дерево | `bun test truthprobe` в `packages/core/test` | **131 pass / 0 fail**, 6 файлов |
 | Патч на чистом дереве | `git am` в worktree `007afb1` | применяется без конфликтов (identity задана локально), все truthprobe-тесты зелёные |
 | Типизация | schema / ai / core / client / tui | зелёная (132 / 357+322 / 2 036 / 181 / 1 947 файлов) |
 | Типизация UI-пакетов | session-ui / app / desktop | зелёная (384 / 2 447 / 3 571 файл, desktop — 2 проекта) |
@@ -344,14 +344,14 @@ python3 scripts/tui-probe.py && python3 scripts/screen-dump.py /tmp/tui-probe.lo
 
 | Что | Как проверяли | Результат |
 | --- | --- | --- |
-| Тесты truthprobe | `bun test` шести файлов в `packages/core/test` | **129 pass, 0 fail** (пропатченное дерево; в этом репозитории — **92 pass / 8 skip**) |
+| Тесты truthprobe | `bun test` шести файлов в `packages/core/test` | **131 pass, 0 fail** (пропатченное дерево; в этом репозитории — **93 pass / 9 skip**) |
 | Тесты всего монорепо | `bun test` в `packages/core` — 7713 тестов, 331 файл | **7300 pass, 351 skip, 62 fail** |
 | Ответ `freepi/particle` | живой запрос через боевой бинарь | `score 0.7595 · likely`, предложение `#0 0.603 · uncertain` |
 | Ответ `freepi/deepseek-v4.1-flash` | живой запрос | `score 0.6893`, первый флаг `0.4849` |
 | Сменный скорер | `TRUTHPROBE_SCORER=linear:weights.json` | score сместился с `0.7595` до `0.9992` — подмена реально работает |
-| Установщик Windows | `install.ps1 -Dir <пусто> -DryRun` | клон, `git apply --check`, все 31 коммитов патча применились, ошибок нет; CI повторяет это на каждом пуше |
+| Установщик Windows | `install.ps1 -Dir <пусто> -DryRun` | клон, `git apply --check`, все 32 коммита патча применились, ошибок нет; CI повторяет это на каждом пуше |
 | Сборка desktop | electron-builder | приложение 246 МБ, вложенный CLI 279 МБ |
-| CI на чужих машинах | GitHub Actions, прогоны [`44593481931`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44593481931), [`44678633546`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44678633546) , [`44736706708`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44736706708) , [`44761971781`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44761971781) и [`44784920180`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44784920180), [`44787911144`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44787911144) и [`44918215420`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44918215420) и [`45161855972`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45161855972) (0.13.12), [`45163760974`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45163760974) (0.13.13), [`45165859105`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45165859105) (0.13.14), [`45169068249`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45169068249) (0.13.15) | **все 7 job'ов success** в каждом, на hosted-раннерах ubuntu-latest и windows-latest |
+| CI на чужих машинах | GitHub Actions, прогоны [`44918215420`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44918215420), [`45161855972`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45161855972) (0.13.12), [`45163760974`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45163760974) (0.13.13), [`45165859105`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45165859105) (0.13.14), [`45169068249`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45169068249) (0.13.15), [`45207888021`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45207888021) (0.13.18) | **7 job'ов из 7 success** в каждом прогоне, чей id ещё резолвится; прежние id (`44593481931`–`44787911144`) старше пересоздания репозитория 21.11.2026 и теперь отвечают 404 |
 | Веса на модель в рантайме | два прогона на моке с разными бандлами, один и тот же ответ | `0.9997 · safe`, когда веса есть для `mock/mock-1`, и `0.0003 · unreliable`, когда они только у `other/model` — выбор по `providerID/modelID` реально работает |
 | `collect.py` в масштабе | 7 моделей, 576 запросов | 120 строк с logprobs; 108 запросов отклонены с `HTTP 403 premium credits`; 348 ответов пришли без logprobs — локальный шлюз `127.0.0.1:8790` отдаёт их только для моделей, которые маршрутизирует |
 | `collect.py` на живом шлюзе | 2 промпта, `freepi/particle` | строки с `meanLp -0.063 / -0.125`, `minLp -0.409 / -0.945`, `fracLow 0.00 / 0.06` — признаки считаются той же формулой, что в рантайме |
@@ -369,8 +369,8 @@ python3 scripts/tui-probe.py && python3 scripts/screen-dump.py /tmp/tui-probe.lo
 
 - **Чистые виртуальные машины — теперь проверено в CI.** GitHub Actions поднимает раннеры
   `ubuntu-latest` и `windows-latest` с нуля: прогоны
-  [`44593481931`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44593481931) и
-  [`44678633546`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44678633546)
+  [`44918215420`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44918215420) и
+  [`45169068249`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45169068249)
   (уже с per-model весами) подтвердили, что установщики проходят `--dry-run` на обеих ОС, патч
   применяется к чистому дереву и ведёт себя одинаково. Это не ручная установка на десктоп, но это чистая ОС.
 - **Linux и macOS.** `install.sh` теперь проверяется в CI на ubuntu-latest (dry-run, без установки
@@ -388,7 +388,7 @@ python3 scripts/tui-probe.py && python3 scripts/screen-dump.py /tmp/tui-probe.lo
 
 ## Устройство патча
 
-53 файла, +3625/−55, 508 953 Б, тридцать один коммит поверх `007afb1`. Шов тонкий и аддитивный:
+53 файла, +3638/−55, 514 039 Б, тридцать два коммита поверх `007afb1`. Шов тонкий и аддитивный:
 
 | Слой | Файл | Что делает |
 | --- | --- | --- |
@@ -416,7 +416,7 @@ python3 scripts/tui-probe.py && python3 scripts/screen-dump.py /tmp/tui-probe.lo
 ```
 src/truthprobe/           эталонная математика (типы, сегментация, скоринг) и логика автопроверки
 src/opencode-tree/        эталонные копии файлов, которые живут в дереве opencode
-test/score.test.ts        44 теста без сети и без зависимостей
+test/score.test.ts        45 тестов без сети и без зависимостей
 test/capability.test.ts   35 тестов статусов, TTL и кэша автопроверки
 test/opencode-tree/       тесты, которые живут в дереве opencode
 patches/                  готовый git-am патч и python-патчеры для точечных правок

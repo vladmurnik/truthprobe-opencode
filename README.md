@@ -1,6 +1,6 @@
 # TruthProbe for opencode
 
-[![unit tests](https://img.shields.io/badge/unit%20tests-92%20pass-brightgreen)](docs/VALIDATION.md)
+[![unit tests](https://img.shields.io/badge/unit%20tests-93%20pass-brightgreen)](docs/VALIDATION.md)
 [![CI](https://github.com/vladmurnik/truthprobe-opencode/actions/workflows/verify.yml/badge.svg)](https://github.com/vladmurnik/truthprobe-opencode/actions/workflows/verify.yml)
 [![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![opencode base](https://img.shields.io/badge/opencode-007afb1-informational)](patches/truthprobe-0001.patch)
@@ -148,9 +148,9 @@ answer length drops the quality to chance — **0.541**. Within individual quest
 withdrawn: its 0.881 was measured on a corrupted set. All numbers and the post-mortem —
 [`docs/LEARNED-WEIGHTS.md`](docs/LEARNED-WEIGHTS.md).
 
-#Patch from the published release:
-[`truthprobe-0001.patch`](https://github.com/vladmurnik/truthprobe-opencode/releases/download/v0.13.16/truthprobe-0001.patch)
-(347 540 B, sha256 `381b37d0…4fe5`).
+**Patch from the published release:**
+[`truthprobe-0001.patch`](https://github.com/vladmurnik/truthprobe-opencode/releases/download/v0.13.18/truthprobe-0001.patch)
+(514 039 B, sha256 `4436386b…6f34`).
 
 ## Manual patch
 
@@ -311,9 +311,9 @@ drifted; `unavailable` — no tokens.
 | OpenAI protocol (gate, request body, `choices[i].logprobs` parsing) | `test/opencode-tree/protocol.test.ts`: in this repository **8 skip** — the file only really runs inside a patched opencode tree (`packages/ai/test/`, CI sets `TRUTHPROBE_REQUIRE_PROTOCOL_TESTS=1`) | **8 pass / 0 fail** in the tree; all 8 skipped here |
 | Auto-enable without environment variables | mock + two consecutive runs | RUN1: probe → `{"status":"ok"}`; RUN2: **2 of 2** requests with `logprobs: true, top_logprobs: 20` |
 | Regression around text events | `test/session*.test.ts test/projector*.test.ts test/message*.test.ts` | **811 pass / 0 fail** |
-| Full core run | `bun test` in `packages/core` (7 713 tests, 63 files) | 7 300 pass / 351 skip / 62 fail — none in truthprobe: `tool-search` downloads ripgrep from github.com, `provider-gitlab-oauth` calls gitlab.com, `cross-spawn`/MCP depend on spawn; the harness blocks outbound network |
-| TruthProbe tests, this repository | `bun test test` | **92 pass / 8 skip / 0 fail**, 210 expect, 5 files, 100 tests |
-| TruthProbe tests, patched tree | `bun test truthprobe` in `packages/core/test` | **129 pass / 0 fail**, 6 files |
+| Full core run | `bun test` in `packages/core` (7 713 tests, 331 files) | 7 300 pass / 351 skip / 62 fail — none in truthprobe: `tool-search` downloads ripgrep from github.com, `provider-gitlab-oauth` calls gitlab.com, `cross-spawn`/MCP depend on spawn; the harness blocks outbound network |
+| TruthProbe tests, this repository | `bun test test` | **93 pass / 9 skip / 0 fail**, 211 expect, 5 files, 102 tests |
+| TruthProbe tests, patched tree | `bun test truthprobe` in `packages/core/test` | **131 pass / 0 fail**, 6 files |
 | Patch on a clean tree | `git am` in a `007afb1` worktree | applies without conflicts (identity configured locally), all truthprobe tests green |
 | Typecheck | schema / ai / core / client / tui | green (132 / 357+322 / 2 036 / 181 / 1 947 files) |
 | Typecheck of the UI packages | session-ui / app / desktop | green (384 / 2 447 / 3 571 files, desktop 2 projects) |
@@ -347,14 +347,14 @@ Everything in the table is a measurement, not an expectation.
 
 | What | How it was checked | Result |
 | --- | --- | --- |
-| TruthProbe tests | `bun test` of six files in `packages/core/test` | **129 pass, 0 fail** (patched tree; in this repository — **92 pass / 8 skip**) |
-| Whole-monorepo tests | `bun test` in `packages/core` — 7713 tests, 63 files | **7300 pass, 351 skip, 62 fail** |
+| TruthProbe tests | `bun test` of six files in `packages/core/test` | **131 pass, 0 fail** (patched tree; in this repository — **93 pass / 9 skip**) |
+| Whole-monorepo tests | `bun test` in `packages/core` — 7713 tests, 331 files | **7300 pass, 351 skip, 62 fail** |
 | Answer from `freepi/particle` | live request through the production binary | `score 0.7595 · likely`, sentence `#0 0.603 · uncertain` |
 | Answer from `freepi/deepseek-v4.1-flash` | live request | `score 0.6893`, first flag `0.4849` |
 | Swappable scorer | `TRUTHPROBE_SCORER=linear:weights.json` | score moved from `0.7595` to `0.9992` — the swap really works |
-| Windows installer | `install.ps1 -Dir <empty> -DryRun` | clone, `git apply --check`, all 30 patch commits applied, no errors; CI repeats this on every push |
+| Windows installer | `install.ps1 -Dir <empty> -DryRun` | clone, `git apply --check`, all 32 patch commits applied, no errors; CI repeats this on every push |
 | Desktop build | electron-builder | app 246 MB, bundled CLI 279 MB |
-| CI on foreign machines | GitHub Actions, runs [`44593481931`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44593481931), [`44678633546`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44678633546) , [`44736706708`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44736706708) , [`44761971781`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44761971781) and [`44784920180`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44784920180), [`44787911144`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44787911144) and [`44918215420`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44918215420) and [`45161855972`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45161855972) (0.13.12), [`45163760974`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45163760974) (0.13.13), [`45165859105`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45165859105) (0.13.14), [`45169068249`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45169068249) (0.13.15) | **all 7 jobs success** in each, on hosted `ubuntu-latest` and `windows-latest` runners |
+| CI on foreign machines | GitHub Actions, runs [`44918215420`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44918215420), [`45161855972`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45161855972) (0.13.12), [`45163760974`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45163760974) (0.13.13), [`45165859105`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45165859105) (0.13.14), [`45169068249`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45169068249) (0.13.15), [`45207888021`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45207888021) (0.13.18) | **7 of 7 jobs success** in every run whose id still resolves; the earlier ids (`44593481931`–`44787911144`) predate the 21.11.2026 recreation of the repository and now answer 404 |
 | Per-model weights at runtime | two mock runs with different bundles, same answer | `0.9997 · safe` when weights exist for `mock/mock-1`, `0.0003 · unreliable` when they only exist for `other/model` — selection by `providerID/modelID` really works |
 | `collect.py` at scale | 7 models, 576 requests | 120 rows with logprobs; 108 requests refused with `HTTP 403 premium credits`; 348 answers came back without logprobs — the local gateway `127.0.0.1:8790` returns them only for the models it routes |
 | `collect.py` against a live gateway | 2 prompts, `freepi/particle` | rows with `meanLp -0.063 / -0.125`, `minLp -0.409 / -0.945`, `fracLow 0.00 / 0.06` — features computed by the same formula as in the runtime |
@@ -373,8 +373,8 @@ What we did **not** check, and will not pretend otherwise:
 
 - **Clean virtual machines — now verified in CI.** GitHub Actions brings up `ubuntu-latest` and
   `windows-latest` runners from scratch: runs
-  [`44593481931`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44593481931) and
-  [`44678633546`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44678633546)
+  [`44918215420`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44918215420) and
+  [`45169068249`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45169068249)
   (already with per-model weights) confirmed that the installers pass `--dry-run` on both OSes, the
   patch applies to a clean tree and behaves identically. This is not a manual install on a desktop,
   but it is a clean OS.
@@ -396,7 +396,7 @@ What we did **not** check, and will not pretend otherwise:
 
 ## Anatomy of the patch
 
-53 files, +3625/−55, 508 953 B, thirty-one commits on top of `007afb1`. The seam is thin and additive:
+53 files, +3638/−55, 514 039 B, thirty-two commits on top of `007afb1`. The seam is thin and additive:
 
 | Layer | File | What it does |
 | --- | --- | --- |
@@ -424,7 +424,7 @@ across upgrades": 6 places that will need rebasing, 15–30 minutes per upstream
 ```
 src/truthprobe/           reference math (types, segmentation, scoring) and the probe logic
 src/opencode-tree/        reference copies of the files that live in the opencode tree
-test/score.test.ts        44 tests without network and without dependencies
+test/score.test.ts        45 tests without network and without dependencies
 test/capability.test.ts   35 tests for statuses, TTL and the probe cache
 test/opencode-tree/       tests that live in the opencode tree
 patches/                  the ready-to-apply git-am patch and python patchers for spot edits

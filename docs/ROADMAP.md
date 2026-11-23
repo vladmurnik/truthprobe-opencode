@@ -151,7 +151,7 @@ so that an AUROC improvement is not bought at the price of false alarms.
 
 ## What we consider a regression
 
-- Any truthprobe test turns red (currently 129 pass in the patched tree, 92 pass / 8 skip — in this repository).
+- Any truthprobe test turns red (currently 131 pass in the patched tree, 93 pass / 9 skip — in this repository).
 - `scripts/evaluate.py` stops computing the same formula as the runtime (this has already happened: 0.388 versus 0.597).
 - `git am` of the patch stops producing a byte-for-byte identical tree to the dev branch.
 - An answer without logprobs starts showing a number instead of `unavailable`.

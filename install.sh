@@ -28,7 +28,7 @@ RELEASES=https://github.com/vladmurnik/truthprobe-opencode/releases/latest/downl
 PATCH_NAME=patches/truthprobe-0001.patch
 # The patch is fetched from the branch and its code is then executed (bun install + build),
 # so we verify the bytes against a pinned sum instead of trusting the URL.
-PATCH_SHA256="8d6d23eb8089649f21cab4911775aff9df9889dc6921ec1274a3bb7c4578d124"
+PATCH_SHA256="4436386b5457eb2cb2187054c064187e7e70e8bcda3d99c4214ee392df606f34"
 
 DIR="${TRUTHPROBE_DIR:-opencode-truthprobe}"
 DRY_RUN=0
@@ -59,7 +59,17 @@ command -v git >/dev/null 2>&1 || die "git is required"
 if command -v curl >/dev/null 2>&1; then
   download() { curl -fsSL --retry 3 --retry-delay 2 --retry-connrefused "$1" -o "$2"; }
 elif command -v wget >/dev/null 2>&1; then
-  download() { wget -q --tries=3 --waitretry=2 -O "$2" "$1"; }
+  # wget --tries only covers network errors, not an HTTP 503 from the CDN,
+  # so the retry loop is explicit here.
+  download() {
+    local attempt=1
+    while [ "$attempt" -le 3 ]; do
+      wget -q --timeout=20 --tries=1 -O "$2" "$1" && [ -s "$2" ] && return 0
+      attempt=$((attempt + 1))
+      sleep 2
+    done
+    return 1
+  }
 else
   die "curl or wget is required"
 fi
@@ -77,7 +87,7 @@ fetch_patch() {
 # a missing sha256sum/shasum is an environment error, not a reason to skip verification.
 # GitHub does not always serve an unadvertised object: `--depth 1` for a specific SHA
 # can answer "Server does not allow request for unadvertised object". Then
-# we fetch the whole history — the base is only needed for verification anyway.
+# we fetch the whole history - the base is only needed for verification anyway.
 fetch_base() {
   git fetch -q --depth 1 origin "$BASE" 2>/dev/null && return 0
   git fetch -q origin || return 1
@@ -106,7 +116,7 @@ if [ "$UNINSTALL" -eq 1 ]; then
   [ -d "$DIR/.git" ] || die "$DIR is not a git checkout"
   cd "$DIR"
   if ! git log --oneline -n 40 | grep -qi truthprobe; then
-    note "no truthprobe commits found — the patch looks already reverted"
+    note "no truthprobe commits found - the patch looks already reverted"
     exit 0
   fi
   if [ "$DRY_RUN" -eq 1 ]; then
@@ -136,7 +146,7 @@ if [ "$DRY_RUN" -eq 1 ]; then
   git remote add origin "$UPSTREAM"
   fetch_base || die "failed to download $BASE_SHORT"
   git checkout -q -B truthprobe FETCH_HEAD
-  fetch_patch "$PATCH" || die "patch download failed: $REPO/$PATCH_NAME and $RELEASES/$PATCH_NAME"
+  fetch_patch "$PATCH" || die "patch download failed: $REPO/$PATCH_NAME and $RELEASES/${PATCH_NAME##*/}"
   verify_patch "$PATCH"
   if ! git apply --check --whitespace=nowarn "$PATCH"; then
     die "the patch does not apply to $BASE_SHORT"
@@ -177,7 +187,7 @@ else
   step "downloading $PATCH_NAME"
   PATCH="$(mktemp)"
   trap 'rm -f "$PATCH"' EXIT
-  fetch_patch "$PATCH" || die "patch download failed: $REPO/$PATCH_NAME and $RELEASES/$PATCH_NAME"
+  fetch_patch "$PATCH" || die "patch download failed: $REPO/$PATCH_NAME and $RELEASES/${PATCH_NAME##*/}"
   verify_patch "$PATCH"
 
   step "checking patch"
@@ -233,10 +243,10 @@ Run:
 
 Confidence numbers:
 
-  Under an answer a line like "answer confidence 71% · uncertain" appears.
+  Under an answer a line like "answer confidence 71% - uncertain" appears.
   The provider is probed automatically: the first request to each model asks for logprobs,
   and if the provider returns them, percentages start with the next request.
-  Which models support it — see docs/MODEL-SUPPORT.md; to probe yours:
+  Which models support it - see docs/MODEL-SUPPORT.md; to probe yours:
 
     python3 scripts/probe-logprobs.py --base <url>/v1 --key <key> --models a,b --md
 

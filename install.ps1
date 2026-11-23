@@ -32,7 +32,11 @@ $PatchAsset = "truthprobe-0001.patch"
 
 function Step($text) { Write-Host "==> $text" -ForegroundColor Cyan }
 function Note($text) { Write-Host "    $text" }
-function Fail($text) { Write-Host "error: $text" -ForegroundColor Red; exit 1 }
+function Fail($text) {
+  Write-Host "error: $text" -ForegroundColor Red
+  if ($script:TempClone) { Remove-Item -Recurse -Force $script:TempClone -ErrorAction SilentlyContinue }
+  exit 1
+}
 
 # raw.githubusercontent.com occasionally answers 503 Backend.max_conn reached, which
 # killed the Windows CI job on 2026-11-23. Retry, then fall back to the release asset:
@@ -91,6 +95,7 @@ Step "fetching sst/opencode @ $BaseShort"
 # `-DryRun` does not touch $Dir: reset --hard + checkout -B move the branch and drop
 # local commits, so the check runs in a throwaway clone.
 $tempClone = $null
+$script:TempClone = $tempClone
 if ($DryRun) {
   $tempClone = Join-Path ([System.IO.Path]::GetTempPath()) ("truthprobe-check-" + [guid]::NewGuid().ToString("N"))
   New-Item -ItemType Directory -Force -Path $tempClone | Out-Null
@@ -128,7 +133,7 @@ if ($DryRun) {
   $known = (git log --oneline -n 40 2>$null) -join "`n"
   if ($head -ne $Base -and $known -notmatch "truthprobe") {
     # The tree is at a foreign commit: without rebasing to $Base the patch does not apply,
-    # and reset --hard silently wipes uncommitted edits — so check for cleanliness first.
+    # and reset --hard silently wipes uncommitted edits, so check for cleanliness first.
     $dirty = (git status --porcelain 2>$null) -join ""
     if ($dirty -ne "" -and $env:TRUTHPROBE_ALLOW_DIRTY -ne "1") {
       Pop-Location
@@ -160,10 +165,10 @@ if ($log -match "truthprobe") {
   }
   if (-not (Test-Path $patch) -or (Get-Item $patch).Length -eq 0) { Pop-Location; Fail "patch download failed" }
   $hash = (Get-FileHash -Algorithm SHA256 -Path $patch).Hash.ToLower()
-  if ($hash -ne "8d6d23eb8089649f21cab4911775aff9df9889dc6921ec1274a3bb7c4578d124") {
+  if ($hash -ne "4436386b5457eb2cb2187054c064187e7e70e8bcda3d99c4214ee392df606f34") {
     Remove-Item $patch -Force -ErrorAction SilentlyContinue
     Pop-Location
-    Fail "patch checksum mismatch: pinned 8d6d23eb8089649f21cab4911775aff9df9889dc6921ec1274a3bb7c4578d124, got $hash"
+    Fail "patch checksum mismatch: pinned 4436386b5457eb2cb2187054c064187e7e70e8bcda3d99c4214ee392df606f34, got $hash"
   }
 
   Step "checking patch"

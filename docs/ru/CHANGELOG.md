@@ -2,35 +2,46 @@
 
 Проект перешёл на английский; русский остался необязательным переводом.
 
-**Primary language.** `README.md`, `CHANGELOG.md`, `docs/*.md`, `PLAN.md` and `CONTRIBUTING.md` are
-English originals. The Russian text moved to `README.ru.md` and `docs/ru/*.md` (14 files), and the two
-are linked by a banner at the top of each file. `README.en.md` was removed — it was the mirror of a
-Russian main file. The rule lives in `CONTRIBUTING.md`, section "Language".
+**Основной язык.** `README.md`, `CHANGELOG.md`, `docs/*.md`, `PLAN.md` и `CONTRIBUTING.md` — английские
+оригиналы. Русский текст переехал в `README.ru.md` и `docs/ru/*.md` (14 файлов), две версии связаны
+баннером в начале каждого файла. `README.en.md` удалён — он был зеркалом русского основного файла.
+Правило записано в `CONTRIBUTING.md`, раздел «Language».
 
-**Code.** The thirty-first commit of the patch (`d54ac9f`) rewrites 28 files, 524 lines of Russian
-comments, JSDoc, messages and test names, into English. Scripts, `Makefile`, the CI workflow and both
-installers were rewritten the same way, with identical insert and delete counts per file, so behaviour
-did not move.
+**Код.** Тридцать первый коммит патча (`d54ac9f`) переписывает 28 файлов, 524 строки русских
+комментариев, JSDoc, сообщений и имён тестов на английский. Скрипты, `Makefile`, CI-workflow и оба
+установщика переписаны так же, с одинаковым числом вставок и удалений на файл, поэтому поведение
+не сдвинулось.
 
-**Intentional semantic change.** `sentences.ts` no longer carries Russian abbreviations or Cyrillic
-regex ranges; it knows `i.e.`, `e.g.`, `etc.`, `cf.` and matches `[A-Za-z]`. Sentence splitting of
-Russian text may be worse than before; Latin text behaves as before.
+**Одна оплошность и её починка.** Тот же рефакторинг заодно выбросил из `sentences.ts` кириллические
+сокращения и кириллические диапазоны символов, поэтому русские ответы рвались после `г.`, `т.е.` и
+`см.`; тест, который это пиннил, был переписан на латинский кейс вместо сохранения. Тридцать второй
+коммит (`5e8cee4`) вернул список сокращений и три класса символов и добавил явные тесты —
+`does not split Cyrillic abbreviations` и кириллический кейс рядом с греческим в unicode-матрице.
+Набор core теперь 131 pass / 379 expect в 6 файлах.
 
-**Also in this release**
+**Также в релизе**
 
-- `install.sh` and `install.ps1` retry three times and fall back to the release asset. Run
-  [`45184432491`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45184432491) failed
-  because `raw.githubusercontent.com` answered `503 Backend.max_conn reached`: a transient CDN error no
-  longer kills an install.
-- `install.ps1` was stored in cp1251 and read as UTF-8 (mojibake); the rewrite removed the last such
-  lines.
+- `install.sh` и `install.ps1` повторяют скачивание патча трижды и, если `raw.githubusercontent.com`
+  продолжает отвечать `503 Backend.max_conn reached` (на этом упал прогон
+  [`45184432491`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45184432491)),
+  переключаются на ассет релиза. Резервный путь берётся из `releases/latest/download`, поэтому
+  зависит от того, опубликован ли текущий тег: с опубликованным `v0.13.18` он отдаёт те же
+  514 039 байт, что и патч, а закреплённая контрольная сумма по-прежнему решает, доверять ли байтам.
+- `install.ps1` хранился в cp1251 и читался как UTF-8 (mojibake); переписывание убрало последние такие
+  строки.
 
-**Measured.** Patch: 31 commits, 53 files, 508 953 B, sha256
-`8d6d23eb8089649f21cab4911775aff9df9889dc6921ec1274a3bb7c4578d124`; `bun test test` → 93 pass / 9 skip /
-0 fail, 211 expect, 102 tests; the core suite in the patched tree → 129 pass / 0 fail.
+**Измерено.** Патч: 32 коммита, 53 файла, `+3638/−55`, 514 039 Б, sha256
+`4436386b5457eb2cb2187054c064187e7e70e8bcda3d99c4214ee392df606f34`; `bun test test` → 93 pass / 9 skip /
+0 fail, 211 expect, 102 теста; набор core в пропатченном дереве → 131 pass / 0 fail, 379 expect.
+Прогон CI [`45207888021`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45207888021)
+на `c1214eb` (тридцать первый коммит) — 7 из 7 job'ов success; тридцать второй коммит проверен только
+локально. Релиз `v0.13.18` опубликован (id `455929364`, ассет 514 039 Б,
+`digest: sha256:4436386b…6f34`), а `releases/latest/download/truthprobe-0001.patch` скачан и
+захеширован вручную: 514 039 байт, тот же `sha256` — совпадает с пином в обоих установщиках.
 
-**What this does not prove.** The translations were verified against numbers, links and heading counts,
-not by a native speaker. The live UI run was not repeated.
+**Чего это не доказывает.** Переводы сверены по числам, ссылкам и числу заголовков, а не носителем
+языка. Живой прогон UI не повторялся. Резервный путь установщика проверен вручную на опубликованном
+ассете, но не в CI: ни один job не скачивает резервный URL.
 
 # 0.13.17 — 2026-11-23
 
@@ -41,7 +52,7 @@ not by a native speaker. The live UI run was not repeated.
 `published_at: 2026-11-23T13:28:34Z`, ассет `truthprobe-0001.patch`, `size: 347540`,
 `state: uploaded`; GitHub сам посчитал
 `digest: sha256:381b37d02024f6e30a43c1bd0002b360da55c4affe70309ac4f3ed387ccc4fe5` — совпадает
-с локальным `sha256sum` и с пином `PATCH_SHA256` в `install.sh:30`. Описание релиза — 948 символов
+с локальным `sha256sum` и с пином `PATCH_SHA256` в `install.sh:31`. Описание релиза — 948 символов
 из записи 0.13.16 в `CHANGELOG.md`.
 
 **Чем это сделано.** Не `curl`: в WSL запросы к `api.github.com` обрывались с
@@ -248,7 +259,7 @@ highlights») добавлял файл `patches/truthprobe-0001.patch` — ус
 128); порог плашки — строгое `r > 0.45`; 127 тестов заменены на 129; карта разделов
 `VALIDATION.md` доведена до §24; typecheck desktop — 3 571 файл.
 
-**Проверено:** `bun test test` 92 pass / 8 skip / 0 fail, 210 expect, 100 тестов;
+**Проверено:** `bun test test` 93 pass / 9 skip / 0 fail, 211 expect, 102 теста;
 `git apply --check` на чистом worktree `007afb1` проходит; `git am` с локальной identity
 применяет все 28 коммитов. Приложение не запускалось (проверка по коду и логам).
 
@@ -604,7 +615,7 @@ highlights») добавлял файл `patches/truthprobe-0001.patch` — ус
 Девятнадцать коммитов, `46 файлов, +7023/−40`, 431 079 Б, `git am` на `007afb1` даёт
 побайтово то же дерево.
 
-**CI**: прогон [`44787911144`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44787911144) на `92f1c65` — **7 job'ов из 7**: патч из 19
+**CI**: прогон `44787911144` на `92f1c65` — **7 job'ов из 7**: патч из 19
 коммитов применяется на ubuntu и windows, 119 truthprobe-тестов зелёные, установщики
 применяют 19 коммитов, e2e кладёт вердикт в базу, CLI собирается. После пересоздания репозитория (21.11.2026) первый прогон [`44918215420`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44918215420) на `69b0b4e` тоже дал **7/7**, а Contributors API показывает только `vladmurnik`.
 
@@ -693,7 +704,7 @@ Brier — с 0.269 до **0.044**: прежняя формула система�
 - Пороги уровней не перекалиброваны под новую шкалу: те же ответы теперь получают более высокий
   уровень, это ожидаемо, но отдельно не проверено на живых сессиях.
 
-- CI [`44761971781`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44761971781) на `128b5f4`: **7 job'ов из 7 success** — пропатченное дерево
+- CI `44761971781` на `128b5f4`: **7 job'ов из 7 success** — пропатченное дерево
   (110 truthprobe-тестов) на ubuntu и windows, установщики, e2e-вердикт, сборка CLI.
 
 # 0.10.0 — 2026-11-20
@@ -827,7 +838,7 @@ Out-of-fold AUROC по моделям: `glm-5.3-flash` 0.964, `particle` 0.791, 
 - `cd packages/core && bun test test/truthprobe`: **109 pass / 0 fail**.
 - Патч: **15 коммитов**, `45 файлов, +6875/−40`, 406 664 Б, `git am` на `007afb1`
   даёт побайтово то же дерево (`WT_TREE == DEV_TREE`, 0 расхождений).
-- CI [`44736706708`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44736706708):
+- CI `44736706708`:
   **7 job'ов из 7 success** на hosted ubuntu-latest и windows-latest, включая `cli build`.
 - Desktop пересобран и установлен: `TruthProbe.exe` 246 624 768 Б, сборка 15:39,
   в `app.asar` лежат `confidence-meter` и `doubtful-list` — новый вердикт в сборке есть.
@@ -865,9 +876,9 @@ Out-of-fold AUROC по моделям: `glm-5.3-flash` 0.964, `particle` 0.791, 
   schema/ai/core/client зелёный; репозиторный `bun test test` — **90 pass / 8 skip / 0 fail**.
 - Живой прогон на моке: один и тот же ответ получает `0.99966 · safe`, когда бандл содержит
   веса для `mock/mock-1`, и `0.000335 · unreliable`, когда веса есть только у `other/model`.
-- CI [`44736706708`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44736706708):
+- CI `44736706708`:
   **7 job'ов из 7 success** на hosted ubuntu-latest и windows-latest.
-- Патч перегенерирован (`14 коммитов`, 394 805 Б) и проверен `git am` на `007afb1`: дерево
+- Патч перегенерирован (`28 коммитов`, 342 760 Б) и проверен `git am` на `007afb1`: дерево
   совпадает с dev-веткой побайтово.
 
 **Не проверено**
@@ -913,7 +924,7 @@ Out-of-fold AUROC по моделям: `glm-5.3-flash` 0.964, `particle` 0.791, 
   Матрица: `patched tree` (клон opencode на `007afb1` → `git am` → `bun install` → typecheck четырёх
   пакетов → truthprobe-тесты), `installer dry-run` (оба установщика), `repo tests`, `end-to-end verdict`
   через мок-провайдер с logprobs, `cli build`.
-- Прогон [`44593481931`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44593481931):
+- Прогон `44593481931`:
   **все 7 job'ов success**.
 
 **Исправлено**

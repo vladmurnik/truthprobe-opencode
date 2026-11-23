@@ -9,7 +9,7 @@
 Номера не переименованы, потому что на них ссылаются оба README, `docs/ROADMAP.md` и
 `docs/CALIBRATION.md`.
 
-База: `sst/opencode` @ `007afb1`. Ветка `feat/truthprobe`, тридцать коммитов; ниже — первые
+База: `sst/opencode` @ `007afb1`. Ветка `feat/truthprobe`, тридцать два коммита; ниже — первые
 четырнадцать, остальные видны в `git log 007afb1..HEAD`:
 
 | Коммит | Что |
@@ -29,7 +29,7 @@
 | `d153658` | fix(truthprobe): make the patched tree typecheck clean |
 | `3b720f0` | feat(truthprobe): per-model calibration weights |
 
-Итог: **53 файла, +3625 / −55**, тридцать один коммит. Патч — `patches/truthprobe-0001.patch` (508 953 Б, `git am`).
+Итог: **53 файла, +3638 / −55**, тридцать два коммита. Патч — `patches/truthprobe-0001.patch` (514 039 Б, `git am`).
 
 ## 1. Слои патча
 
@@ -63,15 +63,15 @@
 ## 2. Тесты
 
 ```
-129 pass / 0 fail   6 файлов truthprobe в packages/core/test (пропатченное дерево)
+131 pass / 0 fail   6 файлов truthprobe в packages/core/test (пропатченное дерево)
   8 pass / 0 fail    26 expect   packages/ai/test/truthprobe.test.ts
   9 pass / 0 fail    23 expect   packages/session-ui/src/message/doubtful.test.ts
- 92 pass / 8 skip   210 expect   test/ самого репозитория (5 файлов, 100 тестов)
+ 93 pass / 9 skip   211 expect   test/ самого репозитория (5 файлов, 102 теста)
 ```
 
 Первая строка — не этот репозиторий, а пропатченное дерево `packages/core/test`: здесь лежат только
-reference-копии. В этом репозитории `bun test test` даёт 92 pass / 8 skip / 0 fail и 210 expect;
-8 пропусков — `test/opencode-tree/protocol.test.ts`, он прогоняется только внутри дерева opencode
+reference-копии. В этом репозитории `bun test test` даёт 93 pass / 9 skip / 0 fail и 211 expect;
+9 пропусков — `test/opencode-tree/protocol.test.ts`, он прогоняется только внутри дерева opencode
 (CI ставит `TRUTHPROBE_REQUIRE_PROTOCOL_TESTS=1` и падает, если исходников не нашлось).
 
 Что покрыто:
@@ -369,16 +369,19 @@ SchemaError: Expected Truthprobe.Level | undefined
 ## 11. CI на чужих чистых машинах (проверено)
 
 19.11.2026 прогон GitHub Actions
-[`44593481931`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44593481931)
+`44593481931`
 (коммит `9011dfe`) завершился **success**: 7 job'ов из 7 на hosted-раннерах.
 20.11.2026 то же самое повторено на патче с per-model весами —
-[`44593481931`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44593481931)
+`44593481931`
 (коммит `7bf2eed`), тоже **7 из 7**: сборка, установщики и truthprobe-тесты не сломались от
 изменений в скорере.
 Третий прогон — уже на патче с новым UI и пересобранными весами —
-[`44593481931`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44593481931)
+`44593481931`
 (коммит `83bb9a2`, 15 коммитов в патче): снова **7 из 7 success**, то есть `ConfidenceLine`
 и `DoubtfulList` в `packages/session-ui` не сломали ни typecheck, ни сборку CLI.
+
+Эти три прогона старше пересоздания репозитория 21.11.2026, поэтому их run id больше не
+резолвятся; проверяемым остаётся хеш коммита, дата и матрица job'ов ниже.
 
 | Job | Раннер | Что доказывает |
 | --- | --- | --- |
@@ -392,18 +395,18 @@ SchemaError: Expected Truthprobe.Level | undefined
 отрабатывает кликами. Локальных Hyper-V/VirtualBox/VMware/Windows Sandbox на машине разработчика
 по-прежнему нет.
 
-Прогон [`44761971781`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44761971781) на `128b5f4` (патч из 17 коммитов, где формула по умолчанию
+Прогон `44761971781` на `128b5f4` (патч из 17 коммитов, где формула по умолчанию
 переписана на `exp(meanLp)`) снова дал **7 job'ов из 7**: пропатченное дерево на ubuntu и
 windows собирается и проходит 110 truthprobe-тестов, установщики применяют 17 коммитов,
 e2e-прогон через мок-провайдера кладёт вердикт в базу, CLI собирается.
 
-Прогон [`44784920180`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44784920180)
+Прогон `44784920180`
 на `ec2e0ab` — патч из 18 коммитов с признаком `digitDensity` — тоже **7 из 7**: 111 truthprobe-тестов,
 установщики применяют 18 коммитов, e2e кладёт вердикт в базу, CLI собирается. Ему предшествовал
 красный прогон `44784193788`, где `patched tree` падал на typecheck из-за фикстуры без нового поля
 (7 × TS2741) — падение было настоящим сигналом, а не флаки, и исправлено в коде патча.
 
-Прогон [`44787911144`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44787911144) на `92f1c65` (19 коммитов: Unicode-тест, `make data`/
+Прогон `44787911144` на `92f1c65` (19 коммитов: Unicode-тест, `make data`/
 `make weights`, staging CLI в `build-desktop.sh`) — снова **7 из 7**: 127 truthprobe-тестов на
 обеих ОС, установщики применяют 19 коммитов, e2e кладёт вердикт в базу, CLI собирается.
 
@@ -639,7 +642,7 @@ data/rows-lie-vs-truth.jsonl --fit --by-model` печатает таблицу �
 `packages/core/test/truthprobe-unicode.test.ts`: те же пять сценариев плюс проверка, что
 совершенно чужие токены дают `unavailable`, а не выдуманную оценку. Набор truthprobe-тестов
 в пропатченном дереве вырос до **129** (6 файлов); в этом репозитории тот же код проверяют
-92 pass / 8 skip (см. §2).
+93 pass / 9 skip (см. §2).
 
 Оговорка: `alignTokens` ищет токен в окне из 8 символов, поэтому один общий иероглиф в
 совершенно другом тексте всё ещё даёт совпадение. Это известное поведение эвристики, тест его
@@ -1012,7 +1015,7 @@ $ cd packages/session-ui && bun test src/message/doubtful.test.ts
 $ bun run typecheck   # core / session-ui / tui
 ✓ No type errors in 2,036 files across 2 projects
 ✓ No type errors in 384 files across 1 project
-✓ No type errors in 2,036 files across 2 projects
+✓ No type errors in 1,947 files across 1 project
 ```
 
 Два новых теста закрепляют поведение, которого раньше не было: при дрейфе смещений оценка остаётся
@@ -1028,7 +1031,7 @@ $ bun run typecheck   # core / session-ui / tui
 
 ```
 $ bash scripts/make-patch.sh --from ~/src/opencode
-  коммитов: 28, файлов: 52, байт: 342760     # замер 0.13.11; актуальные числа — в §28
+  коммитов: 28, файлов: 52, байт: 342760     # замер 0.13.11; актуальные числа — в §32
 $ git apply --check -p1 patches/truthprobe-0001.patch   # на worktree 007afb1
 apply --check ok
 
@@ -1062,7 +1065,8 @@ $ grep -c TRUTHPROBE_SHAKY_THRESHOLD desktop-out/win-unpacked/resources/opencode
 `sidecar-probe.ts` используют их раздельно. `build-desktop.sh` берёт версию из вывода
 `opencode-cli --version` — файл рядом содержит усечённое `0.0.0-dev`.
 
-**Доказательство** (лог `logs/20261123T100624/main.log`, выдержки):
+**Доказательство** (лог desktop `main.log` сборки эпохи 0.13.9, папка лога `20261123T100624`; в
+репозиторий он не попал — `*.log` игнорируется, выдержки воспроизведены дословно):
 
 ```
 v2 CLI version bundled          version: '0.0.0-dev-202611231000', stage: '0.0.0-dev-202611231000+c3c4a36e358e'
@@ -1074,7 +1078,8 @@ v2 CLI background service ready version/runningVersion: '0.0.0-dev-202611231000'
 3 571 файл без ошибок, тесты `cli-version`/`cli-stages` — 22 pass (после 0.13.14).
 
 **Чего это не доказывает.** Проверено, что сервис поднимается и версия сходится; полноценный
-сценарный прогон UI после фикса не делался — приложение запускалось только для проверки лога.
+сценарный прогон UI после фикса не делался — лог остаётся единственным артефактом, и он
+получен до запрета на запуск приложения.
 
 ## 25. Патч везил копию самого себя
 
@@ -1178,14 +1183,14 @@ GitHub API; запрос с общего раннера ушёл анонимн�
 
 **Замеры для доков.** `git diff --shortstat 007afb1..HEAD` → `53 files changed, 3626 insertions(+),
 55 deletions(-)`; патч `patches/truthprobe-0001.patch` — 347 540 Б, sha256
-`ff9312863c16d79e1e7064462a286bf25cebe57fe75c80ca76ea45e184ce43c1`; база
+`381b37d02024f6e30a43c1bd0002b360da55c4affe70309ac4f3ed387ccc4fe5`; база
 `007afb1b0c8a36dff93d7945909d4e976545ba95`. Перегенерация и сверка с доками:
 
 ```
 $ bash scripts/make-patch.sh --from ~/src/opencode
   коммитов: 30, файлов: 53, байт: 347540
 $ sha256sum patches/truthprobe-0001.patch
-ff9312863c16d79e1e7064462a286bf25cebe57fe75c80ca76ea45e184ce43c1  patches/truthprobe-0001.patch
+381b37d02024f6e30a43c1bd0002b360da55c4affe70309ac4f3ed387ccc4fe5  patches/truthprobe-0001.patch
 $ make docs-check
 доки сходятся с патчем: коммитов 30, файлов 53, байт 347540
 ```
@@ -1243,7 +1248,8 @@ Signature      : NotSigned
 
 ## 30. Релиз не был процедурой
 
-Тегов на GitHub четыре, а релиза с патчем — ни одного: `v0.13.12`–`v0.13.15` ставились вручную
+На момент 0.13.16 тегов на GitHub было четыре, а релиза с патчем — ни одного:
+`v0.13.12`–`v0.13.15` ставились вручную
 через `git tag`, и вложение `patches/truthprobe-0001.patch` в релиз не делалось ни разу.
 
 **Фикс.** `scripts/release.sh` + `make release`. Скрипт отказывается работать, если сумма патча
@@ -1277,7 +1283,7 @@ Signature      : NotSigned
 **Измерено (`GET /releases/tags/v0.13.16`):** id `455465241`, `draft: false`,
 `published_at: 2026-11-23T13:28:34Z`; ассет `truthprobe-0001.patch`, `size: 347540`,
 `state: uploaded`, `digest: sha256:381b37d02024f6e30a43c1bd0002b360da55c4affe70309ac4f3ed387ccc4fe5`.
-Сумма совпадает с `sha256sum patches/truthprobe-0001.patch` и с пином `PATCH_SHA256` в `install.sh:30`.
+Сумма совпадает с `sha256sum patches/truthprobe-0001.patch` и с пином `PATCH_SHA256` в `install.sh:31`.
 
 **Чем это сделано.** Не `curl`: в WSL обращения к `api.github.com` обрывались
 (`curl: (56) Proxy CONNECT aborted`, код `000`), тогда как `Invoke-RestMethod` из Windows отвечал `200`.
@@ -1304,11 +1310,12 @@ Signature      : NotSigned
 инсталлятора переписаны так же, с одинаковым числом вставок и удалений в каждом файле, поэтому
 поведение не сдвинулось.
 
-**Одно намеренное семантическое изменение.** `packages/core/src/truthprobe/sentences.ts` знал русские
-сокращения (`т.е.`, `см.`) и кириллические диапазоны трёх регэкспов. Всё это убрано: в списке
-сокращений теперь `i.e.`, `e.g.`, `etc.`, `cf.`, а регэкспы опираются на `[A-Za-z]`. Разбиение
-*русского* текста на сокращениях может работать хуже, чем раньше; латиница не изменилась, и тест
-сокращений проверяет те же четыре случая.
+**Одна оплошность и её починка.** Тот же рефакторинг выбросил из `sentences.ts` русские сокращения
+(`т.е.`, `см.`, `г.`, `др.`) и кириллические диапазоны трёх регэкспов, поэтому русские ответы рвались
+посреди фразы, а тест, который это пиннил, был переписан на латинский кейс вместо сохранения.
+Тридцать второй коммит (`5e8cee4`) вернул список сокращений и три класса символов и добавил тесты:
+`does not split Cyrillic abbreviations` и кириллический кейс рядом с греческим. Латинское поведение не
+менялось, а набор core вырос с 129 pass / 361 expect до 131 pass / 379 expect.
 
 **Дефект, который переписывание сняло само.** Строки 91–155 `install.ps1` были записаны в cp1251 и
 читались как UTF-8, поэтому пользователь Windows видел мусор. Английское переписывание не оставило
@@ -1317,13 +1324,16 @@ Signature      : NotSigned
 **Измерено.**
 
 ```
-коммитов: 31, файлов: 53, байт: 508953
-sha256: 8d6d23eb8089649f21cab4911775aff9df9889dc6921ec1274a3bb7c4578d124
+коммитов: 32, файлов: 53, байт: 514039
+sha256: 4436386b5457eb2cb2187054c064187e7e70e8bcda3d99c4214ee392df606f34
 bun test test                                    93 pass / 9 skip / 0 fail, 211 expect, 102 теста
-bun test test/truthprobe (патч, core)            129 pass / 0 fail, 361 expect, 6 файлов
+bun test test/truthprobe (патч, core)            131 pass / 0 fail, 379 expect, 6 файлов
 grep -rnP '[\x{0400}-\x{04FF}]' src test         0
+GET /releases/tags/v0.13.18                     релиз 455929364, draft false, ассет 514039 Б
+GET /releases/latest/download/...               514039 Б, sha256 4436386b… — совпадает с пином
 ```
 
 **Чего это не доказывает.** Русские переводы сверены по числам, ссылкам и числу заголовков, но не
-носителем языка. В `scripts/collect.py` намеренно остался один кириллический диапазон: он токенизирует
+носителем языка. Резервный путь установщика проверен вручную на опубликованном ассете (байты и хеш
+совпадают с пином), но ни один job CI его не скачивает. В `scripts/collect.py` намеренно остался один кириллический диапазон: он токенизирует
 эталонные ответы (`[a-zа-я0-9]+`), и его изменение изменило бы поведение.

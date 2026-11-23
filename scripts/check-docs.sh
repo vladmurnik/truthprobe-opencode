@@ -77,7 +77,7 @@ check_number "$ROOT/README.md" "bytes" "$BYTES"
 check "$ROOT/docs/VALIDATION.md" "files" "**$FILES files,"
 check "$ROOT/docs/VALIDATION.md" "bytes" "$BYTES_SPACED B"
 check "$ROOT/docs/VALIDATION.md" "measurement block" "commits: $COMMITS, files: $FILES, bytes: $BYTES"
-check_number "$ROOT/CHANGELOG.md" "files" "$FILES"
+check "$ROOT/CHANGELOG.md" "files" "$FILES files"
 check_number "$ROOT/CHANGELOG.md" "bytes" "$BYTES"
 
 # --- Russian translations
@@ -85,7 +85,7 @@ check "$ROOT/README.ru.md" "файлы" "$FILES файла"
 check_number "$ROOT/README.ru.md" "байты" "$BYTES"
 check "$ROOT/docs/ru/VALIDATION.md" "итог" "**$FILES файла,"
 check "$ROOT/docs/ru/VALIDATION.md" "блок замера" "коммитов: $COMMITS, файлов: $FILES, байт: $BYTES"
-check_number "$ROOT/docs/ru/CHANGELOG.md" "файлы" "$FILES"
+check "$ROOT/docs/ru/CHANGELOG.md" "файлы" "$FILES файла"
 
 if [ "$fail" -ne 0 ]; then
   echo >&2
