@@ -1,3 +1,35 @@
+# 0.13.15 — 2026-11-23
+
+Собранный `TruthProbe.exe` представлялся сборкой OpenCode: в свойствах файла стояли
+`CompanyName: OpenCode` и `LegalCopyright: Copyright c 2026 OpenCode`, а `FileVersion` равнялся
+`2.3.0` — версии оболочки, а не продукта. Форк, который ставится пользователю под своим именем,
+не должен выглядеть как чужое приложение.
+
+**Исправлено**
+
+- `packages/desktop/electron-builder.config.ts` — `brand()` заполняет `copyright` и
+  `extraMetadata.author.name` из `OPENCODE_DESKTOP_COMPANY` (по умолчанию `OPENCODE_DESKTOP_APP`).
+- `scripts/build-desktop.sh` — выставляет `OPENCODE_DESKTOP_COMPANY`, берёт `OPENCODE_VERSION`
+  из `package.json` репозитория (версия продукта вместо 2.3.0) и в конце печатает состояние подписи:
+  без `WIN_CSC_LINK` прямо говорит, что файл не подписан.
+- `docs/DEVELOPMENT.md` — раздел «Подпись»: как собрать подписанную сборку (`WIN_CSC_LINK`,
+  `WIN_CSC_KEY_PASSWORD`), как проверить `Get-AuthenticodeSignature`, таблица метаданных до/после.
+- Патч перегенерирован: 30 коммитов, 53 файла, +3626/−55, 347 540 Б,
+  sha256 `381b37d02024f6e30a43c1bd0002b360da55c4affe70309ac4f3ed387ccc4fe5`.
+
+**Проверено**
+
+- Пересборка `bash scripts/build-desktop.sh --win` (30 коммитов, дерево `1784470`), затем
+  `Get-Item … .VersionInfo` на `packages/desktop/dist/win-unpacked/TruthProbe.exe`:
+  `ProductName: TruthProbe`, `FileDescription: TruthProbe`, `CompanyName: TruthProbe`,
+  `FileVersion: 0.13.14`, `ProductVersion: 0.13.14.0`,
+  `LegalCopyright: Copyright c 2026 TruthProbe`, `Signature: NotSigned`.
+- `electron-builder` сам вызвал `signtool.exe` для трёх файлов и без сертификата оставил их
+  неподписанными — скрипт это констатирует, а не скрывает.
+
+**Чего это не доказывает.** Подпись не проверена с настоящим сертификатом: его нет. Запуск
+приложения после смены метаданных не проверялся — GUI по просьбе пользователя не запускается.
+
 # 0.13.14 — 2026-11-23
 
 `cli-stages.test.ts` покрывал только каталоги вида `2.0.18`, а штампованная сборка кладёт CLI

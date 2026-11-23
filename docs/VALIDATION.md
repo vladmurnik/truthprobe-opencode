@@ -2,12 +2,12 @@
 
 Всё ниже — измеренное, не задуманное. Если чего-то не проверяли, это написано отдельным разделом.
 
-**Порядок разделов.** Нумерация идёт 1–10, затем 18, 19, затем 11–17, затем 20–28: разделы про
+**Порядок разделов.** Нумерация идёт 1–10, затем 18, 19, затем 11–17, затем 20–29: разделы про
 живой шлюз (18–19) дописаны позже 11–17 и стоят раньше них, чтобы все замеры шлюза шли подряд.
 Номера не переименованы, потому что на них ссылаются оба README, `docs/ROADMAP.md` и
 `docs/CALIBRATION.md`.
 
-База: `sst/opencode` @ `007afb1`. Ветка `feat/truthprobe`, двадцать восемь коммитов; ниже — первые
+База: `sst/opencode` @ `007afb1`. Ветка `feat/truthprobe`, тридцать коммитов; ниже — первые
 четырнадцать, остальные видны в `git log 007afb1..HEAD`:
 
 | Коммит | Что |
@@ -27,7 +27,7 @@
 | `d153658` | fix(truthprobe): make the patched tree typecheck clean |
 | `3b720f0` | feat(truthprobe): per-model calibration weights |
 
-Итог: **53 файла, +3617 / −55**, двадцать девять коммитов. Патч — `patches/truthprobe-0001.patch` (345 729 Б, `git am`).
+Итог: **53 файла, +3626 / −55**, тридцать коммитов. Патч — `patches/truthprobe-0001.patch` (347 540 Б, `git am`).
 
 ## 1. Слои патча
 
@@ -1174,18 +1174,18 @@ GitHub API; запрос с общего раннера ушёл анонимн�
 1 761 expect, 68 файлов; `cli-stages` отдельно — 7 pass / 14 expect; `cli-version` + `cli-stages`
 вместе — 22 pass / 31 expect; типизация — 3 571 файл, 0 ошибок.
 
-**Замеры для доков.** `git diff --shortstat 007afb1..HEAD` → `53 files changed, 3617 insertions(+),
-55 deletions(-)`; патч `patches/truthprobe-0001.patch` — 345 729 Б, sha256
+**Замеры для доков.** `git diff --shortstat 007afb1..HEAD` → `53 files changed, 3626 insertions(+),
+55 deletions(-)`; патч `patches/truthprobe-0001.patch` — 347 540 Б, sha256
 `ff9312863c16d79e1e7064462a286bf25cebe57fe75c80ca76ea45e184ce43c1`; база
 `007afb1b0c8a36dff93d7945909d4e976545ba95`. Перегенерация и сверка с доками:
 
 ```
 $ bash scripts/make-patch.sh --from ~/src/opencode
-  коммитов: 29, файлов: 53, байт: 345729
+  коммитов: 30, файлов: 53, байт: 347540
 $ sha256sum patches/truthprobe-0001.patch
 ff9312863c16d79e1e7064462a286bf25cebe57fe75c80ca76ea45e184ce43c1  patches/truthprobe-0001.patch
 $ make docs-check
-доки сходятся с патчем: коммитов 29, файлов 53, байт 345729
+доки сходятся с патчем: коммитов 30, файлов 53, байт 347540
 ```
 
 **Проверено в CI.** Прогон [`45165859105`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45165859105)
@@ -1197,4 +1197,41 @@ $ make docs-check
 старый каталог удаляется на запущенном процессе) не проверялся: GUI не запускается по требованию
 пользователя. Windows-специфика «файл залочен, удаление падает и повторяется на следующем старте»
 описана в `cli-stages.ts` комментарием, но тестом не покрыта.
+
+## 29. Метаданные exe: форк представлялся OpenCode
+
+**Симптом.** `Get-Item TruthProbe.exe` в свойствах файла: `CompanyName: OpenCode`,
+`LegalCopyright: Copyright c 2026 OpenCode`, `FileVersion: 2.3.0`. Весь остальной брендинг
+(`ProductName`, `FileDescription`, идентификатор `ai.truthprobe.desktop`, заголовок окна) уже был
+свой — расходились только поля версии ресурса и подпись.
+
+**Причина.** `brand()` в `packages/desktop/electron-builder.config.ts` подменял `productName` и
+`appId`, но `companyName` electron-builder берёт из `package.json` `author.name` (`OpenCode`),
+`copyright` — из своего значения по умолчанию, а `FileVersion` — из версии пакета desktop
+(`2.3.0`). Поэтому у форка оставались чужие строки.
+
+**Фикс.** `brand()` заполняет `copyright` и `extraMetadata.author.name` из
+`OPENCODE_DESKTOP_COMPANY` (по умолчанию равно `OPENCODE_DESKTOP_APP`). `scripts/build-desktop.sh`
+выставляет эту переменную, читает `OPENCODE_VERSION` из `package.json` этого репозитория и в конце
+печатает состояние подписи, если сертификат не задан.
+
+**Замер после фикса** (пересборка на дереве `1784470`, `Get-Item … .VersionInfo`):
+
+```
+ProductName    : TruthProbe
+FileDescription: TruthProbe
+CompanyName    : TruthProbe
+FileVersion    : 0.13.14
+ProductVersion : 0.13.14.0
+LegalCopyright : Copyright c 2026 TruthProbe
+Signature      : NotSigned
+```
+
+`electron-builder` вызвал `signtool.exe` для `TruthProbe.exe`, `resources/opencode-cli.exe` и
+`OpenConsole.exe`, но без `WIN_CSC_LINK` подписывать нечем — сборка остаётся неподписанной, и
+скрипт так и говорит.
+
+**Чего это не доказывает.** Сертификата нет, поэтому ветка с реальной подписью не исполнялась ни
+разу; запуск приложения после смены метаданных не проверялся — GUI по просьбе пользователя не
+запускается.
 

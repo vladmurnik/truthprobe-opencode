@@ -205,6 +205,12 @@ bun x electron-builder --win --x64 --publish never --dir --config electron-build
 `%APPDATA%\ai.truthprobe.desktop` и имя установщика берутся из этих двух переменных; без них сборка
 остаётся обычным opencode.
 
+**Сборка не подписана.** `TruthProbe.exe` собирается без сертификата: в свойствах файла
+`Signature: NotSigned`, и SmartScreen встретит первого пользователя предупреждением
+«неизвестный издатель». Метаданные при этом свои (`ProductName`, `CompanyName`,
+`LegalCopyright` — `TruthProbe`, `FileVersion` — версия продукта). Как собрать подписанную
+сборку — `docs/DEVELOPMENT.md`, раздел «Подпись».
+
 ### Включение
 
 Автоматически. Плагин `opencode.truthprobe` слушает `http.request` — единственное место, где
@@ -377,7 +383,7 @@ python3 scripts/tui-probe.py && python3 scripts/screen-dump.py /tmp/tui-probe.lo
 
 ## Устройство патча
 
-53 файла, +3617/−55, двадцать девять коммитов поверх `007afb1`. Шов тонкий и аддитивный:
+53 файла, +3626/−55, тридцать коммитов поверх `007afb1`. Шов тонкий и аддитивный:
 
 | Слой | Файл | Что делает |
 | --- | --- | --- |

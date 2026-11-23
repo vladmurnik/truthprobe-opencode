@@ -198,6 +198,12 @@ anywhere and run `TruthProbe.exe`. The window title, the AppUserModelID, the
 `%APPDATA%\ai.truthprobe.desktop` directory and the installer name all come from those two variables;
 unset, the build stays plain opencode.
 
+**The build is unsigned.** `TruthProbe.exe` is packed without a certificate: the file properties
+say `Signature: NotSigned`, and SmartScreen greets the first user with an "unknown publisher"
+warning. The metadata is still the fork's own (`ProductName`, `CompanyName`, `LegalCopyright`
+say `TruthProbe`, `FileVersion` is the product version). For a signed build see
+`docs/DEVELOPMENT.md`, section "Подпись" (Signing).
+
 ### How it turns on
 
 Automatically. The `opencode.truthprobe` plugin listens on `http.request` — the only place where the
@@ -334,7 +340,7 @@ reproduction — [`docs/SMOKE-E2E.md`](docs/SMOKE-E2E.md).
 | Live answer, `freepi/particle` | `score 0.7595 · likely`, sentence `#0 0.603 · uncertain` |
 | Live answer, `freepi/deepseek-v4.1-flash` | `score 0.6893`, first doubtful sentence `0.4849` |
 | Scorer swap `TRUTHPROBE_SCORER=linear:weights.json` | score moved `0.7595 → 0.9992`, so the custom scorer is really used |
-| Windows installer, `install.ps1 -Dir <empty> -DryRun` | clean clone, `git apply --check` passed, all 28 patch commits applied |
+| Windows installer, `install.ps1 -Dir <empty> -DryRun` | clean clone, `git apply --check` passed, all 30 patch commits applied |
 | Desktop build | app 246 MB, bundled CLI 279 MB |
 | CI on foreign machines | GitHub Actions [run `44593481931`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44593481931), [run `44678633546`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44678633546) , [run `44736706708`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44736706708) , [run `44761971781`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44761971781) and [run `44784920180`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44784920180), [run `44787911144`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44787911144) and [run `44918215420`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44918215420) and [run `45161855972`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45161855972) (0.13.12), [run `45163760974`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45163760974) (0.13.13), [run `45165859105`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45165859105) (0.13.14) | **all 7 jobs success** in each, on hosted `ubuntu-latest` and `windows-latest` runners |
 | Per-model weights at runtime | two mock runs with different bundles, same answer | `0.9997 · safe` when weights exist for `mock/mock-1`, `0.0003 · unreliable` when they only exist for `other/model` — selection by `providerID/modelID` really works |
@@ -368,7 +374,7 @@ reproduction — [`docs/SMOKE-E2E.md`](docs/SMOKE-E2E.md).
 
 ## Anatomy of the patch
 
-53 files, +3617/−55, twenty-nine commits on top of `007afb1`. The seam is thin and additive:
+53 files, +3626/−55, thirty commits on top of `007afb1`. The seam is thin and additive:
 
 | Layer | File | What it does |
 | --- | --- | --- |

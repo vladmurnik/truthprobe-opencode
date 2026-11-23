@@ -151,3 +151,52 @@ bun test truthprobe                # юнит-тесты патча (129 на с
    приложение кеширует CLI по этой строке (`%APPDATA%\ai.truthprobe.desktop\cli\<штамп>-x64`)
    и переиспользует его, пока строка не изменилась. Без отпечатка содержимого новая сборка
    не доезжает до пользователя — так и вышло 22.11.2026, когда кеш продолжал отдавать CLI от 19-го.
+
+## Подпись
+
+Приложение собирается неподписанным: `electron-builder` подписывает только тогда, когда задан
+сертификат. Без него Windows показывает в свойствах файла «неизвестный издатель», а SmartScreen
+блокирует первый запуск у каждого нового пользователя — это единственное, чего сборке не хватает
+для раздачи.
+
+**Собрать подписанную сборку.** Сертификат `electron-builder` читает из окружения:
+
+```bash
+WIN_CSC_LINK=/secure/truthprobe.pfx \
+WIN_CSC_KEY_PASSWORD='<пароль>' \
+OPENCODE_REPO=$HOME/src/opencode bash scripts/build-desktop.sh --win
+```
+
+`WIN_CSC_LINK` принимает путь к `.pfx` или HTTPS-ссылку; `WIN_CSC_KEY_PASSWORD` — пароль к нему.
+`scripts/build-desktop.sh` в конце печатает состояние подписи: если сертификат не задан, он прямо
+пишет `ВНИМАНИЕ: WIN_CSC_LINK не задан — … не подписан (NotSigned)`, а не делает вид, что сборка
+готова к раздаче.
+
+**Проверить результат** (Windows, тот же файл через `\\wsl$`):
+
+```powershell
+$exe = "\\wsl$\Ubuntu\home\adik\src\opencode\packages\desktop\dist\win-unpacked\TruthProbe.exe"
+(Get-AuthenticodeSignature $exe).Status      # ожидается Valid
+(Get-Item $exe).VersionInfo | Select-Object ProductName, CompanyName, FileVersion, LegalCopyright
+```
+
+**Метаданные exe** (`Get-Item … .VersionInfo`, замер 23.11.2026):
+
+| Поле | До 0.13.15 | С 0.13.15 |
+| --- | --- | --- |
+| `ProductName` | `TruthProbe` | `TruthProbe` |
+| `FileDescription` | `TruthProbe` | `TruthProbe` |
+| `CompanyName` | `OpenCode` | `TruthProbe` |
+| `FileVersion` | `2.3.0` (версия оболочки) | `0.13.14` (версия продукта) |
+| `LegalCopyright` | `Copyright c 2026 OpenCode` | `Copyright c 2026 TruthProbe` |
+| `Signature` | `NotSigned` | `NotSigned` |
+
+`CompanyName` берётся из `extraMetadata.author.name`, `LegalCopyright` — из `copyright`, оба поля
+`brand()` в `packages/desktop/electron-builder.config.ts` заполняет из `OPENCODE_DESKTOP_COMPANY`
+(по умолчанию — `OPENCODE_DESKTOP_APP`). `FileVersion` — `OPENCODE_VERSION`, который
+`scripts/build-desktop.sh` читает из `package.json` этого репозитория: иначе exe сообщает версию
+оболочки (2.3.0), а тег релиза — совсем другое число.
+
+**Чего это не доказывает.** Подпись проверена только как «сертификата нет — и это сказано вслух»;
+с настоящим `.pfx` сборка не запускалась. Запуск подписанного exe на чистой машине и сценарий
+SmartScreen тоже не проверены.

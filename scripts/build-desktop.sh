@@ -57,6 +57,15 @@ export OPENCODE_TARGET="$PLATFORM"
 export OPENCODE_CHANNEL=${OPENCODE_CHANNEL:-dev}
 export OPENCODE_DESKTOP_APP=${OPENCODE_DESKTOP_APP:-TruthProbe}
 export OPENCODE_DESKTOP_APP_ID=${OPENCODE_DESKTOP_APP_ID:-ai.truthprobe.desktop}
+# CompanyName и LegalCopyright в свойствах exe: форк не должен представляться OpenCode.
+export OPENCODE_DESKTOP_COMPANY=${OPENCODE_DESKTOP_COMPANY:-$OPENCODE_DESKTOP_APP}
+# Версия файла = версия продукта из package.json этого репозитория, иначе Windows
+# показывает версию оболочки (2.3.0), а тег релиза говорит совсем другое число.
+if [ -z "${OPENCODE_VERSION:-}" ] && [ -f "$ROOT/package.json" ]; then
+  OPENCODE_VERSION=$(sed -n 's/^ *"version": *"\([^"]*\)".*/\1/p' "$ROOT/package.json" | head -1)
+fi
+[ -n "${OPENCODE_VERSION:-}" ] && export OPENCODE_VERSION
+
 
 echo "== платформа: $PLATFORM, приложение: $OPENCODE_DESKTOP_APP ($OPENCODE_DESKTOP_APP_ID)"
 echo "== 1/4 cli"
@@ -113,7 +122,34 @@ case "$PLATFORM" in
   linux-x64) FLAGS="--linux --x64" ;;
   darwin-*) FLAGS="--mac" ;;
 esac
-(cd "$DEV/packages/desktop" && bun x electron-builder $FLAGS --publish never --dir --config electron-builder.config.ts)
+# Готовая распаковка Electron (например, скачанная один раз в ~/el) экономит сеть:
+# electron-builder иначе тянет ~100 МБ перед каждой кросс-сборкой.
+EXTRA=""
+ELECTRON_DIST=${OPENCODE_ELECTRON_DIST:-$HOME/el}
+if [ -d "$ELECTRON_DIST" ]; then
+  EXTRA="--config.electronDist=$ELECTRON_DIST"
+fi
+(cd "$DEV/packages/desktop" && bun x electron-builder $FLAGS $EXTRA --publish never --dir --config electron-builder.config.ts)
+
+# electron-builder подписывает сам, если задан сертификат: WIN_CSC_LINK (путь/URL к .pfx)
+# и WIN_CSC_KEY_PASSWORD. Без них файл остаётся неподписанным, и это надо сказать вслух,
+# а не выдавать сборку за готовую к раздаче.
+echo "== подпись"
+BIN=$(ls "$DEV/packages/desktop/dist"/*-unpacked/*.exe 2>/dev/null | head -1)
+case "$BIN" in
+  *.exe) ;;
+  *) BIN=$(ls "$DEV/packages/desktop/dist"/*-unpacked/opencode-truthprobe "$DEV/packages/desktop/dist"/*-unpacked/truthprobe 2>/dev/null | head -1) ;;
+esac
+if [ -n "$BIN" ]; then
+  if [ -n "${WIN_CSC_LINK:-${CSC_LINK:-}}" ]; then
+    echo "   сертификат задан (${WIN_CSC_LINK:-$CSC_LINK}); проверьте статус подписи на Windows:"
+    echo "   powershell -NoProfile -Command \"(Get-AuthenticodeSignature '$(wslpath -w "$BIN" 2>/dev/null || echo "$BIN")').Status\""
+  else
+    echo "   ВНИМАНИЕ: WIN_CSC_LINK не задан — $BIN не подписан (NotSigned)."
+    echo "   Установщик покажет «неизвестный издатель»; см. docs/DEVELOPMENT.md, раздел «Подпись»."
+  fi
+fi
+
 
 echo "== готово"
 ls -la "$DEV/packages/desktop/dist"/*-unpacked/ 2>/dev/null | head -8 || \

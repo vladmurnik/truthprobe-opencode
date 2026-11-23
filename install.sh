@@ -27,7 +27,7 @@ REPO=https://raw.githubusercontent.com/vladmurnik/truthprobe-opencode/master
 PATCH_NAME=patches/truthprobe-0001.patch
 # Патч тянется с ветки, а потом его код исполняется (bun install + сборка),
 # поэтому сверяем байты с закреплённой суммой, а не доверяем URL.
-PATCH_SHA256="ff9312863c16d79e1e7064462a286bf25cebe57fe75c80ca76ea45e184ce43c1"
+PATCH_SHA256="381b37d02024f6e30a43c1bd0002b360da55c4affe70309ac4f3ed387ccc4fe5"
 
 DIR="${TRUTHPROBE_DIR:-opencode-truthprobe}"
 DRY_RUN=0
