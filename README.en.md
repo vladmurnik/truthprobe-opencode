@@ -139,7 +139,11 @@ i.e. at or below chance. The previously published `data/weights-detector.json` i
 was measured on a corrupted set. All numbers and the post-mortem —
 [`docs/LEARNED-WEIGHTS.md`](docs/LEARNED-WEIGHTS.md).
 
-### Manual patch
+#Patch from the published release:
+[`truthprobe-0001.patch`](https://github.com/vladmurnik/truthprobe-opencode/releases/download/v0.13.16/truthprobe-0001.patch)
+(347,540 bytes, sha256 `381b37d0…4fe5`).
+
+## Manual patch
 
 ```bash
 git clone https://github.com/sst/opencode && cd opencode

@@ -147,7 +147,11 @@ export TRUTHPROBE_SCORER=linear:/path/to/truthprobe-weights.json
 метрика 0.881 была посчитана на повреждённом наборе. Все числа и разбор —
 [`docs/LEARNED-WEIGHTS.md`](docs/LEARNED-WEIGHTS.md).
 
-### Патч вручную
+#Готовый патч из релиза:
+[`truthprobe-0001.patch`](https://github.com/vladmurnik/truthprobe-opencode/releases/download/v0.13.16/truthprobe-0001.patch)
+(347 540 Б, sha256 `381b37d0…4fe5`).
+
+## Патч вручную
 
 ```bash
 git clone https://github.com/sst/opencode && cd opencode
