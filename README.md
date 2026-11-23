@@ -302,8 +302,8 @@ Windows: `%APPDATA%\opencode\truthprobe\`) и живёт: `ok`/`ignored`/`reject
 | Тесты TruthProbe, этот репозиторий | `bun test test` | **92 pass / 8 skip / 0 fail**, 210 expect, 5 файлов, 100 тестов |
 | Тесты TruthProbe, пропатченное дерево | `bun test truthprobe` в `packages/core/test` | **129 pass / 0 fail**, 6 файлов |
 | Патч на чистом дереве | `git am` в worktree `007afb1` | применяется без конфликтов (identity задана локально), все truthprobe-тесты зелёные |
-| Типизация | schema / ai / core / client / tui | зелёная (132 / 357+322 / 2 030 / 181 / 1 942 файла) |
-| Типизация UI-пакетов | session-ui / app / desktop | зелёная (382 / 2 445 / 3 571 файлов, desktop — 2 проекта) |
+| Типизация | schema / ai / core / client / tui | зелёная (132 / 357+322 / 2 036 / 181 / 1 947 файлов) |
+| Типизация UI-пакетов | session-ui / app / desktop | зелёная (384 / 2 447 / 3 571 файл, desktop — 2 проекта) |
 | Сквозной прогон | мок-провайдер с настоящими `logprobs` | `logprobs: true, top_logprobs: 20` в запросе, `truthprobe` в базе |
 | Живой TUI | pty-проба | бейдж и блок спорных предложений отрендерились |
 | Desktop UI | чип `confidence` в общем компоненте `@opencode/session-ui` | типизация desktop (3 571 файл) зелёная; чип `confidence NN%` и список спорных предложений в футере |

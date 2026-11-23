@@ -302,8 +302,8 @@ drifted; `unavailable` — no tokens.
 | TruthProbe tests, this repository | `bun test test` | **92 pass / 8 skip / 0 fail**, 210 expect, 5 files, 100 tests |
 | TruthProbe tests, patched tree | `bun test truthprobe` in `packages/core/test` | **129 pass / 0 fail**, 6 files |
 | Patch on a clean tree | `git am` in a `007afb1` worktree | applies without conflicts (identity configured locally), all truthprobe tests green |
-| Typecheck | schema / ai / core / client / tui | green (132 / 357+322 / 2 030 / 181 / 1 942 files) |
-| Typecheck of the UI packages | session-ui / app / desktop | green (382 / 2 445 / 3 571 files, desktop 2 projects) |
+| Typecheck | schema / ai / core / client / tui | green (132 / 357+322 / 2 036 / 181 / 1 947 files) |
+| Typecheck of the UI packages | session-ui / app / desktop | green (384 / 2 447 / 3 571 files, desktop 2 projects) |
 | End-to-end run | mock provider with real `logprobs` | `logprobs: true, top_logprobs: 20` in the request, `truthprobe` in the database |
 | Live TUI | pty probe | badge and the doubtful-sentence block rendered |
 | Desktop UI | session-ui chip in the shared Electron component | green typecheck of desktop (3 571 files); `confidence NN%` chip and the doubtful-sentence list in the footer |

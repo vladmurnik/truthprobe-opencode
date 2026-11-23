@@ -118,8 +118,11 @@ reference-копии. В этом репозитории `bun test test` даё�
 | ai (весь) | `bun test --timeout 30000` | **2 276 pass / 0 fail / 29 skip**, 9 377 expect, 7.7 s |
 | schema | `bun test` | **95 pass / 0 fail**, 231 ms |
 | регрессия сессий | `test/session*.test.ts test/projector*.test.ts test/message*.test.ts` | **811 pass / 0 fail**, 30 s |
-| типизация | schema / ai / core / client / tui | 132 / 357+322 / 2 030 / 181 / 1 942 файла, 0 ошибок |
-| типизация UI | session-ui / app / desktop | 382 / 2 445 / 3 569 файлов (desktop — 2 проекта), 0 ошибок |
+| типизация | schema / ai / core / client / tui | 132 / 357+322 / 2 036 / 181 / 1 947 файлов, 0 ошибок |
+| типизация UI | session-ui / app / desktop | 384 / 2 447 / 3 571 файл (desktop — 2 проекта, 0 ошибок) |
+
+Обе строки типизации сняты одним прогоном 2026-11-23 (`bun run typecheck` в каждом пакете,
+пропатченное дерево `90e894d`); прежние редакции таблицы смешивали два прогона.
 
 Строка core — более ранний прогон (328 файлов, до фикса схемы) и оставлена как история; актуальный
 полный замер `packages/core` — §19: 7 713 тестов, 331 файл, **7 300 pass / 351 skip / 62 fail**.
