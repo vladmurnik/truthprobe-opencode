@@ -34,8 +34,10 @@ unicode matrix. The core suite is now 131 pass / 379 expect in 6 files.
 `4436386b5457eb2cb2187054c064187e7e70e8bcda3d99c4214ee392df606f34`; `bun test test` → 93 pass / 9 skip /
 0 fail, 211 expect, 102 tests; the core suite in the patched tree → 131 pass / 0 fail, 379 expect.
 CI run [`45207888021`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45207888021) on
-`c1214eb` (the thirty-first commit) — 7 of 7 jobs success; the thirty-second commit is verified
-locally only. The release `v0.13.18` is published (id `455929364`, asset 514 039 B,
+`c1214eb` (the thirty-first commit) — 7 of 7 jobs success. The thirty-second commit was measured
+locally (`131 pass / 379 expect`); it then entered the patch, and run
+[`45256323762`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45256323762) on `0288f6e` applies that patch from `007afb1` and runs the
+same suites — 7 of 7 jobs success. The release `v0.13.18` is published (id `455929364`, asset 514 039 B,
 `digest: sha256:4436386b…6f34`), and `releases/latest/download/truthprobe-0001.patch` was
 downloaded and hashed by hand: 514 039 bytes, the same `sha256` — it matches the pin in both
 installers.

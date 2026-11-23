@@ -1328,6 +1328,7 @@ bun test test/truthprobe (patched tree, core)   131 pass / 0 fail, 379 expect, 6
 grep -rnP '[\x{0400}-\x{04FF}]' src test        0
 GET /releases/tags/v0.13.18                     release 455929364, draft false, asset 514039 B
 GET /releases/latest/download/...               514039 B, sha256 4436386b… — matches the pin
+CI run 45256323762 on 0288f6e               7 of 7 jobs success, patch applied from 007afb1
 ```
 
 **What this does not prove.** The Russian translations were checked for numbers, links and heading
