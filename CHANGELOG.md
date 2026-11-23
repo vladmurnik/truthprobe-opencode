@@ -27,6 +27,10 @@
 - `electron-builder` сам вызвал `signtool.exe` для трёх файлов и без сертификата оставил их
   неподписанными — скрипт это констатирует, а не скрывает.
 
+**Проверено в CI.** Прогон [`45169068249`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45169068249) на `d64998e` — **7 из 7 джобов success**:
+`repo tests`, `installer dry-run` на ubuntu и windows, `patched tree` на ubuntu и windows,
+`end-to-end verdict`, `cli build`.
+
 **Чего это не доказывает.** Подпись не проверена с настоящим сертификатом: его нет. Запуск
 приложения после смены метаданных не проверялся — GUI по просьбе пользователя не запускается.
 
