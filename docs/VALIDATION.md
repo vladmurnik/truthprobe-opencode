@@ -2,7 +2,7 @@
 
 Всё ниже — измеренное, не задуманное. Если чего-то не проверяли, это написано отдельным разделом.
 
-**Порядок разделов.** Нумерация идёт 1–10, затем 18, 19, затем 11–17, затем 20–27: разделы про
+**Порядок разделов.** Нумерация идёт 1–10, затем 18, 19, затем 11–17, затем 20–28: разделы про
 живой шлюз (18–19) дописаны позже 11–17 и стоят раньше них, чтобы все замеры шлюза шли подряд.
 Номера не переименованы, потому что на них ссылаются оба README, `docs/ROADMAP.md` и
 `docs/CALIBRATION.md`.
@@ -27,7 +27,7 @@
 | `d153658` | fix(truthprobe): make the patched tree typecheck clean |
 | `3b720f0` | feat(truthprobe): per-model calibration weights |
 
-Итог: **52 файла, +3573 / −55**, двадцать восемь коммитов. Патч — `patches/truthprobe-0001.patch` (342 760 Б, `git am`).
+Итог: **53 файла, +3617 / −55**, двадцать девять коммитов. Патч — `patches/truthprobe-0001.patch` (345 729 Б, `git am`).
 
 ## 1. Слои патча
 
@@ -1026,7 +1026,7 @@ $ bun run typecheck   # core / session-ui / tui
 
 ```
 $ bash scripts/make-patch.sh --from ~/src/opencode
-  коммитов: 28, файлов: 52, байт: 342760
+  коммитов: 28, файлов: 52, байт: 342760     # замер 0.13.11; актуальные числа — в §28
 $ git apply --check -p1 patches/truthprobe-0001.patch   # на worktree 007afb1
 apply --check ok
 
@@ -1069,7 +1069,7 @@ v2 CLI background service ready version/runningVersion: '0.0.0-dev-202611231000'
 ```
 
 `service.json` содержит `"version":"0.0.0-dev-202611231000"`; таймаута нет. Типизация desktop —
-3 571 файл без ошибок, тесты `cli-version`/`cli-stages` — 17 pass.
+3 571 файл без ошибок, тесты `cli-version`/`cli-stages` — 22 pass (после 0.13.14).
 
 **Чего это не доказывает.** Проверено, что сервис поднимается и версия сходится; полноценный
 сценарный прогон UI после фикса не делался — приложение запускалось только для проверки лога.
@@ -1136,11 +1136,6 @@ chat-completions моделей. Тест кодировал поведение,
 `installer dry-run (windows-latest)`, `patched tree (ubuntu-latest)`,
 `patched tree (windows-latest)`, `end-to-end verdict`, `cli build`.
 
-**Проверено в CI.** Прогон [`45161855972`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45161855972) на `a8fb2d8` — **7 из 7 джобов success**:
-`repo tests` (с шагом `docs numbers match the patch`), `installer dry-run (ubuntu-latest)`,
-`installer dry-run (windows-latest)`, `patched tree (ubuntu-latest)`,
-`patched tree (windows-latest)`, `end-to-end verdict`, `cli build`.
-
 ## 27. Прогон 22 упал на setup-bun: 403, а не код
 
 **Симптом.** Прогон [`45162922783`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45162922783)
@@ -1161,3 +1156,40 @@ GitHub API; запрос с общего раннера ушёл анонимн�
 Прогон [`45163760974`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45163760974) на `b9b6212` — **7 из 7 джобов success**, включая
 `patched tree (ubuntu-latest)`, который до этого падал именно на `setup-bun`, и `cli build`,
 который до этого вообще не запускался.
+
+## 28. Тесты стадии не запускались — и это была неправда
+
+В §24 записано, что `cli-stages.test.ts` «локально не запускается — нет `@effect/platform-node`».
+Зависимость на месте (`packages/desktop/package.json`, `@effect/platform-node: "catalog:"`, каталог
+`packages/desktop/node_modules/@effect/platform-node` существует); прогон просто делался из корня
+репозитория, где своих `node_modules` у пакета нет. На `27acd43` файл запускается и проходит.
+
+**Чего не хватало в тестах.** Все четыре кейса использовали каталоги вида `2.0.18`–`2.0.20`,
+а штампованная сборка ставит CLI в `0.0.0-dev-<ts>-<sha>-x64` — то есть ровно ту раскладку,
+из-за которой в 0.13.9 правился `splitStamp`, тесты не трогали. Добавлены три кейса:
+апгрейд между штампованными сборками, сохранение каталога принятого сервиса и обычный релиз
+рядом с забытым штампом.
+
+**Измерено** (`bun test` в `packages/desktop` на `27acd43`): 539 тестов — 535 pass, 4 skip, 0 fail,
+1 761 expect, 68 файлов; `cli-stages` отдельно — 7 pass / 14 expect; `cli-version` + `cli-stages`
+вместе — 22 pass / 31 expect; типизация — 3 571 файл, 0 ошибок.
+
+**Замеры для доков.** `git diff --shortstat 007afb1..HEAD` → `53 files changed, 3617 insertions(+),
+55 deletions(-)`; патч `patches/truthprobe-0001.patch` — 345 729 Б, sha256
+`ff9312863c16d79e1e7064462a286bf25cebe57fe75c80ca76ea45e184ce43c1`; база
+`007afb1b0c8a36dff93d7945909d4e976545ba95`. Перегенерация и сверка с доками:
+
+```
+$ bash scripts/make-patch.sh --from ~/src/opencode
+  коммитов: 29, файлов: 53, байт: 345729
+$ sha256sum patches/truthprobe-0001.patch
+ff9312863c16d79e1e7064462a286bf25cebe57fe75c80ca76ea45e184ce43c1  patches/truthprobe-0001.patch
+$ make docs-check
+доки сходятся с патчем: коммитов 29, файлов 53, байт 345729
+```
+
+**Чего это не доказывает.** Живой сценарий обновления (сервис работает, ставится новая сборка,
+старый каталог удаляется на запущенном процессе) не проверялся: GUI не запускается по требованию
+пользователя. Windows-специфика «файл залочен, удаление падает и повторяется на следующем старте»
+описана в `cli-stages.ts` комментарием, но тестом не покрыта.
+

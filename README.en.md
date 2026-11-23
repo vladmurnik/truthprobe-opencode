@@ -368,7 +368,7 @@ reproduction — [`docs/SMOKE-E2E.md`](docs/SMOKE-E2E.md).
 
 ## Anatomy of the patch
 
-52 files, +3573/−55, twenty-eight commits on top of `007afb1`. The seam is thin and additive:
+53 files, +3617/−55, twenty-nine commits on top of `007afb1`. The seam is thin and additive:
 
 | Layer | File | What it does |
 | --- | --- | --- |

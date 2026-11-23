@@ -138,10 +138,10 @@ if ($log -match "truthprobe") {
   Invoke-WebRequest -UseBasicParsing -Uri "$Repo/$PatchName" -OutFile $patch
   if (-not (Test-Path $patch) -or (Get-Item $patch).Length -eq 0) { Pop-Location; Fail "patch download failed" }
   $hash = (Get-FileHash -Algorithm SHA256 -Path $patch).Hash.ToLower()
-  if ($hash -ne "9611bdf672f0e2567a879a5d0d3f81fbe75141620bf82d417ad9a788e2315802") {
+  if ($hash -ne "ff9312863c16d79e1e7064462a286bf25cebe57fe75c80ca76ea45e184ce43c1") {
     Remove-Item $patch -Force -ErrorAction SilentlyContinue
     Pop-Location
-    Fail "patch checksum mismatch: pinned 9611bdf672f0e2567a879a5d0d3f81fbe75141620bf82d417ad9a788e2315802, got $hash"
+    Fail "patch checksum mismatch: pinned ff9312863c16d79e1e7064462a286bf25cebe57fe75c80ca76ea45e184ce43c1, got $hash"
   }
 
   Step "checking patch"
