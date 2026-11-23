@@ -21,6 +21,16 @@
 
 **4. `make docs-check` в CI.** Джоб `repo tests` теперь сверяет числа в доках с патчем.
 
+**Проверено в CI:** прогон [`45161855972`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45161855972) на `a8fb2d8` — **7 из 7 джобов success**:
+`repo tests` (вместе с новым `docs numbers match the patch`), `installer dry-run` на Ubuntu
+и Windows, `patched tree` на обеих ОС, `end-to-end verdict`, `cli build`. Предыдущие пять
+прогонов (0.13.8–0.13.11) были красными.
+
+**Проверено в CI:** прогон [`45161855972`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45161855972) на `a8fb2d8` — **7 из 7 джобов success**:
+`repo tests` (вместе с новым `docs numbers match the patch`), `installer dry-run` на Ubuntu
+и Windows, `patched tree` на обеих ОС, `end-to-end verdict`, `cli build`. Предыдущие пять
+прогонов (0.13.8–0.13.11) были красными.
+
 **Проверено локально:** `TRUTHPROBE_REQUIRE_PROTOCOL_TESTS=1 bun test
 test/truthprobe-protocol.test.ts` в пропатченном дереве — 9 pass / 0 fail; `make patch`
 переписывает пин (проверено на намеренно испорченной сумме — восстановлена); `make docs-check`

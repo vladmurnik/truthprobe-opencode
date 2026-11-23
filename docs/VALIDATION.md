@@ -1131,3 +1131,13 @@ chat-completions моделей. Тест кодировал поведение,
 песочнице недоступны — прокси рвёт соединение, поэтому зелёный CI подтверждается только
 следующим прогоном на GitHub, а не локально.
 
+**Проверено в CI.** Прогон [`45161855972`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45161855972) на `a8fb2d8` — **7 из 7 джобов success**:
+`repo tests` (с шагом `docs numbers match the patch`), `installer dry-run (ubuntu-latest)`,
+`installer dry-run (windows-latest)`, `patched tree (ubuntu-latest)`,
+`patched tree (windows-latest)`, `end-to-end verdict`, `cli build`.
+
+**Проверено в CI.** Прогон [`45161855972`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45161855972) на `a8fb2d8` — **7 из 7 джобов success**:
+`repo tests` (с шагом `docs numbers match the patch`), `installer dry-run (ubuntu-latest)`,
+`installer dry-run (windows-latest)`, `patched tree (ubuntu-latest)`,
+`patched tree (windows-latest)`, `end-to-end verdict`, `cli build`.
+
