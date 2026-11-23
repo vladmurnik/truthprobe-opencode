@@ -1329,9 +1329,13 @@ grep -rnP '[\x{0400}-\x{04FF}]' src test        0
 GET /releases/tags/v0.13.18                     release 455929364, draft false, asset 514039 B
 GET /releases/latest/download/...               514039 B, sha256 4436386b… — matches the pin
 CI run 45256323762 on 0288f6e               7 of 7 jobs success, patch applied from 007afb1
+CI run 45257273878 on bbb4858               7 of 7 jobs success, documentation-only change
 ```
 
 **What this does not prove.** The Russian translations were checked for numbers, links and heading
 counts, not by a native speaker. The installer fallback was exercised by hand against the published
 asset (bytes and digest match the pin), but no CI job downloads it. `scripts/collect.py` keeps one Cyrillic range on purpose: it tokenises
-reference answers (`[a-zа-я0-9]+`), and changing it would change behaviour.
+reference answers (`[a-zа-я0-9]+`), and changing it would change behaviour. Citing a run id
+changes the tree, so every documentation commit that records one starts a run of its own; the
+numbers above describe the patch artifact, not the commit that quotes them, and the chain of
+citations stops at the last run whose tree carries the same bytes.
