@@ -146,15 +146,35 @@ function sentenceAt(sentences: Sentence[], start: number, end: number): Sentence
  */
 export function digitDensity(text: string): number {
   if (!text) return 0;
+  // Числитель и знаменатель считаем в code points: `text.length` меряет UTF-16
+  // единицы, и на эмодзи или астральной CJK доля цифр занижалась.
   let digits = 0;
-  for (const ch of text) if (ch >= "0" && ch <= "9") digits++;
-  return clamp01(digits / text.length);
+  let chars = 0;
+  for (const ch of text) {
+    chars++;
+    if (ch >= "0" && ch <= "9") digits++;
+  }
+  return clamp01(digits / chars);
 }
 
 function geometricMean(lps: number[]): number {
   if (lps.length === 0) return 0;
   return clamp01(Math.exp(lps.reduce((a, b) => a + b, 0) / lps.length));
 }
+
+/**
+ * Минимум без `Math.min(...values)`: разворот длинного массива в аргументы падает
+ * с `RangeError` на очень длинных ответах, а вызывается это синхронно в публикации.
+ */
+function minOf(values: number[]): number {
+  if (values.length === 0) return 0;
+  let min = values[0];
+  for (const value of values) if (value < min) min = value;
+  return min;
+}
+
+/** Ключ псевдопредложения, в которое складываются токены при дрейфе смещений. */
+const DRIFT_BUCKET = -1;
 
 /**
  * Считает уверенность по всему ответу.
@@ -223,25 +243,35 @@ export function scoreAnswer(
 
   // Группировка по предложениям (если дрейф — всё в одно «предложение»).
   const buckets = new Map<number, TokenWithOffset[]>();
-  for (const t of content) {
-    const s = offsetDrift ? null : sentenceAt(sentences, t.start, t.end);
-    if (!s) continue;
-    const arr = buckets.get(s.i) ?? [];
-    arr.push(t);
-    buckets.set(s.i, arr);
+  if (offsetDrift) {
+    // Смещения уехали: привязать токены к предложениям нельзя, но пустой список
+    // предложений снаружи читается как «спорных нет». Держим всё в одном
+    // псевдопредложении с реальным диапазоном текста, чтобы оценка осталась видимой.
+    buckets.set(DRIFT_BUCKET, content);
+  } else {
+    for (const t of content) {
+      const s = sentenceAt(sentences, t.start, t.end);
+      if (!s) continue;
+      const arr = buckets.get(s.i) ?? [];
+      arr.push(t);
+      buckets.set(s.i, arr);
+    }
   }
 
   const scored: SentenceScore[] = [];
   for (const [i, arr] of [...buckets.entries()].sort((a, b) => a[0] - b[0])) {
-    const s = sentences[i];
+    const s = i === DRIFT_BUCKET ? { i: 0, start: 0, end: text.length, text } : sentences[i];
+    if (!s) continue;
     const lps = arr.map((t) => t.logprob);
     const geo = geometricMean(lps);
     const startPhi = phi(arr[0], opt.topK);
     // Встроенная оценка — только геометрическое среднее: замер (docs/VALIDATION.md §14)
     // показал, что вес худшего токена и φ делают её хуже случайного.
     const features = featuresOf({
-      meanLp: Math.log(Math.max(geo, 1e-9)),
-      minLp: Math.min(...lps),
+      // Сырой средний logprob: `log(max(geo, 1e-9))` схлопывал всё ниже 1e-9
+      // в одно значение −20.7, и линейная модель теряла разрешение на плохих ответах.
+      meanLp: lps.reduce((a, b) => a + b, 0) / lps.length,
+      minLp: minOf(lps),
       meanPhi: startPhi,
       lowFraction: lps.filter((lp) => Math.exp(lp) < 0.5).length / lps.length,
       digitDensity: digitDensity(s.text),
@@ -259,10 +289,12 @@ export function scoreAnswer(
       score,
       risk,
       meanLp: Math.exp(lps.reduce((a, b) => a + b, 0) / lps.length),
-      minLp: Math.min(...lps),
+      minLp: minOf(lps),
       phi: startPhi,
       tokens: arr.length,
-      flag: risk >= opt.riskyThreshold,
+      // Строгое сравнение: ровно на границе (score 0.55, risk 0.45) уровень ещё
+      // `uncertain`, и помечать предложение спорным нельзя.
+      flag: risk > opt.riskyThreshold,
       level: levelOf(score) ?? "unreliable",
     });
   }
@@ -270,8 +302,8 @@ export function scoreAnswer(
   const allLps = content.map((t) => t.logprob);
   const globalGeo = geometricMean(allLps);
   const globalFeatures = featuresOf({
-    meanLp: Math.log(Math.max(globalGeo, 1e-9)),
-    minLp: Math.min(...allLps),
+    meanLp: allLps.reduce((a, b) => a + b, 0) / allLps.length,
+    minLp: minOf(allLps),
     meanPhi: phi(content[0], opt.topK),
     lowFraction: allLps.filter((lp) => Math.exp(lp) < 0.5).length / allLps.length,
     digitDensity: digitDensity(text),
@@ -310,9 +342,7 @@ export function envScoreOptions(env: Record<string, string | undefined> = proces
     return Number.isFinite(value) && value >= 0 && value <= 1 ? value : undefined;
   };
   const risky = num("TRUTHPROBE_RISKY_THRESHOLD");
-  const shaky = num("TRUTHPROBE_SHAKY_THRESHOLD");
-  return {
-    ...(risky === undefined ? {} : { riskyThreshold: risky }),
-    ...(shaky === undefined ? {} : { shakyThreshold: shaky }),
-  };
+  // `TRUTHPROBE_SHAKY_THRESHOLD` убран: переменная разбиралась, но ни один скорер
+  // и ни один UI её не читал, поэтому она только обещала несуществующую настройку.
+  return risky === undefined ? {} : { riskyThreshold: risky };
 }

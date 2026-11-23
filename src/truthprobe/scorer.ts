@@ -103,9 +103,11 @@ export function parseLinearWeights(raw: unknown): LinearWeights {
   const num = (key: string, value: unknown) => {
     if (value === null) throw new Error(`weight "${key}" is null`)
     if (value === undefined) throw new Error(`weight "${key}" is missing`)
-    const parsed = Number(value)
-    if (!Number.isFinite(parsed)) throw new Error(`weight "${key}" is not a number`)
-    return parsed
+    // `Number("") === 0`, `Number([]) === 0`, `Number(true) === 1`: без проверки типа
+    // мусор в файле весов молча превращается в валидный коэффициент.
+    if (typeof value !== "number") throw new Error(`weight "${key}" is not a number`)
+    if (!Number.isFinite(value)) throw new Error(`weight "${key}" is not a number`)
+    return value
   }
   const out: LinearWeights = {
     bias: num("bias", src.bias),

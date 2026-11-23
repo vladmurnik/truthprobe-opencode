@@ -298,7 +298,7 @@ drifted; `unavailable` — no tokens.
 | Regression around text events | `test/session*.test.ts test/projector*.test.ts test/message*.test.ts` | **811 pass / 0 fail** |
 | Full core run | `bun test` in `packages/core` (7 713 tests, 331 files) | 7 300 pass / 351 skip / 62 fail — none in truthprobe: `tool-search` downloads ripgrep from github.com, `provider-gitlab-oauth` calls gitlab.com, `cross-spawn`/MCP depend on spawn; the harness blocks outbound network |
 | TruthProbe tests, this repository | `bun test test` | **92 pass / 8 skip / 0 fail**, 210 expect, 5 files, 100 tests |
-| TruthProbe tests, patched tree | `bun test truthprobe` in `packages/core/test` | **127 pass / 0 fail**, 6 files |
+| TruthProbe tests, patched tree | `bun test truthprobe` in `packages/core/test` | **129 pass / 0 fail**, 6 files |
 | Patch on a clean tree | `git am` in a `007afb1` worktree | applies without conflicts, all truthprobe tests green |
 | Typecheck | schema / ai / core / client / tui | green (132 / 357+322 / 2 030 / 181 / 1 942 files) |
 | Typecheck of the UI packages | session-ui / app / desktop | green (382 / 2 445 / 3 569 files, desktop 2 projects) |
@@ -366,7 +366,7 @@ reproduction — [`docs/SMOKE-E2E.md`](docs/SMOKE-E2E.md).
 
 ## Anatomy of the patch
 
-46 files, +7023/−40, nineteen commits on top of `007afb1`. The seam is thin and additive:
+48 files, +7234/−40, twenty-six commits on top of `007afb1`. The seam is thin and additive:
 
 | Layer | File | What it does |
 | --- | --- | --- |

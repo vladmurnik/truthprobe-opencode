@@ -70,8 +70,6 @@ export interface ScoreOptions {
   topK?: number;
   /** Порог риска для подсветки. */
   riskyThreshold?: number;
-  /** Порог «шатко» (жёлтый), если понадобится третий уровень. */
-  shakyThreshold?: number;
   /** Минимальная длина содержательного токена, чтобы считать его значимым. */
   minTokenChars?: number;
   /** Доля веса whole-answer, отданная глобальному геом. среднему. */
@@ -130,7 +128,6 @@ export interface LinearWeights {
 export const DEFAULT_SCORE_OPTIONS: Required<Omit<ScoreOptions, "scorer">> = {
   topK: 20,
   riskyThreshold: 0.45,
-  shakyThreshold: 0.3,
   minTokenChars: 2,
   globalWeight: 0.6,
 };

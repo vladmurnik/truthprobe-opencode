@@ -7,7 +7,8 @@
 Номера не переименованы, потому что на них ссылаются оба README, `docs/ROADMAP.md` и
 `docs/CALIBRATION.md`.
 
-База: `sst/opencode` @ `007afb1`. Ветка `feat/truthprobe`, четырнадцать коммитов:
+База: `sst/opencode` @ `007afb1`. Ветка `feat/truthprobe`, двадцать шесть коммитов; ниже — первые
+четырнадцать, остальные видны в `git log 007afb1..HEAD`:
 
 | Коммит | Что |
 | --- | --- |
@@ -26,7 +27,7 @@
 | `d153658` | fix(truthprobe): make the patched tree typecheck clean |
 | `3b720f0` | feat(truthprobe): per-model calibration weights |
 
-Итог: **46 файлов, +7162 / −40**, двадцать пять коммитов. Патч — `patches/truthprobe-0001.patch` (473 067 Б, `git am`).
+Итог: **48 файлов, +7234 / −40**, двадцать шесть коммитов. Патч — `patches/truthprobe-0001.patch` (491 498 Б, `git am`).
 
 ## 1. Слои патча
 
@@ -60,7 +61,7 @@
 ## 2. Тесты
 
 ```
-127 pass / 0 fail   6 файлов truthprobe в packages/core/test (пропатченное дерево)
+129 pass / 0 fail   6 файлов truthprobe в packages/core/test (пропатченное дерево)
   8 pass / 0 fail    26 expect   packages/ai/test/truthprobe.test.ts
   9 pass / 0 fail    23 expect   packages/session-ui/src/message/doubtful.test.ts
  92 pass / 8 skip   210 expect   test/ самого репозитория (5 файлов, 100 тестов)
@@ -973,3 +974,68 @@ C: восстановлено 33 ответа, 6 строк без токено�
 с `RAW2=rows_raw2f.jsonl RAW3=rows_raw3f.jsonl`, затем `python3 scripts/halluc/dataset.py` с
 `DATASET_OUT=dataset_fixed.jsonl` и `python3 scripts/halluc/eval.py`. Исходные `rows_raw*.jsonl`
 не перезаписываются.
+
+## 23. Девять дефектов, найденных внешним аудитом кода
+
+Аудит прошёлся по реализации, а не по числам, и нашёл девять мест, где поведение расходилось с
+обещаниями. Все девять исправлены коммитом `af30d3d` в пропатченном дереве, патч перегенерирован.
+
+| # | Что было | Что стало |
+| --- | --- | --- |
+| 1 | `digitDensity` делил число цифр на `text.length`, то есть на UTF-16 units: на эмодзи или астральной CJK доля цифр занижалась вдвое | числитель и знаменатель считаются в code points |
+| 2 | `Math.min(...lps)` в двух местах: длинный ответ разворачивался в аргументы и мог упасть `RangeError` прямо в публикации события | свёртка `minOf(values)` без разворота |
+| 3 | при дрейфе смещений токенов `sentences` оставался пустым, снаружи это читалось как «спорных предложений нет» | всё складывается в одно псевдопредложение с реальным диапазоном текста, причина пишется в `reason` |
+| 4 | признак `meanLp` считался как `log(max(geo, 1e-9))`: всё ниже `1e-9` схлопывалось в −20.7, и линейная модель теряла разрешение на плохих ответах | в признаки идёт сырой средний logprob |
+| 5 | флаг спорного предложения стоял при `risk >= riskyThreshold`, поэтому на границе (score 0.55 / risk 0.45) предложение было помечено спорным, а уровень оставался `uncertain` | строгое `risk > riskyThreshold` |
+| 6 | `session-ui` и TUI повторяли пороги уровня числами, копируя `0.9/0.75/0.55/0.35` | оба читают `LEVEL_BOUNDS` из `packages/core/src/truthprobe/levels.ts`; у `session-ui` появилась workspace-зависимость на `@opencode/core` |
+| 7 | оценка по скрытым reasoning-токенам публиковалась со статусом `ok`, то есть выдавалась за полную | статус `partial`, TUI печатает ` · partial match` |
+| 8 | `TRUTHPROBE_SHAKY_THRESHOLD` разбиралась в опции, но её не читал ни один скорер и ни один UI | переменная и поле `shakyThreshold` удалены; тест переписан |
+| 9 | тест `digitDensity` закреплял именно дефект (деление на UTF-16) | тест переписан на code points и дополнен флагом и астральной CJK |
+
+**Проверено (в пропатченном дереве):**
+
+```
+$ cd packages/core && bun test test/truthprobe
+ 129 pass
+ 0 fail
+ 361 expect() calls
+Ran 129 tests across 6 files.
+
+$ cd packages/session-ui && bun test src/message/doubtful.test.ts
+ 9 pass, 0 fail
+
+$ bun run typecheck   # core / session-ui / tui
+✓ No type errors in 2,036 files across 2 projects
+✓ No type errors in 384 files across 1 project
+✓ No type errors in 1,947 files across 2 projects
+```
+
+Два новых теста закрепляют поведение, которого раньше не было: при дрейфе смещений оценка остаётся
+видимой (`sentences.length === 1`, текст и число токенов на месте), а флаг на точной границе
+`risk === riskyThreshold` не ставится.
+
+**Полный прогон TUI** (`packages/tui`, 1 679 тестов): 1 672 pass, 2 skip, 5 fail. Падения —
+`Node reloads the local ESM graph without relocating source files` (3) и
+`shell output opens, follows, scrolls, and survives exit` (2, таймаут 5 с); они не касаются
+`message-parts.tsx` и воспроизводятся без правок TruthProbe.
+
+**Патч и сборка после фиксов:**
+
+```
+$ bash scripts/make-patch.sh --from ~/src/opencode
+  коммитов: 26, файлов: 48, байт: 491498
+$ git apply --check -p1 patches/truthprobe-0001.patch   # на worktree 007afb1
+apply --check ok
+
+$ cat desktop-out/win-unpacked/resources/opencode-cli.version
+0.0.0-dev+ef470da66c44
+$ grep -c TRUTHPROBE_SHAKY_THRESHOLD desktop-out/win-unpacked/resources/opencode-cli.exe
+0            # переменной в собранном CLI больше нет
+```
+
+Установленная копия (`AppData/Local/Programs/TruthProbe`) несёт тот же штамп
+`0.0.0-dev+ef470da66c44`, кеш CLI очищен, поэтому приложение развернёт именно этот бинарь.
+
+**Чего это не доказывает.** Ни один из девяти фиксов не меняет качество детектора: §22 остаётся в
+силе, `1 − exp(meanLp)` — 0.799 OOF AUROC, обученные веса не превосходят формулу. Исправления — про
+честность чисел, единицы измерения и совпадение флага с уровнем, а не про новую точность.

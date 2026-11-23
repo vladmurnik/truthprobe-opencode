@@ -1,7 +1,7 @@
 From 3ccda6cdf3320c8fbcfbb2c8656c34a2827932af Mon Sep 17 00:00:00 2001
 From: truthprobe <truthprobe@local>
 Date: Thu, 19 Nov 2026 00:59:59 +0300
-Subject: [PATCH 01/25] feat(truthprobe): score answers from token logprobs
+Subject: [PATCH 01/26] feat(truthprobe): score answers from token logprobs
 
 - schema: Truthprobe.Info, capabilities.logprobs, AssistantText.truthprobe, optional truthprobe on session.text.ended
 - ai/openai-chat: request logprobs/top_logprobs when enabled, parse choice-level logprobs into providerMetadata
@@ -1192,7 +1192,7 @@ index 6a844d7..f21811e 100644
 From a9db0dab3c3392b40e8c9366e3455be1f37b7dcf Mon Sep 17 00:00:00 2001
 From: adik <adik@local>
 Date: Thu, 19 Nov 2026 01:12:00 +0300
-Subject: [PATCH 02/25] fix(tui): apply truthprobe metadata from
+Subject: [PATCH 02/26] fix(tui): apply truthprobe metadata from
  session.text.ended events
 
 The solid client store only copied event.data.text into the in-memory
@@ -1222,7 +1222,7 @@ index 8b6d247..7368d0c 100644
 From 2870f64a9bcb19d1e1701d85101c5074646cdcac Mon Sep 17 00:00:00 2001
 From: adik <adik@local>
 Date: Thu, 19 Nov 2026 03:08:36 +0300
-Subject: [PATCH 03/25] test(truthprobe): cover segmentation, scoring and
+Subject: [PATCH 03/26] test(truthprobe): cover segmentation, scoring and
  protocol parsing
 
 - send logprobs from every chat-completions model that declares the capability
@@ -1985,7 +1985,7 @@ index eed85f3..5bde799 100755
 From f04342565c0963f466c9bae21dc1b0d9158bab44 Mon Sep 17 00:00:00 2001
 From: TruthProbe <truthprobe@local>
 Date: Thu, 19 Nov 2026 09:40:19 +0300
-Subject: [PATCH 04/25] feat(truthprobe): probe providers and enable logprobs
+Subject: [PATCH 04/26] feat(truthprobe): probe providers and enable logprobs
  automatically
 
 Adding a provider key no longer needs an environment variable.
@@ -2800,7 +2800,7 @@ index 0000000..e23e561
 From 3126939707e7c7c305f8b3c2a89d196dc1b5acd9 Mon Sep 17 00:00:00 2001
 From: adik <adik@local>
 Date: Thu, 19 Nov 2026 13:34:58 +0300
-Subject: [PATCH 05/25] feat(truthprobe): show confidence in the desktop
+Subject: [PATCH 05/26] feat(truthprobe): show confidence in the desktop
  session UI
 
 ---
@@ -2897,7 +2897,7 @@ index be526b4..659538f 100644
 From 335305a2e846ae50c7d31cec6a750b74a4d385a6 Mon Sep 17 00:00:00 2001
 From: TruthProbe <truthprobe@localhost>
 Date: Thu, 19 Nov 2026 13:44:43 +0300
-Subject: [PATCH 06/25] feat(truthprobe): list doubtful sentences in the
+Subject: [PATCH 06/26] feat(truthprobe): list doubtful sentences in the
  desktop footer
 
 ---
@@ -3082,7 +3082,7 @@ index b44a4df..2a7ef9d 100644
 From 6017d751fc1a7a9bf1eac92e2b40b161e0c48b49 Mon Sep 17 00:00:00 2001
 From: TruthProbe <truthprobe@localhost>
 Date: Thu, 19 Nov 2026 14:33:06 +0300
-Subject: [PATCH 07/25] feat(desktop): let a fork brand the desktop app
+Subject: [PATCH 07/26] feat(desktop): let a fork brand the desktop app
 
 A fork that ships its own Electron application sets OPENCODE_DESKTOP_APP and
 OPENCODE_DESKTOP_APP_ID before building. The window title, the AppUserModelID,
@@ -3294,7 +3294,7 @@ index 9688672..de655d5 100644
 From a478531b342afc1a07626aafcd1e085543cbaef2 Mon Sep 17 00:00:00 2001
 From: truthprobe <truthprobe@local>
 Date: Thu, 19 Nov 2026 19:21:40 +0300
-Subject: [PATCH 08/25] fix(truthprobe): keep logprobs that arrive without
+Subject: [PATCH 08/26] fix(truthprobe): keep logprobs that arrive without
  text, align tokens, always publish a verdict
 
 - ai: buffer token logprobs in parser state; gateways send them in a separate
@@ -3705,7 +3705,7 @@ index f21811e..edac0e3 100644
 From 5a335e31658d33202b76ac0fb58f795cb1db4e03 Mon Sep 17 00:00:00 2001
 From: truthprobe <truthprobe@local>
 Date: Thu, 19 Nov 2026 19:36:25 +0300
-Subject: [PATCH 09/25] fix(truthprobe): say so when tokens do not match the
+Subject: [PATCH 09/26] fix(truthprobe): say so when tokens do not match the
  answer text
 
 Dropping every token that cannot be found in the text silently produced
@@ -3737,7 +3737,7 @@ index e024f93..7d46333 100644
 From 3d8a5b1ac9a2b94bd6729f6e9de9b6b400ac5df6 Mon Sep 17 00:00:00 2001
 From: adik <adik@users.noreply.github.com>
 Date: Thu, 19 Nov 2026 21:10:26 +0300
-Subject: [PATCH 10/25] feat(truthprobe): confidence levels and sentence
+Subject: [PATCH 10/26] feat(truthprobe): confidence levels and sentence
  highlights
 
 ---
@@ -8105,7 +8105,7 @@ index 0000000..d3450d7
 From 51f6f1088316234b53fb7ba8b8b78619c9b3d570 Mon Sep 17 00:00:00 2001
 From: adik <adik@users.noreply.github.com>
 Date: Thu, 19 Nov 2026 21:13:56 +0300
-Subject: [PATCH 11/25] feat(truthprobe): pluggable scorer (geometric | linear
+Subject: [PATCH 11/26] feat(truthprobe): pluggable scorer (geometric | linear
  weights)
 
 ---
@@ -8487,7 +8487,7 @@ index 0000000..998bf44
 From 699374c936946d597addbc90680dd680e048a37c Mon Sep 17 00:00:00 2001
 From: adik <adik@users.noreply.github.com>
 Date: Thu, 19 Nov 2026 21:28:48 +0300
-Subject: [PATCH 12/25] fix(schema): accept null level so unavailable verdicts
+Subject: [PATCH 12/26] fix(schema): accept null level so unavailable verdicts
  decode
 
 ---
@@ -8545,7 +8545,7 @@ index 5d05c07..d6f7831 100644
 From d153658602f327ff2f5f9a7ccbcfd4c2a6e6a9dc Mon Sep 17 00:00:00 2001
 From: TruthProbe <truthprobe@localhost>
 Date: Thu, 19 Nov 2026 21:58:03 +0300
-Subject: [PATCH 13/25] fix(truthprobe): make the patched tree typecheck clean
+Subject: [PATCH 13/26] fix(truthprobe): make the patched tree typecheck clean
 
 - schema: Level is a type alias over the Literals union, not an interface
 - core: DEFAULT_SCORE_OPTIONS omits the optional scorer field
@@ -8681,7 +8681,7 @@ index d6f7831..99b4171 100644
 From 3b720f0a39072f8e1699cecd75337d10f3f3c402 Mon Sep 17 00:00:00 2001
 From: TruthProbe <truthprobe@localhost>
 Date: Fri, 20 Nov 2026 07:54:47 +0300
-Subject: [PATCH 14/25] feat(truthprobe): per-model calibration weights
+Subject: [PATCH 14/26] feat(truthprobe): per-model calibration weights
 
 - core: WeightsBundle/parseWeightsBundle/bundleScorer/weightsFor read the
   {global, models} bundle written by calibrate.py --fit --by-model
@@ -8972,7 +8972,7 @@ index 0000000..57691fb
 From f6ef42b7d241e856c4b443e8d55c7fc88668c939 Mon Sep 17 00:00:00 2001
 From: TruthProbe <truthprobe@localhost>
 Date: Fri, 20 Nov 2026 15:31:41 +0300
-Subject: [PATCH 15/25] feat(session-ui): one readable confidence verdict and a
+Subject: [PATCH 15/26] feat(session-ui): one readable confidence verdict and a
  doubtful list
 
 - session-ui: new confidence.tsx with ConfidenceMeter, ConfidenceLine and
@@ -9248,7 +9248,7 @@ index 29f537b..6043672 100644
 From 068ce15559a427b8b95e53f2effbbf473ddc0764 Mon Sep 17 00:00:00 2001
 From: vladmurnik <vladmurnik@users.noreply.github.com>
 Date: Fri, 20 Nov 2026 16:28:49 +0300
-Subject: [PATCH 16/25] feat(tui): fixed-width confidence meter and level label
+Subject: [PATCH 16/26] feat(tui): fixed-width confidence meter and level label
 
 ---
  .../tui/src/routes/session/message-parts.tsx  | 36 +++++++++++++------
@@ -9332,7 +9332,7 @@ index b94c95c..8c17cd8 100644
 From 654daf52b109ed8571a8cdebcca7902232e88174 Mon Sep 17 00:00:00 2001
 From: vladmurnik <vladmurnik@users.noreply.github.com>
 Date: Fri, 20 Nov 2026 18:15:27 +0300
-Subject: [PATCH 17/25] fix(truthprobe): drop phi and the worst token from the
+Subject: [PATCH 17/26] fix(truthprobe): drop phi and the worst token from the
  default score
 
 Measured on 626 rows (544 truthful, 82 deliberate lies): the old
@@ -9450,7 +9450,7 @@ index 998bf44..3e7db3f 100644
 From 0360b612d487da3d131c60188e29a296ff2224b6 Mon Sep 17 00:00:00 2001
 From: vladmurnik <vladmurnik@users.noreply.github.com>
 Date: Fri, 20 Nov 2026 20:23:10 +0300
-Subject: [PATCH 18/25] feat(truthprobe): carry digit density as a feature
+Subject: [PATCH 18/26] feat(truthprobe): carry digit density as a feature
 
 - core: ScorerFeatures.digitDensity and an optional LinearWeights.digitDensity,
   so old weight files keep loading with a zero weight
@@ -9633,7 +9633,7 @@ index 3e7db3f..e231a93 100644
 From e6e5aec22af6994db4cb2604c246aa217ed0d95b Mon Sep 17 00:00:00 2001
 From: vladmurnik <vladmurnik@users.noreply.github.com>
 Date: Fri, 20 Nov 2026 20:50:16 +0300
-Subject: [PATCH 19/25] test(truthprobe): pin cyrillic, CJK, emoji and arabic
+Subject: [PATCH 19/26] test(truthprobe): pin cyrillic, CJK, emoji and arabic
  answers
 
 - core: one test file covering five scripts, offsets, sentence spans and the
@@ -9745,7 +9745,7 @@ index 0000000..92b6302
 From bf49277a4a35b8cdd887c8ec5da71f5d7df152b1 Mon Sep 17 00:00:00 2001
 From: vladmurnik <vladmurnik@users.noreply.github.com>
 Date: Sun, 22 Nov 2026 15:30:44 +0300
-Subject: [PATCH 20/25] fix(truthprobe): honour an explicit off switch and key
+Subject: [PATCH 20/26] fix(truthprobe): honour an explicit off switch and key
  the cache by model
 
 - OPENCODE_TRUTHPROBE=0|off|false now returns false before the capability cache
@@ -9884,7 +9884,7 @@ index e23e561..0e611e4 100644
 From af4519a9e616956dc3b16a87bf18629cf4146def Mon Sep 17 00:00:00 2001
 From: vladmurnik <vladmurnik@users.noreply.github.com>
 Date: Sun, 22 Nov 2026 15:30:44 +0300
-Subject: [PATCH 21/25] fix(truthprobe): reject null weights and say when a
+Subject: [PATCH 21/26] fix(truthprobe): reject null weights and say when a
  model falls back
 
 - JSON null no longer becomes weight 0 through Number(null); it throws like NaN
@@ -9973,7 +9973,7 @@ index e231a93..d21b25e 100644
 From 074117fe2b1f4505c250e5a1f4d7eff1cd9f60cf Mon Sep 17 00:00:00 2001
 From: vladmurnik <vladmurnik@users.noreply.github.com>
 Date: Sun, 22 Nov 2026 15:30:44 +0300
-Subject: [PATCH 22/25] fix(truthprobe): keep the confidence badge when a step
+Subject: [PATCH 22/26] fix(truthprobe): keep the confidence badge when a step
  aborts
 
 - score whatever text arrived before the failure instead of dropping it
@@ -10011,7 +10011,7 @@ index 46cbf4f..6bc2c57 100644
 From f235bf8215e0d763a3ab1d3e71157fda11f2b470 Mon Sep 17 00:00:00 2001
 From: vladmurnik <vladmurnik@users.noreply.github.com>
 Date: Sun, 22 Nov 2026 15:30:44 +0300
-Subject: [PATCH 23/25] fix(ui): always show the answer verdict and restore
+Subject: [PATCH 23/26] fix(ui): always show the answer verdict and restore
  levels from scores
 
 - TUI printed the answer line only when something was flagged; desktop always did
@@ -10193,7 +10193,7 @@ index 8c17cd8..0363da0 100644
 From c0f509c8e58f095137e727d341f6f82c5945bc45 Mon Sep 17 00:00:00 2001
 From: vladmurnik <vladmurnik@users.noreply.github.com>
 Date: Sun, 22 Nov 2026 15:30:44 +0300
-Subject: [PATCH 24/25] fix(truthprobe): measure entropy over the alternatives
+Subject: [PATCH 24/26] fix(truthprobe): measure entropy over the alternatives
  it normalises by
 
 - top_logprobs longer than top_k inflated H while still dividing by ln(top_k),
@@ -10279,7 +10279,7 @@ index 641ff03..855d26a 100755
 From 1958afc6cf1489b1a96f546d7b1f236a95969327 Mon Sep 17 00:00:00 2001
 From: vladmurnik <vladmurnik@users.noreply.github.com>
 Date: Sun, 22 Nov 2026 16:24:27 +0300
-Subject: [PATCH 25/25] fix(truthprobe): make the honesty switches actually
+Subject: [PATCH 25/26] fix(truthprobe): make the honesty switches actually
  switch
 
 - protocol: an explicit OPENCODE_TRUTHPROBE wins over capabilities.logprobs,
@@ -10539,6 +10539,362 @@ index 0363da0..ea90a1d 100644
          </box>
        </Show>
      </>
+-- 
+2.53.0
+
+
+From af30d3d64a1511cb2a10844f1f30c76773db1f4f Mon Sep 17 00:00:00 2001
+From: vladmurnik <vladmurnik@users.noreply.github.com>
+Date: Mon, 23 Nov 2026 00:49:26 +0300
+Subject: [PATCH 26/26] fix(truthprobe): close the nine findings from the
+ external audit
+
+- digitDensity divides by code points, not UTF-16 units; a flag emoji or an
+  astral CJK no longer halves the measured digit share
+- minOf replaces Math.min(...values) in both feature and sentence paths: a
+  long answer could throw RangeError inside event publication
+- offset drift keeps the score visible in one pseudo-sentence instead of an
+  empty sentence list that reads as "nothing doubtful"
+- features carry the raw mean logprob; log(max(geo, 1e-9)) collapsed every
+  poor answer into -20.7 and cost the linear model its resolution
+- a doubtful sentence is flagged on strict risk > riskyThreshold, so the flag
+  can no longer disagree with the level on the 0.55/0.45 boundary
+- session-ui and TUI read LEVEL_BOUNDS from @opencode/core instead of
+  repeating the numbers (session-ui gains the workspace dependency)
+- a reasoning-token score is reported as "partial", and the TUI says so
+- TRUTHPROBE_SHAKY_THRESHOLD is removed: nothing ever read it
+---
+ bun.lock                                      |  1 +
+ .../src/session/runner/publish-llm-event.ts   |  4 +-
+ packages/core/src/truthprobe/score.ts         | 70 +++++++++++++------
+ packages/core/src/truthprobe/types.ts         |  3 -
+ packages/core/test/truthprobe-levels.test.ts  |  2 +-
+ packages/core/test/truthprobe.test.ts         | 42 ++++++++++-
+ packages/session-ui/package.json              |  1 +
+ packages/session-ui/src/message/doubtful.ts   | 11 +--
+ .../tui/src/routes/session/message-parts.tsx  | 10 +--
+ 9 files changed, 108 insertions(+), 36 deletions(-)
+
+diff --git a/bun.lock b/bun.lock
+index 01aad3f..ae469b4 100644
+--- a/bun.lock
++++ b/bun.lock
+@@ -682,6 +682,7 @@
+         "@kitlangton/solid-motion": "0.2.2",
+         "@kobalte/core": "catalog:",
+         "@opencode/client": "workspace:*",
++        "@opencode/core": "workspace:*",
+         "@opencode/patchmark": "workspace:*",
+         "@opencode/ui": "workspace:*",
+         "@opencode/util": "workspace:*",
+diff --git a/packages/core/src/session/runner/publish-llm-event.ts b/packages/core/src/session/runner/publish-llm-event.ts
+index b5d5538..f8fcdbd 100644
+--- a/packages/core/src/session/runner/publish-llm-event.ts
++++ b/packages/core/src/session/runner/publish-llm-event.ts
+@@ -523,7 +523,9 @@ export const createLLMEventPublisher = (bus: Pick<Bus.Interface, "publish">, inp
+           lastReasoningScore = undefined
+           if (scored.status === "unavailable" && reasoningScore && reasoningScore.status === "ok")
+             scoredText.set(event.id, {
+-              status: "ok",
++              // `partial`, а не `ok`: число посчитано по скрытым рассуждениям, а не по
++              // видимому ответу. UI обязан сказать это вслух.
++              status: "partial",
+               score: reasoningScore.score,
+               risk: reasoningScore.risk,
+               level: reasoningScore.level,
+diff --git a/packages/core/src/truthprobe/score.ts b/packages/core/src/truthprobe/score.ts
+index 15df63e..dedc15a 100644
+--- a/packages/core/src/truthprobe/score.ts
++++ b/packages/core/src/truthprobe/score.ts
+@@ -146,9 +146,15 @@ function sentenceAt(sentences: Sentence[], start: number, end: number): Sentence
+  */
+ export function digitDensity(text: string): number {
+   if (!text) return 0;
++  // Числитель и знаменатель считаем в code points: `text.length` меряет UTF-16
++  // единицы, и на эмодзи или астральной CJK доля цифр занижалась.
+   let digits = 0;
+-  for (const ch of text) if (ch >= "0" && ch <= "9") digits++;
+-  return clamp01(digits / text.length);
++  let chars = 0;
++  for (const ch of text) {
++    chars++;
++    if (ch >= "0" && ch <= "9") digits++;
++  }
++  return clamp01(digits / chars);
+ }
+ 
+ function geometricMean(lps: number[]): number {
+@@ -156,6 +162,20 @@ function geometricMean(lps: number[]): number {
+   return clamp01(Math.exp(lps.reduce((a, b) => a + b, 0) / lps.length));
+ }
+ 
++/**
++ * Минимум без `Math.min(...values)`: разворот длинного массива в аргументы падает
++ * с `RangeError` на очень длинных ответах, а вызывается это синхронно в публикации.
++ */
++function minOf(values: number[]): number {
++  if (values.length === 0) return 0;
++  let min = values[0];
++  for (const value of values) if (value < min) min = value;
++  return min;
++}
++
++/** Ключ псевдопредложения, в которое складываются токены при дрейфе смещений. */
++const DRIFT_BUCKET = -1;
++
+ /**
+  * Считает уверенность по всему ответу.
+  *
+@@ -223,25 +243,35 @@ export function scoreAnswer(
+ 
+   // Группировка по предложениям (если дрейф — всё в одно «предложение»).
+   const buckets = new Map<number, TokenWithOffset[]>();
+-  for (const t of content) {
+-    const s = offsetDrift ? null : sentenceAt(sentences, t.start, t.end);
+-    if (!s) continue;
+-    const arr = buckets.get(s.i) ?? [];
+-    arr.push(t);
+-    buckets.set(s.i, arr);
++  if (offsetDrift) {
++    // Смещения уехали: привязать токены к предложениям нельзя, но пустой список
++    // предложений снаружи читается как «спорных нет». Держим всё в одном
++    // псевдопредложении с реальным диапазоном текста, чтобы оценка осталась видимой.
++    buckets.set(DRIFT_BUCKET, content);
++  } else {
++    for (const t of content) {
++      const s = sentenceAt(sentences, t.start, t.end);
++      if (!s) continue;
++      const arr = buckets.get(s.i) ?? [];
++      arr.push(t);
++      buckets.set(s.i, arr);
++    }
+   }
+ 
+   const scored: SentenceScore[] = [];
+   for (const [i, arr] of [...buckets.entries()].sort((a, b) => a[0] - b[0])) {
+-    const s = sentences[i];
++    const s = i === DRIFT_BUCKET ? { i: 0, start: 0, end: text.length, text } : sentences[i];
++    if (!s) continue;
+     const lps = arr.map((t) => t.logprob);
+     const geo = geometricMean(lps);
+     const startPhi = phi(arr[0], opt.topK);
+     // Встроенная оценка — только геометрическое среднее: замер (docs/VALIDATION.md §14)
+     // показал, что вес худшего токена и φ делают её хуже случайного.
+     const features = featuresOf({
+-      meanLp: Math.log(Math.max(geo, 1e-9)),
+-      minLp: Math.min(...lps),
++      // Сырой средний logprob: `log(max(geo, 1e-9))` схлопывал всё ниже 1e-9
++      // в одно значение −20.7, и линейная модель теряла разрешение на плохих ответах.
++      meanLp: lps.reduce((a, b) => a + b, 0) / lps.length,
++      minLp: minOf(lps),
+       meanPhi: startPhi,
+       lowFraction: lps.filter((lp) => Math.exp(lp) < 0.5).length / lps.length,
+       digitDensity: digitDensity(s.text),
+@@ -259,10 +289,12 @@ export function scoreAnswer(
+       score,
+       risk,
+       meanLp: Math.exp(lps.reduce((a, b) => a + b, 0) / lps.length),
+-      minLp: Math.min(...lps),
++      minLp: minOf(lps),
+       phi: startPhi,
+       tokens: arr.length,
+-      flag: risk >= opt.riskyThreshold,
++      // Строгое сравнение: ровно на границе (score 0.55, risk 0.45) уровень ещё
++      // `uncertain`, и помечать предложение спорным нельзя.
++      flag: risk > opt.riskyThreshold,
+       level: levelOf(score) ?? "unreliable",
+     });
+   }
+@@ -270,8 +302,8 @@ export function scoreAnswer(
+   const allLps = content.map((t) => t.logprob);
+   const globalGeo = geometricMean(allLps);
+   const globalFeatures = featuresOf({
+-    meanLp: Math.log(Math.max(globalGeo, 1e-9)),
+-    minLp: Math.min(...allLps),
++    meanLp: allLps.reduce((a, b) => a + b, 0) / allLps.length,
++    minLp: minOf(allLps),
+     meanPhi: phi(content[0], opt.topK),
+     lowFraction: allLps.filter((lp) => Math.exp(lp) < 0.5).length / allLps.length,
+     digitDensity: digitDensity(text),
+@@ -310,9 +342,7 @@ export function envScoreOptions(env: Record<string, string | undefined> = proces
+     return Number.isFinite(value) && value >= 0 && value <= 1 ? value : undefined;
+   };
+   const risky = num("TRUTHPROBE_RISKY_THRESHOLD");
+-  const shaky = num("TRUTHPROBE_SHAKY_THRESHOLD");
+-  return {
+-    ...(risky === undefined ? {} : { riskyThreshold: risky }),
+-    ...(shaky === undefined ? {} : { shakyThreshold: shaky }),
+-  };
++  // `TRUTHPROBE_SHAKY_THRESHOLD` убран: переменная разбиралась, но ни один скорер
++  // и ни один UI её не читал, поэтому она только обещала несуществующую настройку.
++  return risky === undefined ? {} : { riskyThreshold: risky };
+ }
+diff --git a/packages/core/src/truthprobe/types.ts b/packages/core/src/truthprobe/types.ts
+index 7890599..33e4927 100644
+--- a/packages/core/src/truthprobe/types.ts
++++ b/packages/core/src/truthprobe/types.ts
+@@ -70,8 +70,6 @@ export interface ScoreOptions {
+   topK?: number;
+   /** Порог риска для подсветки. */
+   riskyThreshold?: number;
+-  /** Порог «шатко» (жёлтый), если понадобится третий уровень. */
+-  shakyThreshold?: number;
+   /** Минимальная длина содержательного токена, чтобы считать его значимым. */
+   minTokenChars?: number;
+   /** Доля веса whole-answer, отданная глобальному геом. среднему. */
+@@ -130,7 +128,6 @@ export interface LinearWeights {
+ export const DEFAULT_SCORE_OPTIONS: Required<Omit<ScoreOptions, "scorer">> = {
+   topK: 20,
+   riskyThreshold: 0.45,
+-  shakyThreshold: 0.3,
+   minTokenChars: 2,
+   globalWeight: 0.6,
+ };
+diff --git a/packages/core/test/truthprobe-levels.test.ts b/packages/core/test/truthprobe-levels.test.ts
+index 14be703..119fe61 100644
+--- a/packages/core/test/truthprobe-levels.test.ts
++++ b/packages/core/test/truthprobe-levels.test.ts
+@@ -74,9 +74,9 @@ describe("scoreAnswer проставляет уровень", () => {
+ 
+ describe("envScoreOptions", () => {
+   test("читает пороги из окружения", () => {
++    // `TRUTHPROBE_SHAKY_THRESHOLD` больше не читается: переменная ничего не настраивала.
+     expect(envScoreOptions({ TRUTHPROBE_RISKY_THRESHOLD: "0.6", TRUTHPROBE_SHAKY_THRESHOLD: "0.2" })).toEqual({
+       riskyThreshold: 0.6,
+-      shakyThreshold: 0.2,
+     })
+   })
+ 
+diff --git a/packages/core/test/truthprobe.test.ts b/packages/core/test/truthprobe.test.ts
+index 855d26a..83dd517 100755
+--- a/packages/core/test/truthprobe.test.ts
++++ b/packages/core/test/truthprobe.test.ts
+@@ -401,10 +401,48 @@ describe("границы и состояния", () => {
+     expect(result.score!).toBeGreaterThan(0.5)
+   })
+ 
+-  test("digitDensity считает только ASCII-цифры и делит на UTF-16 units", () => {
++  test("digitDensity считает только ASCII-цифры и делит на code points", () => {
+     expect(digitDensity("\u0661\u0662ab")).toBe(0)
+     expect(digitDensity("12")).toBe(1)
+-    expect(digitDensity("\u{1F1EB}\u{1F1F7}12")).toBeCloseTo(1 / 3, 6)
++    // Флаг — два code points (региональные индикаторы), а не четыре UTF-16 unit:
++    // доля цифр в «🇫🇷12» — 2 из 4, а не 2 из 6.
++    expect(digitDensity("\u{1F1EB}\u{1F1F7}12")).toBeCloseTo(0.5, 6)
++    // Астральная CJK тоже один символ, иначе знаменатель раздувается.
++    expect(digitDensity("\u{20000}7")).toBeCloseTo(0.5, 6)
++  })
++
++  test("при дрейфе смещений оценка не исчезает: одно псевдопредложение на весь текст", () => {
++    const text = "Привет мир, как дела сегодня."
++    // Два токена совпали с текстом, третий — нет: смещения уехали, привязать
++    // токены к предложениям нельзя.
++    const raw = [
++      { token: "Привет", logprob: -0.1 },
++      { token: " мир", logprob: -0.2 },
++      { token: "абракадабра", logprob: -1.5 },
++    ]
++    const result = scoreAnswer(text, raw as never)
++    expect(result.status).toBe("partial")
++    // До фикса `sentences` был пуст, и снаружи это читалось как «спорных нет».
++    expect(result.sentences).toHaveLength(1)
++    expect(result.sentences[0].text).toBe(text)
++    expect(result.sentences[0].tokens).toBe(2)
++    expect(result.sentences[0].level).toBe("likely")
++  })
++
++  test("флаг предложения строго выше порога риска", () => {
++    // logprob = ln 0.55 → score 0.55, risk 1 − 0.55: ровно граница уровней.
++    const lp = Math.log(0.55)
++    const raw = ["aaa", "bbb", "ccc"].map((token) => ({ token, logprob: lp }))
++    const atBoundary = scoreAnswer("aaabbbccc", raw as never, { riskyThreshold: 1 - 0.55 })
++    expect(atBoundary.sentences[0].risk).toBe(1 - 0.55)
++    expect(atBoundary.sentences[0].level).toBe("uncertain")
++    // `>=` на этой границе пометил бы предложение спорным, хотя уровень — uncertain.
++    expect(atBoundary.sentences[0].flag).toBe(false)
++    expect(atBoundary.flagged).toBe(0)
++
++    const below = scoreAnswer("aaabbbccc", raw as never, { riskyThreshold: 0.4 })
++    expect(below.sentences[0].flag).toBe(true)
++    expect(below.flagged).toBe(1)
+   })
+ 
+   test("top_logprobs длиннее topK считаются по тому же набору, что и нормировка", () => {
+diff --git a/packages/session-ui/package.json b/packages/session-ui/package.json
+index 2363de9..eb4b48b 100644
+--- a/packages/session-ui/package.json
++++ b/packages/session-ui/package.json
+@@ -73,6 +73,7 @@
+     "@kitlangton/solid-motion": "0.2.2",
+     "@kobalte/core": "catalog:",
+     "@opencode/client": "workspace:*",
++    "@opencode/core": "workspace:*",
+     "@opencode/patchmark": "workspace:*",
+     "@opencode/ui": "workspace:*",
+     "@opencode/util": "workspace:*",
+diff --git a/packages/session-ui/src/message/doubtful.ts b/packages/session-ui/src/message/doubtful.ts
+index b28312a..ff7ba8c 100644
+--- a/packages/session-ui/src/message/doubtful.ts
++++ b/packages/session-ui/src/message/doubtful.ts
+@@ -1,3 +1,4 @@
++import { LEVEL_BOUNDS } from "@opencode/core/truthprobe/levels"
+ import type { TruthprobeInfo } from "@opencode/client/promise"
+ 
+ /** Процент из числа из схемы: там score бывает number | "Infinity" | "NaN" | null. */
+@@ -10,13 +11,13 @@ const LEVELS: readonly ConfidenceLevel[] = ["safe", "likely", "uncertain", "risk
+ 
+ const asLevel = (value: unknown) => LEVELS.find((level) => level === value)
+ 
+-/** Уровень по порогам ядра (`packages/core/src/truthprobe/levels.ts`). */
++/** Уровень по порогам ядра — берём их из `levels.ts`, а не повторяем числа. */
+ export function levelFromScore(score: unknown): ConfidenceLevel | undefined {
+   if (typeof score !== "number" || !Number.isFinite(score)) return undefined
+-  if (score >= 0.9) return "safe"
+-  if (score >= 0.75) return "likely"
+-  if (score >= 0.55) return "uncertain"
+-  if (score >= 0.35) return "risky"
++  if (score >= LEVEL_BOUNDS.safe) return "safe"
++  if (score >= LEVEL_BOUNDS.likely) return "likely"
++  if (score >= LEVEL_BOUNDS.uncertain) return "uncertain"
++  if (score >= LEVEL_BOUNDS.risky) return "risky"
+   return "unreliable"
+ }
+ 
+diff --git a/packages/tui/src/routes/session/message-parts.tsx b/packages/tui/src/routes/session/message-parts.tsx
+index ea90a1d..000ab12 100644
+--- a/packages/tui/src/routes/session/message-parts.tsx
++++ b/packages/tui/src/routes/session/message-parts.tsx
+@@ -6,6 +6,7 @@ import type {
+   SessionMessageAssistantReasoning,
+   SessionMessageAssistantText,
+ } from "@opencode/client"
++import { LEVEL_BOUNDS } from "@opencode/core/truthprobe/levels"
+ import { Spinner } from "../../component/spinner"
+ import { createSyntaxStyleMemo, useTheme, useThemes } from "../../context/theme"
+ import { reasoningSummary } from "../../context/thinking"
+@@ -199,10 +200,10 @@ export function TextPart(props: {
+     const score = typeof value.score === "number" && Number.isFinite(value.score) ? value.score : undefined
+     // Старые парты не несут `level`: флаг остаётся последним свидетельством сомнения.
+     if (score === undefined) return value.flag === true ? "risky" : undefined
+-    if (score >= 0.9) return "safe"
+-    if (score >= 0.75) return "likely"
+-    if (score >= 0.55) return "uncertain"
+-    if (score >= 0.35) return "risky"
++    if (score >= LEVEL_BOUNDS.safe) return "safe"
++    if (score >= LEVEL_BOUNDS.likely) return "likely"
++    if (score >= LEVEL_BOUNDS.uncertain) return "uncertain"
++    if (score >= LEVEL_BOUNDS.risky) return "risky"
+     return "unreliable"
+   }
+   const answerLevel = createMemo(() => (probe() ? level({ level: probe()?.level, score: probe()?.score }) : undefined))
+@@ -251,6 +252,7 @@ export function TextPart(props: {
+               <span style={{ fg: tone(answerLevel()) }}>{bar(probe()?.score)}</span>
+               {answerLevel() ? " · " : ""}
+               <span style={{ fg: tone(answerLevel()) }}>{answerLevel() ?? ""}</span>
++              {probe()?.status === "partial" ? " · partial match" : ""}
+               {flagged().length > 0
+                 ? ` · ${flagged().length} doubtful sentence${flagged().length > 1 ? "s" : ""}`
+                 : ""}
 -- 
 2.53.0
 

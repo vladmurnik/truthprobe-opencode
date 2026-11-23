@@ -299,7 +299,7 @@ Windows: `%APPDATA%\opencode\truthprobe\`) и живёт: `ok`/`ignored`/`reject
 | Регрессия вокруг событий текста | `test/session*.test.ts test/projector*.test.ts test/message*.test.ts` | **811 pass / 0 fail** |
 | Полный прогон core | `bun test` в `packages/core` (7 713 тестов, 331 файл) | 7 300 pass / 351 skip / 62 fail — ни одного в truthprobe: `tool-search` качает ripgrep с github.com, `provider-gitlab-oauth` ходит на gitlab.com, `cross-spawn`/MCP зависят от spawn; в окружении зарезана исходящая сеть |
 | Тесты TruthProbe, этот репозиторий | `bun test test` | **92 pass / 8 skip / 0 fail**, 210 expect, 5 файлов, 100 тестов |
-| Тесты TruthProbe, пропатченное дерево | `bun test truthprobe` в `packages/core/test` | **127 pass / 0 fail**, 6 файлов |
+| Тесты TruthProbe, пропатченное дерево | `bun test truthprobe` в `packages/core/test` | **129 pass / 0 fail**, 6 файлов |
 | Патч на чистом дереве | `git am` в worktree `007afb1` | применяется без конфликтов, все truthprobe-тесты зелёные |
 | Типизация | schema / ai / core / client / tui | зелёная (132 / 357+322 / 2 030 / 181 / 1 942 файла) |
 | Типизация UI-пакетов | session-ui / app / desktop | зелёная (382 / 2 445 / 3 569 файлов, desktop — 2 проекта) |
@@ -333,7 +333,7 @@ python3 scripts/tui-probe.py && python3 scripts/screen-dump.py /tmp/tui-probe.lo
 
 | Что | Как проверяли | Результат |
 | --- | --- | --- |
-| Тесты truthprobe | `bun test` шести файлов в `packages/core/test` | **127 pass, 0 fail** (пропатченное дерево; в этом репозитории — **92 pass / 8 skip**) |
+| Тесты truthprobe | `bun test` шести файлов в `packages/core/test` | **129 pass, 0 fail** (пропатченное дерево; в этом репозитории — **92 pass / 8 skip**) |
 | Тесты всего монорепо | `bun test` в `packages/core` — 7713 тестов, 331 файл | **7300 pass, 351 skip, 62 fail** |
 | Ответ `freepi/particle` | живой запрос через боевой бинарь | `score 0.7595 · likely`, предложение `#0 0.603 · uncertain` |
 | Ответ `freepi/deepseek-v4.1-flash` | живой запрос | `score 0.6893`, первый флаг `0.4849` |
@@ -376,7 +376,7 @@ python3 scripts/tui-probe.py && python3 scripts/screen-dump.py /tmp/tui-probe.lo
 
 ## Устройство патча
 
-46 файлов, +7162/−40, двадцать пять коммитов поверх `007afb1`. Шов тонкий и аддитивный:
+48 файлов, +7234/−40, двадцать шесть коммитов поверх `007afb1`. Шов тонкий и аддитивный:
 
 | Слой | Файл | Что делает |
 | --- | --- | --- |
