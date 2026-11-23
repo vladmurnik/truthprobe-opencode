@@ -20,7 +20,10 @@ jobs:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: latest
+          # пин вместо latest: разыменование latest идёт через GitHub API, который
+          # отвечает 403 на анонимные запросы с общих раннеров (прогон 22 упал так)
+          bun-version: 1.4.5
+          github-token: ${{ secrets.GITHUB_TOKEN }}
       - run: bun test test
       - name: docs numbers match the patch
         run: bash scripts/check-docs.sh
@@ -37,7 +40,10 @@ jobs:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: latest
+          # пин вместо latest: разыменование latest идёт через GitHub API, который
+          # отвечает 403 на анонимные запросы с общих раннеров (прогон 22 упал так)
+          bun-version: 1.4.5
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: install.sh --dry-run (linux)
         if: runner.os == 'Linux'
@@ -63,7 +69,10 @@ jobs:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: latest
+          # пин вместо latest: разыменование latest идёт через GitHub API, который
+          # отвечает 403 на анонимные запросы с общих раннеров (прогон 22 упал так)
+          bun-version: 1.4.5
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: clone opencode at the patch base
         shell: bash
@@ -123,7 +132,10 @@ jobs:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: latest
+          # пин вместо latest: разыменование latest идёт через GitHub API, который
+          # отвечает 403 на анонимные запросы с общих раннеров (прогон 22 упал так)
+          bun-version: 1.4.5
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: clone, patch, install
         run: |
@@ -192,7 +204,10 @@ jobs:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: latest
+          # пин вместо latest: разыменование latest идёт через GitHub API, который
+          # отвечает 403 на анонимные запросы с общих раннеров (прогон 22 упал так)
+          bun-version: 1.4.5
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: clone, patch, install
         run: |
