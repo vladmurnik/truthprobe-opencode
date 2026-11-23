@@ -65,8 +65,14 @@ if [ "$DRY_RUN" -eq 1 ]; then
 fi
 
 # Приложение держит exe и resources открытыми, поэтому сначала закрываем его.
+# Одиночные слэши обязательны: WSL передаёт `//IM` в Windows буквально, и taskkill
+# отвечает «Invalid argument/option» — установка падала на заблокированных файлах.
 if command -v taskkill.exe >/dev/null 2>&1; then
-  taskkill.exe //IM TruthProbe.exe //F >/dev/null 2>&1 || true
+  taskkill.exe /IM TruthProbe.exe /F >/dev/null 2>&1 || true
+  for _ in 1 2 3 4 5 6 7 8 9 10; do
+    tasklist.exe /FI "IMAGENAME eq TruthProbe.exe" 2>/dev/null | grep -q TruthProbe || break
+    sleep 1
+  done
 fi
 
 mkdir -p "$TO"

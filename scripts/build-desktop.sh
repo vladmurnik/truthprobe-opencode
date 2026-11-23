@@ -72,22 +72,37 @@ esac
 [ -f "$SRC" ] || { echo "error: нет $SRC — сборка CLI не дала бинарь" >&2; exit 1; }
 mkdir -p "$STAGE"
 cp -f "$SRC" "$DST"
-# Штамп версии — это то, по чему приложение кеширует CLI
-# (%APPDATA%\ai.truthprobe.desktop\cli\<version>-<arch>). Если штамп не меняется,
-# свежесобранный бинарь не доезжает до пользователя: приложение переиспользует
-# старый из кеша. Поэтому к версии из сборки добавляется отпечаток содержимого,
-# и любая пересборка CLI меняет ключ кеша.
-UPSTREAM=""
-if [ -f "$CLI_DIR/opencode-cli.version" ]; then
-  UPSTREAM=$(tr -d '\r\n' <"$CLI_DIR/opencode-cli.version")
+# Штамп — `<версия CLI>+<sha256[:12]>`, и обе половины обязательны:
+#
+#   * версия до плюса — ровно то, что CLI сообщает о себе и пишет в `service.json`.
+#     Desktop сравнивает её с той, которую передал сервису, и при расхождении
+#     останавливает сервис и запускает новый. Штамп целиком там не совпадёт
+#     никогда, поэтому приложение уходило в цикл перезапусков до таймаута 120 с;
+#   * отпечаток после плюса — ключ каталога `%APPDATA%\ai.truthprobe.desktop\cli\`.
+#     Без него пересобранный CLI не доезжает до пользователя: приложение
+#     переиспользует бинарь, распакованный в прошлый раз.
+#
+# Версию спрашиваем у самого бинаря: файл версии рядом со сборкой бывает
+# сокращён (например `0.0.0-dev`), а `--version` печатает ровно ту строку, с
+# которой потом сверяется сервис.
+CLI_VERSION=""
+if "$DST" --version >/dev/null 2>&1; then
+  CLI_VERSION=$("$DST" --version 2>/dev/null | tr -d '\r' | sed -n 's/.* v\([0-9][^ ]*\).*/\1/p' | head -1)
+fi
+if [ -z "$CLI_VERSION" ] && [ -f "$CLI_DIR/opencode-cli.version" ]; then
+  CLI_VERSION=$(tr -d '\r\n' <"$CLI_DIR/opencode-cli.version")
+fi
+if [ -z "$CLI_VERSION" ]; then
+  echo "error: не удалось узнать версию CLI ($DST --version и $CLI_DIR/opencode-cli.version пусты)" >&2
+  exit 1
 fi
 if command -v sha256sum >/dev/null 2>&1; then
   STAMP=$(sha256sum "$DST" | cut -c1-12)
 else
   STAMP=$(shasum -a 256 "$DST" | cut -c1-12)
 fi
-printf '%s\n' "${UPSTREAM:-0.0.0-dev}+${STAMP}" >"$STAGE/opencode-cli.version"
-echo "   $(basename "$DST"): $(wc -c <"$DST") bytes, штамп $(cat "$STAGE/opencode-cli.version")"
+printf '%s\n' "${CLI_VERSION}+${STAMP}" >"$STAGE/opencode-cli.version"
+echo "   $(basename "$DST"): $(wc -c <"$DST") bytes, версия $CLI_VERSION, штамп $(cat "$STAGE/opencode-cli.version")"
 
 echo "== 3/4 electron-vite"
 (cd "$DEV/packages/desktop" && bun x electron-vite build)

@@ -7,7 +7,7 @@
 Номера не переименованы, потому что на них ссылаются оба README, `docs/ROADMAP.md` и
 `docs/CALIBRATION.md`.
 
-База: `sst/opencode` @ `007afb1`. Ветка `feat/truthprobe`, двадцать шесть коммитов; ниже — первые
+База: `sst/opencode` @ `007afb1`. Ветка `feat/truthprobe`, двадцать семь коммитов; ниже — первые
 четырнадцать, остальные видны в `git log 007afb1..HEAD`:
 
 | Коммит | Что |
@@ -27,7 +27,7 @@
 | `d153658` | fix(truthprobe): make the patched tree typecheck clean |
 | `3b720f0` | feat(truthprobe): per-model calibration weights |
 
-Итог: **48 файлов, +7234 / −40**, двадцать шесть коммитов. Патч — `patches/truthprobe-0001.patch` (491 498 Б, `git am`).
+Итог: **53 файла, +7290 / −55**, двадцать семь коммитов. Патч — `patches/truthprobe-0001.patch` (503 631 Б, `git am`).
 
 ## 1. Слои патча
 
@@ -1023,7 +1023,7 @@ $ bun run typecheck   # core / session-ui / tui
 
 ```
 $ bash scripts/make-patch.sh --from ~/src/opencode
-  коммитов: 26, файлов: 48, байт: 491498
+  коммитов: 27, файлов: 53, байт: 503631
 $ git apply --check -p1 patches/truthprobe-0001.patch   # на worktree 007afb1
 apply --check ok
 
@@ -1039,3 +1039,34 @@ $ grep -c TRUTHPROBE_SHAKY_THRESHOLD desktop-out/win-unpacked/resources/opencode
 **Чего это не доказывает.** Ни один из девяти фиксов не меняет качество детектора: §22 остаётся в
 силе, `1 − exp(meanLp)` — 0.799 OOF AUROC, обученные веса не превосходят формулу. Исправления — про
 честность чисел, единицы измерения и совпадение флага с уровнем, а не про новую точность.
+
+## 24. Штамп версии CLI ломал запуск desktop
+
+Дефект введён в 0.13.8 вместе со штампом `<версия>+<sha256[:12]>` и исправлен в 0.13.9.
+
+**Симптом.** Любое действие в приложении возвращало `Desktop IPC handler failed` с причиной
+`Timed out waiting for the background service to start`. В `main.log` после `v2 CLI executable staged`
+через 120 секунд появлялся `connect.failed`.
+
+**Причина.** `desktop-cli.ts` отдавал содержимое `resources/opencode-cli.version` как версию сервиса,
+а CLI регистрирует в `service.json` свою собственную (`0.0.0-dev-<timestamp>`). `matchesVersion`
+сравнивает строго, поэтому сервис считался несовместимым на каждом круге и перезапускался до таймаута.
+
+**Фикс.** `splitStamp()` в `cli-version.ts` делит строку: до `+` — версия для сверки с сервисом,
+целиком — ключ каталога со стадией. `Resolved` несёт оба поля, `background-service.ts` и
+`sidecar-probe.ts` используют их раздельно. `build-desktop.sh` берёт версию из вывода
+`opencode-cli --version` — файл рядом содержит усечённое `0.0.0-dev`.
+
+**Доказательство** (лог `logs/20261123T100624/main.log`, выдержки):
+
+```
+v2 CLI version bundled          version: '0.0.0-dev-202611231000', stage: '0.0.0-dev-202611231000+c3c4a36e358e'
+v2 CLI staged executable reused stage: '0.0.0-dev-202611231000-c3c4a36e358e-x64'
+v2 CLI background service ready version/runningVersion: '0.0.0-dev-202611231000', probed: true
+```
+
+`service.json` содержит `"version":"0.0.0-dev-202611231000"`; таймаута нет. Типизация desktop —
+3 571 файл без ошибок, тесты `cli-version`/`cli-stages` — 17 pass.
+
+**Чего это не доказывает.** Проверено, что сервис поднимается и версия сходится; полноценный
+сценарный прогон UI после фикса не делался — приложение запускалось только для проверки лога.

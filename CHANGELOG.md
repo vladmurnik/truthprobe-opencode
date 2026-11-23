@@ -1,3 +1,36 @@
+# 0.13.9 — 2026-11-23
+
+Штамп версии, добавленный в 0.13.8, сломал запуск desktop: приложение не дожидалось фонового
+сервиса и падало с `Timed out waiting for the background service to start`.
+
+**Причина.** `resources/opencode-cli.version` уходил в `serviceVersion` целиком, а CLI записывает
+в `service.json` собственную версию без штампа (`0.0.0-dev-<timestamp>`). `matchesVersion`
+сравнивает строки строго, поэтому `<версия>+<sha256>` не совпадала никогда: сервис считался чужим,
+останавливался, поднимался заново и так до таймаута в 120 секунд.
+
+**Исправлено**
+
+- `packages/desktop/src/main/service/cli-version.ts` — `splitStamp()`: до `+` версия, которую сервис
+  обязан сообщать о себе, целиком — ключ каталога со стадией сборки.
+- `desktop-cli.ts` — `Resolved` несёт `version` и `stage` раздельно: каталог стадии строится по
+  `stage`, версия для `Service.ensure` берётся из `version`.
+- `background-service.ts`, `sidecar-probe.ts` — используют разложенные значения.
+- `scripts/build-desktop.sh` — версия снимается с самого бинаря (`opencode-cli --version`), а не из
+  файла рядом: там лежит усечённое `0.0.0-dev`, из-за чего штамп раньше получался пустым.
+- `scripts/install-desktop.sh` — `taskkill.exe /IM` с одиночным слэшем и ожидание выхода процесса:
+  с `//IM` в WSL `taskkill` не распознавал аргумент, приложение оставалось запущенным, и `cp` падал
+  с `Permission denied`.
+
+**Проверено**
+
+- typecheck desktop: 3 571 файл, 0 ошибок; тесты `cli-version` и `cli-stages`: 17 pass / 0 fail.
+- Сборка со штампом `0.0.0-dev-202611231000+c3c4a36e358e`, установка в
+  `AppData/Local/Programs/TruthProbe`, кеш CLI очищен.
+- Лог запуска: `v2 CLI version bundled` с `version: '0.0.0-dev-202611231000'` и
+  `stage: '0.0.0-dev-202611231000+c3c4a36e358e'`, затем `v2 CLI background service ready` с
+  `runningVersion: '0.0.0-dev-202611231000'`, `probed: true`; `service.json` содержит ту же версию.
+  Таймаута нет.
+
 # 0.13.8 — 2026-11-23
 
 Внешний аудит кода (не чисел) нашёл девять мест, где поведение расходилось с обещаниями.
