@@ -60,7 +60,16 @@ BYTES=$(wc -c <"$OUT" | tr -d ' ')
 # `grep -c '^diff --git'` считает заголовки, а не файлы: файл, тронутый в двух
 # коммитах, даёт два `diff --git`. Считаем уникальные пути (b/<path>).
 FILES=$(grep '^diff --git ' "$OUT" | sed -e 's#^diff --git .* b/##' -e 's#^"##' -e 's#"$##' | sort -u | wc -l | tr -d ' ')
+# Закреплённая сумма в инсталляторах: без неё после каждой перегенерации патча
+# `install.sh --dry-run` и `install.ps1 -DryRun` падают на сверке, и CI краснеет.
+SHA=$(sha256sum "$OUT" | cut -d' ' -f1)
+sed -i.bak -E "s/^PATCH_SHA256=\"[0-9a-f]+\"/PATCH_SHA256=\"$SHA\"/" "$ROOT/install.sh"
+rm -f "$ROOT/install.sh.bak"
+sed -i.bak "s/[0-9a-f]\{64\}/$SHA/g" "$ROOT/install.ps1"
+rm -f "$ROOT/install.ps1.bak"
+
 echo "готово: $OUT"
+echo "  sha256: $SHA (закреплён в install.sh и install.ps1)"
 echo "  коммитов: $COMMITS, файлов: $FILES, байт: $BYTES"
 echo "  база: $BASE"
 echo

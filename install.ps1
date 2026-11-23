@@ -79,7 +79,11 @@ if ($DryRun) {
   git init -q
   git remote add origin $Upstream
   git fetch -q --depth 1 origin $Base
-  if ($LASTEXITCODE -ne 0) { Pop-Location; Fail "git fetch of $Base failed" }
+  if ($LASTEXITCODE -ne 0) {
+    # GitHub может отказать в необъявленном SHA: тогда тянем историю целиком.
+    git fetch -q origin
+    if ($LASTEXITCODE -ne 0) { Pop-Location; Fail "git fetch of $Base failed" }
+  }
   git checkout -q -B truthprobe FETCH_HEAD
   if ($LASTEXITCODE -ne 0) { Pop-Location; Fail "git checkout failed" }
   Note "checking in a temporary clone: $tempClone"
@@ -90,7 +94,11 @@ if ($DryRun) {
   git remote add origin $Upstream 2>$null
   if ($LASTEXITCODE -ne 0) { git remote set-url origin $Upstream }
   git fetch -q --depth 1 origin $Base
-  if ($LASTEXITCODE -ne 0) { Pop-Location; Fail "git fetch of $Base failed" }
+  if ($LASTEXITCODE -ne 0) {
+    # GitHub может отказать в необъявленном SHA: тогда тянем историю целиком.
+    git fetch -q origin
+    if ($LASTEXITCODE -ne 0) { Pop-Location; Fail "git fetch of $Base failed" }
+  }
   git checkout -q -B truthprobe FETCH_HEAD
   if ($LASTEXITCODE -ne 0) { Pop-Location; Fail "git checkout failed" }
   Note "cloned into $((Get-Location).Path)"
@@ -109,7 +117,11 @@ if ($DryRun) {
     }
     Note "moving the checkout to $BaseShort"
     git fetch -q --depth 1 origin $Base
-    if ($LASTEXITCODE -ne 0) { Pop-Location; Fail "git fetch of $Base failed" }
+    if ($LASTEXITCODE -ne 0) {
+      # GitHub может отказать в необъявленном SHA: тогда тянем историю целиком.
+      git fetch -q origin
+      if ($LASTEXITCODE -ne 0) { Pop-Location; Fail "git fetch of $Base failed" }
+    }
     git reset -q --hard FETCH_HEAD
     git checkout -q -B truthprobe
   }
@@ -126,10 +138,10 @@ if ($log -match "truthprobe") {
   Invoke-WebRequest -UseBasicParsing -Uri "$Repo/$PatchName" -OutFile $patch
   if (-not (Test-Path $patch) -or (Get-Item $patch).Length -eq 0) { Pop-Location; Fail "patch download failed" }
   $hash = (Get-FileHash -Algorithm SHA256 -Path $patch).Hash.ToLower()
-  if ($hash -ne "dd7b5f35677468ff0ee3d43e119b79d53d50e2584a566c62a65f06a116dda5a0") {
+  if ($hash -ne "9611bdf672f0e2567a879a5d0d3f81fbe75141620bf82d417ad9a788e2315802") {
     Remove-Item $patch -Force -ErrorAction SilentlyContinue
     Pop-Location
-    Fail "patch checksum mismatch: pinned dd7b5f35677468ff0ee3d43e119b79d53d50e2584a566c62a65f06a116dda5a0, got $hash"
+    Fail "patch checksum mismatch: pinned 9611bdf672f0e2567a879a5d0d3f81fbe75141620bf82d417ad9a788e2315802, got $hash"
   }
 
   Step "checking patch"

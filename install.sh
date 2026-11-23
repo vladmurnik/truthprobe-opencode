@@ -27,7 +27,7 @@ REPO=https://raw.githubusercontent.com/vladmurnik/truthprobe-opencode/master
 PATCH_NAME=patches/truthprobe-0001.patch
 # Патч тянется с ветки, а потом его код исполняется (bun install + сборка),
 # поэтому сверяем байты с закреплённой суммой, а не доверяем URL.
-PATCH_SHA256="dd7b5f35677468ff0ee3d43e119b79d53d50e2584a566c62a65f06a116dda5a0"
+PATCH_SHA256="9611bdf672f0e2567a879a5d0d3f81fbe75141620bf82d417ad9a788e2315802"
 
 DIR="${TRUTHPROBE_DIR:-opencode-truthprobe}"
 DRY_RUN=0
@@ -65,6 +65,15 @@ fi
 
 # Патч не просто копируется: `git am` и следующая сборка его исполняют. Поэтому
 # отсутствие sha256sum/shasum — ошибка окружения, а не повод пропустить сверку.
+# GitHub не всегда отдаёт необъявленный объект: `--depth 1` по конкретному SHA
+# может ответить «Server does not allow request for unadvertised object». Тогда
+# тянем историю целиком — база всё равно нужна только для проверки.
+fetch_base() {
+  git fetch -q --depth 1 origin "$BASE" 2>/dev/null && return 0
+  git fetch -q origin || return 1
+  git cat-file -e "$BASE^{commit}" 2>/dev/null
+}
+
 verify_patch() {
   if command -v sha256sum >/dev/null 2>&1; then
     printf '%s  %s\n' "$PATCH_SHA256" "$1" | sha256sum -c - >/dev/null 2>&1 ||
@@ -115,7 +124,7 @@ if [ "$DRY_RUN" -eq 1 ]; then
   cd "$CHECK"
   git init -q
   git remote add origin "$UPSTREAM"
-  git fetch -q --depth 1 origin "$BASE"
+  fetch_base || die "не удалось скачать $BASE_SHORT"
   git checkout -q -B truthprobe FETCH_HEAD
   download "$REPO/$PATCH_NAME" "$PATCH"
   [ -s "$PATCH" ] || die "patch download failed: $REPO/$PATCH_NAME"
@@ -139,7 +148,7 @@ if [ -d "$DIR/.git" ] && git -C "$DIR" rev-parse --git-dir >/dev/null 2>&1; then
     if [ -n "$(git status --porcelain)" ] && [ "${TRUTHPROBE_ALLOW_DIRTY:-0}" != "1" ]; then
       die "в $DIR есть незакоммиченные изменения; закоммитьте их или задайте TRUTHPROBE_ALLOW_DIRTY=1"
     fi
-    git fetch -q --depth 1 origin "$BASE"
+    fetch_base || die "не удалось скачать $BASE_SHORT"
     git reset -q --hard FETCH_HEAD
     git checkout -q -B truthprobe
   fi
@@ -148,7 +157,7 @@ else
   cd "$DIR"
   git init -q
   git remote add origin "$UPSTREAM" 2>/dev/null || git remote set-url origin "$UPSTREAM"
-  git fetch -q --depth 1 origin "$BASE"
+  fetch_base || die "не удалось скачать $BASE_SHORT"
   git checkout -q -B truthprobe FETCH_HEAD
   note "склонировано в $(pwd)"
 fi

@@ -30,11 +30,20 @@ afterEach(() => {
 })
 
 suite("openai-chat.truthprobeEnabled", () => {
-  test("capabilities win over the environment", () => {
+  // README обещает: `OPENCODE_TRUTHPROBE=1` просит logprobs у всех chat-completions
+  // моделей, то есть явная переменная сильнее возможностей. Тест требовал обратного
+  // и держал CI красным.
+  test("an explicit environment override wins over capabilities", () => {
     process.env.OPENCODE_TRUTHPROBE = "1"
-    expect(truthprobeEnabled({ capabilities: { logprobs: false } })).toBe(false)
+    expect(truthprobeEnabled({ capabilities: { logprobs: false } })).toBe(true)
+    process.env.OPENCODE_TRUTHPROBE = "0"
+    expect(truthprobeEnabled({ capabilities: { logprobs: true } })).toBe(false)
+  })
+
+  test("without the environment, capabilities decide", () => {
     delete process.env.OPENCODE_TRUTHPROBE
     expect(truthprobeEnabled({ capabilities: { logprobs: true } })).toBe(true)
+    expect(truthprobeEnabled({ capabilities: { logprobs: false } })).toBe(false)
   })
 
   test("environment flag accepts 1/on/true only", () => {
