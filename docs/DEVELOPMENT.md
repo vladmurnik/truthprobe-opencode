@@ -72,7 +72,7 @@ signature вердикта (`AnswerScore`): `status`, `score`, `risk`, `level`, 
 ### Порог уровня (например `safe: 0.90 → 0.93`)
 1. `src/truthprobe/levels.ts` → `LEVEL_BOUNDS.safe`.
 2. `packages/core/test/truthprobe-levels.test.ts` (в дереве) — тесты границ.
-3. `make patch`, `make verify`, обновить цифры в README/docs.
+3. `make patch`, `make verify` (внутри — `make docs-check`), обновить цифры в README/docs.
 
 ### Добавить признак в скорер
 1. `src/truthprobe/scorer.ts`: `FEATURE_NAMES` + `LinearWeights` в `types.ts`.

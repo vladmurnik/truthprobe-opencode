@@ -6,6 +6,7 @@
 #   make setup     развернуть пропатченное дерево opencode и поставить зависимости
 #   make test      юнит-тесты репозитория (без клонирования opencode, ~2 с)
 #   make verify    тесты + проверка, что патч ложится на чистую базу
+#   make docs-check  сверить числа в доках (коммиты/файлы/байты) с самим патчем
 #   make patch     перегенерировать patches/truthprobe-0001.patch из dev-дерева
 #   make preview   поднять мок-провайдер и прогнать один запрос через CLI
 #   make desktop   собрать desktop-приложение (нужен установленный bun)
@@ -26,7 +27,7 @@ BASE ?= $(or $(TRUTHPROBE_BASE),007afb1b0c8a36dff93d7945909d4e976545ba95)
 export TRUTHPROBE_BASE := $(BASE)
 TP_DIR ?= .worktree/opencode
 
-.PHONY: help setup test verify patch preview desktop desktop-install clean eval weights data
+.PHONY: help setup test verify docs-check patch preview desktop desktop-install clean eval weights data
 
 help:
 	@sed -n '2,20p' Makefile
@@ -37,8 +38,11 @@ setup:
 test:
 	bun test test
 
-verify: test
+verify: test docs-check
 	bash scripts/dev-setup.sh --check --dir "$(TP_DIR)"
+
+docs-check:
+	bash scripts/check-docs.sh
 
 patch:
 	bash scripts/make-patch.sh --from "$(TP_DIR)"

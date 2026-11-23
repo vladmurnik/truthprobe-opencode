@@ -14,6 +14,11 @@ highlights») добавлял файл `patches/truthprobe-0001.patch` — ус
 `git diff --name-only $BASE..HEAD` и падает, если в диапазоне есть пути вне `packages/**`
 и `bun.lock`. Именно так и проскочила копия патча.
 
+**`make docs-check`.** Новый `scripts/check-docs.sh` считает коммиты, файлы и байты прямо
+из файла патча и сверяет их с `README.md`, `README.en.md`, `docs/VALIDATION.md` и
+`CHANGELOG.md`; цель включена в `make verify`. Числа в доках больше не держатся на честном
+слове: расхождение валит проверку.
+
 **Доки приведены к измеренному:** 52 файла, +3555/−55, патч 338 084 Б;
 `TRUTHPROBE_SHAKY_THRESHOLD` описан как удалённый в 0.13.8, а не «разбирается, но не
 влияет»; рецепт `git am` содержит локальную identity (без неё `empty ident name`, exit
