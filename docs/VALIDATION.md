@@ -29,7 +29,7 @@ fourteen, the rest are visible in `git log 007afb1..HEAD`:
 | `d153658` | fix(truthprobe): make the patched tree typecheck clean |
 | `3b720f0` | feat(truthprobe): per-model calibration weights |
 
-Total: **53 files, +3638 / −55**, thirty-two commits. The patch is `patches/truthprobe-0001.patch` (514 039 B, `git am`).
+Total: **53 files, +3638 / −55** (`git diff --shortstat 007afb1..HEAD`), thirty-two commits. The patch is `patches/truthprobe-0001.patch` (514 039 B, `git am`).
 
 ## 1. Layers of the patch
 
@@ -284,9 +284,9 @@ bun x electron-builder --win --x64 --publish never --dir --config electron-build
 | What | Result |
 | --- | --- |
 | artifact | `dist/win-unpacked/TruthProbe.exe`, `resources/opencode-cli.exe` (our CLI), no `app-update.yml` |
-| window title | `TruthProbe` (checked via `MainWindowTitle` after launch) |
+| window title | `TruthProbe` (checked via `MainWindowTitle` once, on the 0.13.9-era build) |
 | data | `%APPDATA%\ai.truthprobe.desktop`, the CLI sidecar in `cli/<version>-x64/` |
-| processes | 5 × `TruthProbe` + 1 × `opencode-cli` |
+| processes | 5 × `TruthProbe` + 1 × `opencode-cli`, from that same single observation; the log is not committed (`*.log` is ignored) |
 
 Without `--config` electron-builder takes its own defaults and puts the executable under the npm-package name —
 that is not a build of the fork but a random one. The variables are read in `src/main/constants.ts` (the brand
@@ -1281,7 +1281,8 @@ token in the sandbox. Creating a release, uploading the asset and removing the d
 **Measured (`GET /releases/tags/v0.13.16`):** id `455465241`, `draft: false`,
 `published_at: 2026-11-23T13:28:34Z`; asset `truthprobe-0001.patch`, `size: 347540`,
 `state: uploaded`, `digest: sha256:381b37d02024f6e30a43c1bd0002b360da55c4affe70309ac4f3ed387ccc4fe5`.
-The checksum matches `sha256sum patches/truthprobe-0001.patch` and the pin `PATCH_SHA256` in `install.sh:31`.
+At the time this matched `sha256sum patches/truthprobe-0001.patch` and the `PATCH_SHA256` pin in `install.sh`;
+0.13.18 moved the pin to `4436386b…`, so the v0.13.16 asset no longer equals the current patch.
 
 **What this was done with.** Not `curl`: in WSL the requests to `api.github.com` dropped
 (`curl: (56) Proxy CONNECT aborted`, code `000`), while `Invoke-RestMethod` from Windows answered `200`.
@@ -1330,6 +1331,7 @@ GET /releases/tags/v0.13.18                     release 455929364, draft false, 
 GET /releases/latest/download/...               514039 B, sha256 4436386b… — matches the pin
 CI run 45256323762 on 0288f6e               7 of 7 jobs success, patch applied from 007afb1
 CI run 45257273878 on bbb4858               7 of 7 jobs success, documentation-only change
+CI run 45258540185 on 1e76820               7 of 7 jobs success, documentation-only change
 ```
 
 **What this does not prove.** The Russian translations were checked for numbers, links and heading

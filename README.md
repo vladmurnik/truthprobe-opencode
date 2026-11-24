@@ -206,7 +206,7 @@ bun x electron-builder --win --x64 --publish never --dir --config electron-build
 
 `--config` is required: without it electron-builder falls back to its defaults and names the executable
 after the npm package. The result is `dist/win-unpacked` (a portable folder, ≈877 MB: 246 MB app,
-279 MB bundled CLI and the rest): it can live anywhere and run `TruthProbe.exe`. The window title, the
+279 MB bundled CLI and the rest — one build of 23.11.2026, not re-measured since): it can live anywhere and run `TruthProbe.exe`. The window title, the
 AppUserModelID, the `%APPDATA%\ai.truthprobe.desktop` directory and the installer name all come from
 those two variables; unset, the build stays plain opencode.
 
@@ -319,7 +319,7 @@ drifted; `unavailable` — no tokens.
 | Typecheck of the UI packages | session-ui / app / desktop | green (384 / 2 447 / 3 571 files, desktop 2 projects) |
 | End-to-end run | mock provider with real `logprobs` | `logprobs: true, top_logprobs: 20` in the request, `truthprobe` in the database |
 | Live TUI | pty probe | badge and the doubtful-sentence block rendered |
-| Desktop UI | `confidence` chip in the shared `@opencode/session-ui` component | green typecheck of desktop (3 571 files); `confidence NN%` chip and the doubtful-sentence list in the footer |
+| Desktop UI | `confidence` chip in the shared `@opencode/session-ui` component | component wired and typechecked (3 571 files); the mapping is unit-tested, the rendering inside a live window was not observed — the GUI is not started at the user's request |
 | Standalone desktop app | build with `OPENCODE_DESKTOP_APP`/`OPENCODE_DESKTOP_APP_ID` | `TruthProbe.exe`, window title `TruthProbe`, userData `ai.truthprobe.desktop`, CLI sidecar beside it, no `app-update.yml` |
 | Windows binary | `.exe` against the mock | `status: "ok", score: 0.417, first 0.708, flagged: 1` |
 
@@ -353,7 +353,7 @@ Everything in the table is a measurement, not an expectation.
 | Answer from `freepi/deepseek-v4.1-flash` | live request | `score 0.6893`, first flag `0.4849` |
 | Swappable scorer | `TRUTHPROBE_SCORER=linear:weights.json` | score moved from `0.7595` to `0.9992` — the swap really works |
 | Windows installer | `install.ps1 -Dir <empty> -DryRun` | clone, `git apply --check`, all 32 patch commits applied, no errors; CI repeats this on every push |
-| Desktop build | electron-builder | app 246 MB, bundled CLI 279 MB |
+| Desktop build | electron-builder | one build of 23.11.2026: app 246 MB, bundled CLI 279 MB, not re-measured since |
 | CI on foreign machines | GitHub Actions, runs [`44918215420`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44918215420), [`45161855972`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45161855972) (0.13.12), [`45163760974`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45163760974) (0.13.13), [`45165859105`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45165859105) (0.13.14), [`45169068249`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45169068249) (0.13.15), [`45207888021`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45207888021) (0.13.18), [`45256323762`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45256323762) (audit fixes), [`45257273878`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45257273878) (docs) | **7 of 7 jobs success** in every run whose id still resolves; the earlier ids (`44593481931`–`44787911144`) predate the 21.11.2026 recreation of the repository and now answer 404 |
 | Per-model weights at runtime | two mock runs with different bundles, same answer | `0.9997 · safe` when weights exist for `mock/mock-1`, `0.0003 · unreliable` when they only exist for `other/model` — selection by `providerID/modelID` really works |
 | `collect.py` at scale | 7 models, 576 requests | 120 rows with logprobs; 108 requests refused with `HTTP 403 premium credits`; 348 answers came back without logprobs — the local gateway `127.0.0.1:8790` returns them only for the models it routes |
@@ -396,7 +396,7 @@ What we did **not** check, and will not pretend otherwise:
 
 ## Anatomy of the patch
 
-53 files, +3638/−55, 514 039 B, thirty-two commits on top of `007afb1`. The seam is thin and additive:
+53 files, +3638/−55 (`git diff --shortstat 007afb1..HEAD`), 514 039 B, thirty-two commits on top of `007afb1`. The seam is thin and additive:
 
 | Layer | File | What it does |
 | --- | --- | --- |

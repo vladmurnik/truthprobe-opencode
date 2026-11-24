@@ -3,9 +3,10 @@
 The project speaks English now; Russian survives as an optional translation.
 
 **Primary language.** `README.md`, `CHANGELOG.md`, `docs/*.md`, `PLAN.md` and `CONTRIBUTING.md` are
-English originals. The Russian text moved to `README.ru.md` and `docs/ru/*.md` (14 files), and the two
-are linked by a banner at the top of each file. `README.en.md` was removed — it was the mirror of a
-Russian main file. The rule lives in `CONTRIBUTING.md`, section "Language".
+English originals. The Russian text moved to `README.ru.md` and `docs/ru/*.md` (14 files). `README.md`, `PLAN.md`,
+`CONTRIBUTING.md` and every `docs/*.md` carry a language banner at the top; the pair of CHANGELOGs is
+linked by its release bodies and tags instead, because a banner inside a release note reads as content.
+`README.en.md` was removed — it was the mirror of a Russian main file. The rule lives in `CONTRIBUTING.md`, section "Language".
 
 **Code.** The thirty-first commit of the patch (`d54ac9f`) rewrites 28 files, 524 lines of Russian
 comments, JSDoc, messages and test names, into English. Scripts, `Makefile`, the CI workflow and both
@@ -30,7 +31,7 @@ unicode matrix. The core suite is now 131 pass / 379 expect in 6 files.
 - `install.ps1` was stored in cp1251 and read as UTF-8 (mojibake); the rewrite removed the last such
   lines.
 
-**Measured.** Patch: 32 commits, 53 files, `+3638/−55`, 514 039 B, sha256
+**Measured.** Patch: 32 commits, 53 files, `+3638/−55` (`git diff --shortstat 007afb1..HEAD`), 514 039 B, sha256
 `4436386b5457eb2cb2187054c064187e7e70e8bcda3d99c4214ee392df606f34`; `bun test test` → 93 pass / 9 skip /
 0 fail, 211 expect, 102 tests; the core suite in the patched tree → 131 pass / 0 fail, 379 expect.
 CI run [`45207888021`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45207888021) on
@@ -57,7 +58,8 @@ executed end-to-end for the first time with a real token.
 `published_at: 2026-11-23T13:28:34Z`, asset `truthprobe-0001.patch`, `size: 347540`,
 `state: uploaded`; GitHub itself computed
 `digest: sha256:381b37d02024f6e30a43c1bd0002b360da55c4affe70309ac4f3ed387ccc4fe5` — it matches
-the local `sha256sum` and the `PATCH_SHA256` pin in `install.sh:31`. The release description is 948 characters
+the local `sha256sum` and the `PATCH_SHA256` pin as it stood in `install.sh` then. 0.13.18 moved the pin
+to `4436386b…`, so the v0.13.16 asset no longer equals the current patch. The release description is 948 characters
 from the 0.13.16 entry in `CHANGELOG.md`.
 
 **How it was done.** Not with `curl`: in WSL requests to `api.github.com` aborted with
@@ -207,11 +209,6 @@ for an unadvertised object the server refuses. Both installers fall back to a fu
 and Windows, `patched tree` on both OSes, `end-to-end verdict`, `cli build`. The previous five
 runs (0.13.8–0.13.11) were red.
 
-**Verified in CI:** run [`45161855972`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45161855972) on `a8fb2d8` — **7 of 7 jobs success**:
-`repo tests` (together with the new `docs numbers match the patch`), `installer dry-run` on Ubuntu
-and Windows, `patched tree` on both OSes, `end-to-end verdict`, `cli build`. The previous five
-runs (0.13.8–0.13.11) were red.
-
 **Verified locally:** `TRUTHPROBE_REQUIRE_PROTOCOL_TESTS=1 bun test
 test/truthprobe-protocol.test.ts` in the patched tree — 9 pass / 0 fail; `make patch`
 rewrites the pin (checked on a deliberately corrupted checksum — restored); `make docs-check`
@@ -255,7 +252,7 @@ range is empty.
 and `bun.lock`. That is exactly how the patch copy slipped through.
 
 **`make docs-check`.** The new `scripts/check-docs.sh` counts commits, files and bytes straight
-from the patch file and compares them with `README.md`, `README.en.md`, `docs/VALIDATION.md` and
+from the patch file and compares them with `README.md`, `docs/VALIDATION.md` and
 `CHANGELOG.md`; the target is part of `make verify`. The numbers in the docs no longer rest on an honest
 word: a mismatch fails the check.
 

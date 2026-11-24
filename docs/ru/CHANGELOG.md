@@ -3,8 +3,10 @@
 Проект перешёл на английский; русский остался необязательным переводом.
 
 **Основной язык.** `README.md`, `CHANGELOG.md`, `docs/*.md`, `PLAN.md` и `CONTRIBUTING.md` — английские
-оригиналы. Русский текст переехал в `README.ru.md` и `docs/ru/*.md` (14 файлов), две версии связаны
-баннером в начале каждого файла. `README.en.md` удалён — он был зеркалом русского основного файла.
+оригиналы. Русский текст переехал в `README.ru.md` и `docs/ru/*.md` (14 файлов). `README.md`, `PLAN.md`,
+`CONTRIBUTING.md` и каждый `docs/*.md` несут баннер языка в начале; пара CHANGELOG'ов связана
+описаниями релизов и тегами, а не баннером, потому что баннер внутри заметки о релизе читается как
+содержание. `README.en.md` удалён — он был зеркалом русского основного файла.
 Правило записано в `CONTRIBUTING.md`, раздел «Language».
 
 **Код.** Тридцать первый коммит патча (`d54ac9f`) переписывает 28 файлов, 524 строки русских
@@ -30,7 +32,7 @@
 - `install.ps1` хранился в cp1251 и читался как UTF-8 (mojibake); переписывание убрало последние такие
   строки.
 
-**Измерено.** Патч: 32 коммита, 53 файла, `+3638/−55`, 514 039 Б, sha256
+**Измерено.** Патч: 32 коммита, 53 файла, `+3638/−55` (`git diff --shortstat 007afb1..HEAD`), 514 039 Б, sha256
 `4436386b5457eb2cb2187054c064187e7e70e8bcda3d99c4214ee392df606f34`; `bun test test` → 93 pass / 9 skip /
 0 fail, 211 expect, 102 теста; набор core в пропатченном дереве → 131 pass / 0 fail, 379 expect.
 Прогон CI [`45207888021`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45207888021)
@@ -56,7 +58,8 @@
 `published_at: 2026-11-23T13:28:34Z`, ассет `truthprobe-0001.patch`, `size: 347540`,
 `state: uploaded`; GitHub сам посчитал
 `digest: sha256:381b37d02024f6e30a43c1bd0002b360da55c4affe70309ac4f3ed387ccc4fe5` — совпадает
-с локальным `sha256sum` и с пином `PATCH_SHA256` в `install.sh:31`. Описание релиза — 948 символов
+с локальным `sha256sum` и с пином `PATCH_SHA256`, который стоял тогда в `install.sh`. В 0.13.18 пин переехал
+на `4436386b…`, поэтому ассет v0.13.16 больше не совпадает с текущим патчем. Описание релиза — 948 символов
 из записи 0.13.16 в `CHANGELOG.md`.
 
 **Чем это сделано.** Не `curl`: в WSL запросы к `api.github.com` обрывались с
@@ -206,11 +209,6 @@ GUI не запускался.
 и Windows, `patched tree` на обеих ОС, `end-to-end verdict`, `cli build`. Предыдущие пять
 прогонов (0.13.8–0.13.11) были красными.
 
-**Проверено в CI:** прогон [`45161855972`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45161855972) на `a8fb2d8` — **7 из 7 джобов success**:
-`repo tests` (вместе с новым `docs numbers match the patch`), `installer dry-run` на Ubuntu
-и Windows, `patched tree` на обеих ОС, `end-to-end verdict`, `cli build`. Предыдущие пять
-прогонов (0.13.8–0.13.11) были красными.
-
 **Проверено локально:** `TRUTHPROBE_REQUIRE_PROTOCOL_TESTS=1 bun test
 test/truthprobe-protocol.test.ts` в пропатченном дереве — 9 pass / 0 fail; `make patch`
 переписывает пин (проверено на намеренно испорченной сумме — восстановлена); `make docs-check`
@@ -253,7 +251,7 @@ highlights») добавлял файл `patches/truthprobe-0001.patch` — ус
 и `bun.lock`. Именно так и проскочила копия патча.
 
 **`make docs-check`.** Новый `scripts/check-docs.sh` считает коммиты, файлы и байты прямо
-из файла патча и сверяет их с `README.md`, `README.en.md`, `docs/VALIDATION.md` и
+из файла патча и сверяет их с `README.md`, `docs/VALIDATION.md` и
 `CHANGELOG.md`; цель включена в `make verify`. Числа в доках больше не держатся на честном
 слове: расхождение валит проверку.
 

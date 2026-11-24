@@ -316,7 +316,7 @@ Windows: `%APPDATA%\opencode\truthprobe\`) и живёт: `ok`/`ignored`/`reject
 | Типизация UI-пакетов | session-ui / app / desktop | зелёная (384 / 2 447 / 3 571 файл, desktop — 2 проекта) |
 | Сквозной прогон | мок-провайдер с настоящими `logprobs` | `logprobs: true, top_logprobs: 20` в запросе, `truthprobe` в базе |
 | Живой TUI | pty-проба | бейдж и блок спорных предложений отрендерились |
-| Desktop UI | чип `confidence` в общем компоненте `@opencode/session-ui` | типизация desktop (3 571 файл) зелёная; чип `confidence NN%` и список спорных предложений в футере |
+| Desktop UI | чип `confidence` в общем компоненте `@opencode/session-ui` | компонент подключён и типизирован (3 571 файл); соответствие покрыто юнит-тестом, отрисовка в живом окне не наблюдалась — GUI по просьбе пользователя не запускается |
 | Отдельное desktop-приложение | сборка с `OPENCODE_DESKTOP_APP`/`OPENCODE_DESKTOP_APP_ID` | `TruthProbe.exe`, заголовок окна `TruthProbe`, userData `ai.truthprobe.desktop`, сайдкар CLI рядом, `app-update.yml` нет |
 | Windows-бинарь | `.exe` на моке | `status: "ok", score: 0.417, first 0.708, flagged: 1` |
 
@@ -388,7 +388,7 @@ python3 scripts/tui-probe.py && python3 scripts/screen-dump.py /tmp/tui-probe.lo
 
 ## Устройство патча
 
-53 файла, +3638/−55, 514 039 Б, тридцать два коммита поверх `007afb1`. Шов тонкий и аддитивный:
+53 файла, +3638/−55 (`git diff --shortstat 007afb1..HEAD`), 514 039 Б, тридцать два коммита поверх `007afb1`. Шов тонкий и аддитивный:
 
 | Слой | Файл | Что делает |
 | --- | --- | --- |

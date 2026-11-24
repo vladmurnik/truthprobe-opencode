@@ -29,7 +29,7 @@
 | `d153658` | fix(truthprobe): make the patched tree typecheck clean |
 | `3b720f0` | feat(truthprobe): per-model calibration weights |
 
-Итог: **53 файла, +3638 / −55**, тридцать два коммита. Патч — `patches/truthprobe-0001.patch` (514 039 Б, `git am`).
+Итог: **53 файла, +3638 / −55** (`git diff --shortstat 007afb1..HEAD`), тридцать два коммита. Патч — `patches/truthprobe-0001.patch` (514 039 Б, `git am`).
 
 ## 1. Слои патча
 
@@ -284,9 +284,9 @@ bun x electron-builder --win --x64 --publish never --dir --config electron-build
 | Что | Результат |
 | --- | --- |
 | артефакт | `dist/win-unpacked/TruthProbe.exe`, `resources/opencode-cli.exe` (наш CLI), `app-update.yml` нет |
-| заголовок окна | `TruthProbe` (проверено `MainWindowTitle` после запуска) |
+| заголовок окна | `TruthProbe` (проверено `MainWindowTitle` один раз, на сборке эпохи 0.13.9) |
 | данные | `%APPDATA%\ai.truthprobe.desktop`, сайдкар CLI в `cli/<version>-x64/` |
-| процессы | 5 × `TruthProbe` + 1 × `opencode-cli` |
+| процессы | 5 × `TruthProbe` + 1 × `opencode-cli`, из того же единственного наблюдения; лог не закоммичен (`*.log` в .gitignore) |
 
 Без `--config` electron-builder берёт свои умолчания и кладёт исполняемый файл под именем npm-пакета —
 это не сборка форка, а случайная. Переменные читаются в `src/main/constants.ts` (брэнд
@@ -1283,7 +1283,8 @@ Signature      : NotSigned
 **Измерено (`GET /releases/tags/v0.13.16`):** id `455465241`, `draft: false`,
 `published_at: 2026-11-23T13:28:34Z`; ассет `truthprobe-0001.patch`, `size: 347540`,
 `state: uploaded`, `digest: sha256:381b37d02024f6e30a43c1bd0002b360da55c4affe70309ac4f3ed387ccc4fe5`.
-Сумма совпадает с `sha256sum patches/truthprobe-0001.patch` и с пином `PATCH_SHA256` в `install.sh:31`.
+Тогда это совпадало с `sha256sum patches/truthprobe-0001.patch` и с пином `PATCH_SHA256` в `install.sh`;
+в 0.13.18 пин переехал на `4436386b…`, поэтому ассет v0.13.16 больше не совпадает с текущим патчем.
 
 **Чем это сделано.** Не `curl`: в WSL обращения к `api.github.com` обрывались
 (`curl: (56) Proxy CONNECT aborted`, код `000`), тогда как `Invoke-RestMethod` из Windows отвечал `200`.
@@ -1333,6 +1334,7 @@ GET /releases/tags/v0.13.18                     релиз 455929364, draft fals
 GET /releases/latest/download/...               514039 Б, sha256 4436386b… — совпадает с пином
 Прогон CI 45256323762 на 0288f6e               7 из 7 job'ов success, патч применён от 007afb1
 Прогон CI 45257273878 на bbb4858            7 из 7 job'ов success, изменение только в документации
+Прогон CI 45258540185 на 1e76820            7 из 7 job'ов success, изменение только в документации
 ```
 
 **Чего это не доказывает.** Русские переводы сверены по числам, ссылкам и числу заголовков, но не

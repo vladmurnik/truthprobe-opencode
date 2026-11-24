@@ -15,7 +15,7 @@
 | Веса калибровки на модель (`WeightsBundle`, `bundleScorer`, `scoreAnswer(..., model)`) | мок-прогон: `0.99966 · safe` при весах для `mock/mock-1`, `0.000335 · unreliable` при весах только у `other/model` |
 | Читаемый вердикт в UI | `packages/session-ui/src/message/confidence.tsx`, маркеры `confidence-meter`/`doubtful-list` в собранном `app.asar` |
 | Сбор калибровочных строк | `scripts/collect.py` (признаки считаются ровно как в рантайме, reasoning-префикс вырезается) |
-| CI на чужих машинах | 7/7 job'ов на ubuntu и windows, прогоны `44593481931`, `44678633546`, `44736706708`, `44761971781` |
+| CI на чужих машинах | 7/7 job'ов на ubuntu и windows: прогоны `45256323762` (патч от `007afb1`), `45257273878` и `45258540185` (доки); id, которые стояли здесь раньше (`44593481931`–`44787911144`), старше пересоздания репозитория 21.11.2026 и отвечают 404 |
 | DX: одна команда на setup/preview/patch/desktop | `Makefile`, `scripts/dev-setup.sh`, `scripts/preview.sh`, `CONTRIBUTING.md` |
 | Оценка качества на одном файле | `scripts/evaluate.py` + `make eval`: AUROC/ECE/Brier и доля верных по уровням для `geometric`/`global`/`per-model` |
 | Встроенная формула = `exp(meanLp)` | 626 строк (544 правды / 82 заказанной лжи): AUROC **0.388 → 0.597**, ECE **0.368 → 0.098**; на 739 верных строках ECE 0.493 → 0.160 (§14 VALIDATION) |
