@@ -1331,7 +1331,7 @@ bun test test/truthprobe (патч, core)            131 pass / 0 fail, 379 expe
 grep -rnP '[\x{0400}-\x{04FF}]' src test         0
 GET /releases/tags/v0.13.18                     релиз 455929364, draft false, ассет 514039 Б
 GET /releases/latest/download/...               514039 Б, sha256 4436386b… — совпадает с пином
-Прогон CI 45256323762 на 0288f6e            7 из 7 job'ов success, патч применён от 007afb1
+Прогон CI 45256323762 на 0288f6e               7 из 7 job'ов success, патч применён от 007afb1
 Прогон CI 45257273878 на bbb4858            7 из 7 job'ов success, изменение только в документации
 ```
 

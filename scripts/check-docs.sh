@@ -86,6 +86,7 @@ check_number "$ROOT/README.ru.md" "байты" "$BYTES"
 check "$ROOT/docs/ru/VALIDATION.md" "итог" "**$FILES файла,"
 check "$ROOT/docs/ru/VALIDATION.md" "блок замера" "коммитов: $COMMITS, файлов: $FILES, байт: $BYTES"
 check "$ROOT/docs/ru/CHANGELOG.md" "файлы" "$FILES файла"
+check "$ROOT/docs/ru/CHANGELOG.md" "байты" "$BYTES_SPACED Б"
 
 if [ "$fail" -ne 0 ]; then
   echo >&2

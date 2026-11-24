@@ -108,7 +108,7 @@ if ($DryRun) {
     git fetch -q origin
     if ($LASTEXITCODE -ne 0) { Pop-Location; Fail "git fetch of $Base failed" }
   }
-  git checkout -q -B truthprobe FETCH_HEAD
+  git checkout -q -B truthprobe $Base
   if ($LASTEXITCODE -ne 0) { Pop-Location; Fail "git checkout failed" }
   Note "checking in a temporary clone: $tempClone"
 } elseif (-not (Test-Path (Join-Path $Dir ".git"))) {
@@ -123,7 +123,7 @@ if ($DryRun) {
     git fetch -q origin
     if ($LASTEXITCODE -ne 0) { Pop-Location; Fail "git fetch of $Base failed" }
   }
-  git checkout -q -B truthprobe FETCH_HEAD
+  git checkout -q -B truthprobe $Base
   if ($LASTEXITCODE -ne 0) { Pop-Location; Fail "git checkout failed" }
   Note "cloned into $((Get-Location).Path)"
 } else {
@@ -146,7 +146,7 @@ if ($DryRun) {
       git fetch -q origin
       if ($LASTEXITCODE -ne 0) { Pop-Location; Fail "git fetch of $Base failed" }
     }
-    git reset -q --hard FETCH_HEAD
+    git reset -q --hard $Base
     git checkout -q -B truthprobe
   }
 }
@@ -199,6 +199,10 @@ if ($log -match "truthprobe") {
     Note "git am failed, retrying as a plain diff"
     git apply --whitespace=nowarn $patch
     if ($LASTEXITCODE -ne 0) { Pop-Location; Fail "patch did not apply; see the git output above" }
+    # git am commits per patch, a plain apply does not: without this commit a second
+    # install reports "does not apply" and -Uninstall exits "already reverted".
+    git add -A
+    git commit -q -m "truthprobe-0001: applied as a plain diff"
   }
   Remove-Item $patch -Force -ErrorAction SilentlyContinue
   git log --oneline -1

@@ -82,7 +82,7 @@ user turn
     "status": "ok" | "unavailable" | "partial",
     "model": { "providerID": "deepseek", "modelID": "deepseek-chat", "topK": 20 },
     "answer": { "score": 0.87, "risk": 0.13, "sentences": 14, "flagged": 2 },
-    "first":  { "score": 0.94, "entropy": 0.11, "token": "У", "text": "Утверждение верно." },
+    "first":  { "score": 0.94, "entropy": 0.11, "token": "T", "text": "The statement is true." },
     "sentences": [
       { "i": 0, "start": 0, "end": 18, "score": 0.94, "risk": 0.06, "minLp": -0.02, "flag": false },
       { "i": 7, "start": 412, "end": 470, "score": 0.41, "risk": 0.59, "minLp": -1.83, "flag": true }

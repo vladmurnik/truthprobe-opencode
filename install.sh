@@ -43,7 +43,15 @@ while [ $# -gt 0 ]; do
     --scorer=*) SCORER="${1#--scorer=}"; shift ;;
     --dry-run) DRY_RUN=1; shift ;;
     --uninstall) UNINSTALL=1; shift ;;
-    -h|--help) sed -n '2,24p' "$0"; exit 0 ;;
+    -h|--help)
+      # Under `curl ... | bash` there is no script file, so $0 is the shell;
+      # BASH_SOURCE is empty and we fall back to a one-line usage.
+      if [ -f "${BASH_SOURCE[0]:-}" ]; then
+        sed -n '2,24p' "${BASH_SOURCE[0]}"
+      else
+        printf 'usage: bash install.sh [--dir PATH] [--dry-run] [--uninstall] [--scorer FILE]\n'
+      fi
+      exit 0 ;;
     -*) printf 'error: unknown option %s\n' "$1" >&2; exit 2 ;;
     *) DIR="$1"; shift ;;
   esac
@@ -78,9 +86,9 @@ fi
 # killed the Windows CI job. The release asset serves the same bytes, so a second
 # source is enough; the pinned checksum still decides whether the file is trusted.
 fetch_patch() {
-  download "$REPO/$PATCH_NAME" "$1" 2>/dev/null && [ -s "$1" ] && return 0
+  download "$REPO/$PATCH_NAME" "$1" && [ -s "$1" ] && return 0
   note "raw.githubusercontent.com failed, trying the release asset"
-  download "$RELEASES/${PATCH_NAME##*/}" "$1" 2>/dev/null && [ -s "$1" ]
+  download "$RELEASES/${PATCH_NAME##*/}" "$1" && [ -s "$1" ]
 }
 
 # The patch is not merely copied: `git am` and the following build execute it. So
@@ -145,7 +153,7 @@ if [ "$DRY_RUN" -eq 1 ]; then
   git init -q
   git remote add origin "$UPSTREAM"
   fetch_base || die "failed to download $BASE_SHORT"
-  git checkout -q -B truthprobe FETCH_HEAD
+  git checkout -q -B truthprobe "$BASE"
   fetch_patch "$PATCH" || die "patch download failed: $REPO/$PATCH_NAME and $RELEASES/${PATCH_NAME##*/}"
   verify_patch "$PATCH"
   if ! git apply --check --whitespace=nowarn "$PATCH"; then
@@ -168,7 +176,7 @@ if [ -d "$DIR/.git" ] && git -C "$DIR" rev-parse --git-dir >/dev/null 2>&1; then
       die "$DIR has uncommitted changes; commit them or set TRUTHPROBE_ALLOW_DIRTY=1"
     fi
     fetch_base || die "failed to download $BASE_SHORT"
-    git reset -q --hard FETCH_HEAD
+    git reset -q --hard "$BASE"
     git checkout -q -B truthprobe
   fi
 else
@@ -177,7 +185,7 @@ else
   git init -q
   git remote add origin "$UPSTREAM" 2>/dev/null || git remote set-url origin "$UPSTREAM"
   fetch_base || die "failed to download $BASE_SHORT"
-  git checkout -q -B truthprobe FETCH_HEAD
+  git checkout -q -B truthprobe "$BASE"
   note "cloned into $(pwd)"
 fi
 
@@ -202,7 +210,11 @@ else
   if ! git am --whitespace=nowarn "$PATCH"; then
     git am --abort 2>/dev/null || true
     note "git am failed, applying as a plain diff"
-    git apply --whitespace=nowarn "$PATCH"
+    git apply --whitespace=nowarn "$PATCH" || die "the patch did not apply; see the git output above"
+    # git am records a commit per patch; a plain apply does not, and without this
+    # commit a second install reports "does not apply" and --uninstall exits "already reverted".
+    git add -A
+    git commit -q -m "truthprobe-0001: applied as a plain diff"
   fi
   git log --oneline -1
 fi
@@ -213,18 +225,6 @@ if [ -n "$SCORER" ]; then
   mkdir -p .truthprobe
   cp "$SCORER" .truthprobe/weights.json
   note "weights: $(pwd)/.truthprobe/weights.json"
-fi
-
-if [ "$DRY_RUN" -eq 1 ]; then
-  step "dry run: dependencies and build skipped"
-  cat <<EOF
-
-Ready to install. Next:
-
-  bash install.sh --dir $DIR     # install dependencies and check that it runs
-
-EOF
-  exit 0
 fi
 
 step "installing dependencies (a few minutes)"

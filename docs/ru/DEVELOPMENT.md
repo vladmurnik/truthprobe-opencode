@@ -165,7 +165,7 @@ bun test truthprobe                # юнит-тесты патча (129 на с
 
 ```bash
 WIN_CSC_LINK=/secure/truthprobe.pfx \
-WIN_CSC_KEY_PASSWORD='<пароль>' \
+WIN_CSC_KEY_PASSWORD='<password>' \
 OPENCODE_REPO=$HOME/src/opencode bash scripts/build-desktop.sh --win
 ```
 

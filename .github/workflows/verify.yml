@@ -27,11 +27,18 @@ jobs:
       - run: bun test test
       - name: docs numbers match the patch
         run: bash scripts/check-docs.sh
+      # The checksum is hand-copied into install.sh and install.ps1; without this the
+      # pin can drift away from the artifact and only a user would ever notice.
+      - name: pinned checksum matches the patch
+        run: |
+          PIN=$(sed -n 's/^PATCH_SHA256="\([0-9a-f]\{64\}\)".*/\1/p' install.sh)
+          echo "$PIN  patches/truthprobe-0001.patch" | sha256sum -c -
 
   # 2. Both installers must at least apply the patch cleanly on a clean VM.
   installer-dry-run:
     name: installer dry-run (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
