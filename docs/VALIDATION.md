@@ -1300,7 +1300,7 @@ optional translation kept in `README.ru.md` and `docs/ru/`, updated together wit
 place where the two languages meet inside one file is the language banner at the top.
 
 **What the switch touched.** The English originals are `README.md`, `CHANGELOG.md`, `docs/*.md`,
-`PLAN.md`, `CONTRIBUTING.md`; the Russian copies are `README.ru.md` and `docs/ru/*.md` (14 files).
+`PLAN.md`, `CONTRIBUTING.md`; the Russian copies are `README.ru.md` and `docs/ru/*.md` (15 files together).
 `README.en.md` is gone: it was the English twin of a Russian main file. The rule is recorded in
 `CONTRIBUTING.md`, section "Language".
 

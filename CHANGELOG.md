@@ -3,7 +3,7 @@
 The project speaks English now; Russian survives as an optional translation.
 
 **Primary language.** `README.md`, `CHANGELOG.md`, `docs/*.md`, `PLAN.md` and `CONTRIBUTING.md` are
-English originals. The Russian text moved to `README.ru.md` and `docs/ru/*.md` (14 files). `README.md`, `PLAN.md`,
+English originals. The Russian text moved to `README.ru.md` and `docs/ru/*.md` (15 files). `README.md`, `PLAN.md`,
 `CONTRIBUTING.md` and every `docs/*.md` carry a language banner at the top; the pair of CHANGELOGs is
 linked by its release bodies and tags instead, because a banner inside a release note reads as content.
 `README.en.md` was removed — it was the mirror of a Russian main file. The rule lives in `CONTRIBUTING.md`, section "Language".
@@ -35,7 +35,7 @@ unicode matrix. The core suite is now 131 pass / 379 expect in 6 files.
 `4436386b5457eb2cb2187054c064187e7e70e8bcda3d99c4214ee392df606f34`; `bun test test` → 93 pass / 9 skip /
 0 fail, 211 expect, 102 tests; the core suite in the patched tree → 131 pass / 0 fail, 379 expect.
 CI run [`45207888021`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45207888021) on
-`c1214eb` (the thirty-first commit) — 7 of 7 jobs success. The thirty-second commit was measured
+`c1214eb` (the i18n commit) — 7 of 7 jobs success. The thirty-second commit was measured
 locally (`131 pass / 379 expect`); it then entered the patch, and run
 [`45256323762`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45256323762) on `0288f6e` applies that patch from `007afb1` and runs the
 same suites — 7 of 7 jobs success. A third run,
@@ -232,8 +232,7 @@ checks the invariant "the compared version never contains `+`".
 **Verified:** `bun test src/main/service/cli-version.test.ts` — 15 pass / 0 fail; typecheck of all
 packages — one run, 0 errors (schema 132, ai 357+322, core 2 036,
 client 181, tui 1 947, session-ui 384, app 2 447, desktop 3 571 files);
-desktop typecheck — 3 571 files, 0 errors. Patch regenerated: 28 commits, 52 files,
-+3573/−55, 342 760 B.
+desktop typecheck — 3 571 files, 0 errors. The patch of this release was not measured separately, so no size is quoted here.
 
 # 0.13.10 — 2026-11-23
 
