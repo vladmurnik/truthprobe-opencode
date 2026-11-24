@@ -15,7 +15,7 @@ Status as of 20.11.2026.
 | Calibration weights per model (`WeightsBundle`, `bundleScorer`, `scoreAnswer(..., model)`) | mock run: `0.99966 · safe` with weights for `mock/mock-1`, `0.000335 · unreliable` with weights only for `other/model` |
 | A readable verdict in the UI | `packages/session-ui/src/message/confidence.tsx`, the markers `confidence-meter`/`doubtful-list` in the built `app.asar` |
 | Collection of calibration rows | `scripts/collect.py` (the features are computed exactly as in the runtime, the reasoning prefix is cut out) |
-| CI on other people's machines | 7/7 jobs on ubuntu and windows: runs `45256323762` (patch from `007afb1`), `45257273878` and `45258540185` (docs); the ids quoted in earlier versions (`44593481931`–`44787911144`) predate the 21.11.2026 recreation of the repository and answer 404 |
+| CI on other people's machines | 7/7 jobs on ubuntu and windows: runs `45256323762` (patch from `007afb1`), `45257273878` and `45258540185` (docs), `45432016124` (installer hardening) and `45432598676`, `45433000897` (docs); the ids quoted in earlier versions (`44593481931`–`44787911144`) predate the 21.11.2026 recreation of the repository and answer 404 |
 | DX: one command for setup/preview/patch/desktop | `Makefile`, `scripts/dev-setup.sh`, `scripts/preview.sh`, `CONTRIBUTING.md` |
 | Quality evaluation on a single file | `scripts/evaluate.py` + `make eval`: AUROC/ECE/Brier and the share of correct answers by level for `geometric`/`global`/`per-model` |
 | The built-in formula = `exp(meanLp)` | 626 rows (544 truths / 82 ordered lies): AUROC **0.388 → 0.597**, ECE **0.368 → 0.098**; on 739 correct rows ECE 0.493 → 0.160 (§14 VALIDATION) |

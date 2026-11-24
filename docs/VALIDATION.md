@@ -1332,6 +1332,9 @@ GET /releases/latest/download/...               514039 B, sha256 4436386b… —
 CI run 45256323762 on 0288f6e               7 of 7 jobs success, patch applied from 007afb1
 CI run 45257273878 on bbb4858               7 of 7 jobs success, documentation-only change
 CI run 45258540185 on 1e76820               7 of 7 jobs success, documentation-only change
+CI run 45432016124 on 71f78e8               7 of 7 jobs success, installer hardening
+CI run 45432598676 on a7473e0               7 of 7 jobs success, documentation-only change
+CI run 45433000897 on d01e6fa               7 of 7 jobs success, documentation-only change
 ```
 
 **What this does not prove.** The Russian translations were checked for numbers, links and heading

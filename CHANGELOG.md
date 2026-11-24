@@ -40,7 +40,10 @@ locally (`131 pass / 379 expect`); it then entered the patch, and run
 [`45256323762`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45256323762) on `0288f6e` applies that patch from `007afb1` and runs the
 same suites — 7 of 7 jobs success. A third run,
 [`45257273878`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45257273878) on `bbb4858`, repeats the whole matrix on the commit that only
-records these ids, so the citation covers the documentation too. The release `v0.13.18` is published (id `455929364`, asset 514 039 B,
+records these ids, so the citation covers the documentation too. Three later runs —
+[`45432016124`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45432016124) on `71f78e8`, [`45432598676`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45432598676) on `a7473e0` and
+[`45433000897`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45433000897) on `d01e6fa` — repeat the matrix on the installer hardening and the two
+documentation corrections, all 7 of 7 jobs success. The release `v0.13.18` is published (id `455929364`, asset 514 039 B,
 `digest: sha256:4436386b…6f34`), and `releases/latest/download/truthprobe-0001.patch` was
 downloaded and hashed by hand: 514 039 bytes, the same `sha256` — it matches the pin in both
 installers.

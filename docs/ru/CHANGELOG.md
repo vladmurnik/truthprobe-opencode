@@ -41,7 +41,10 @@
 [`45256323762`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45256323762) на `0288f6e` применяет этот патч от `007afb1` и гоняет
 те же наборы — 7 из 7 job'ов success. Третий прогон,
 [`45257273878`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45257273878) на `bbb4858`, повторяет всю матрицу на коммите, который
-только записывает эти id, — так ссылка покрывает и документацию. Релиз `v0.13.18` опубликован (id `455929364`, ассет 514 039 Б,
+только записывает эти id, — так ссылка покрывает и документацию. Три последующих прогона —
+[`45432016124`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45432016124) на `71f78e8`, [`45432598676`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45432598676) на `a7473e0` и
+[`45433000897`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45433000897) на `d01e6fa` — повторяют матрицу на усилении установщиков и двух
+правках документации, все 7 из 7 job'ов success. Релиз `v0.13.18` опубликован (id `455929364`, ассет 514 039 Б,
 `digest: sha256:4436386b…6f34`), а `releases/latest/download/truthprobe-0001.patch` скачан и
 захеширован вручную: 514 039 байт, тот же `sha256` — совпадает с пином в обоих установщиках.
 
