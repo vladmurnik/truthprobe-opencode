@@ -1382,7 +1382,10 @@ bun test (packages/desktop)                     545 tests, 541 pass, 4 skip, 176
 bun test test (this repository)                  93 pass / 9 skip / 0 fail, 211 expect, 102 tests
 ```
 
-**What this does not prove.** No CI run is cited here: the tag `v0.13.19` and its release are
-published after this section was written. The desktop application was not started — the suite was
+**CI** (run [`45607797986`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45607797986) on `bfc1520`, 7 of 7 jobs success): the patch applies from
+`007afb1` on ubuntu and windows, both installer dry-runs pass, the end-to-end verdict and the CLI
+build pass. The release `v0.13.19` (id `458040236`) serves 532 314 B with the same `sha256`.
+
+**What this does not prove.** The desktop application was not started — the suite was
 run, the window was not. The sentence in §32 about `scripts/collect.py` keeping one Cyrillic range
 no longer describes the code. `meanLp` still measures fluency, not truth.

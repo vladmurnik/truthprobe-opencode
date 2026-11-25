@@ -36,8 +36,13 @@ in the reflog. The branch is now created from `$BASE` with the current branch le
 `bun test` in `packages/desktop` → 545 tests, 541 pass, 4 skip, 1769 expect, 68 files;
 `bun test test` in this repository → 93 pass / 9 skip / 0 fail, 211 expect, 102 tests.
 
-**What this does not prove.** No CI run is cited: the tag and the release are published after this
-entry, and the first run on them is not recorded here. The desktop application was not started — the
+**Measured in CI.** Run [`45607797986`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45607797986) on `bfc1520` — 7 of 7 jobs success:
+the patch applies from `007afb1` on ubuntu and windows, the installer dry-run passes on both, the
+end-to-end verdict and the CLI build pass. The release `v0.13.19` is published (id `458040236`,
+asset 532 314 B, `digest: sha256:3d90d3fd…1ecf`), and `releases/latest/download/truthprobe-0001.patch`
+was downloaded and hashed by hand: 532 314 bytes, the same `sha256`.
+
+**What this does not prove.** The desktop application was not started — the
 suite was run, the window was not. `meanLp` still measures fluency, not truth: the audits fixed how
 the number is carried, not what it means.
 
