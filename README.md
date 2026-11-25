@@ -351,7 +351,7 @@ python3 scripts/tui-probe.py && python3 scripts/screen-dump.py /tmp/tui-probe.lo
 Full numbers and the decision log — [`docs/VALIDATION.md`](docs/VALIDATION.md), step-by-step
 reproduction — [`docs/SMOKE-E2E.md`](docs/SMOKE-E2E.md).
 
-## What was actually verified (statistics as of 19.11.2026)
+## What was actually verified (19.11.2026 snapshot; tests and CI re-measured 25.11.2026)
 
 The snapshot was taken on build `0.0.0-dev-202611191814`, Windows 11, the local free-pi gateway.
 Everything in the table is a measurement, not an expectation.
@@ -481,10 +481,12 @@ These review points were **not** closed (except the marked ones), and we do not 
   is keyed by `provider/model`: confirming `particle` no longer turns logprobs on for `deepseek-*`, and
   a provider whose other models reject the field no longer gets a 400 for the whole request. The cost
   is one probe per new model, after which the verdict is cached.
-- **`temperature > 0`.** `top_logprobs` at non-zero temperature is a smoothed distribution, not the
-  model's confidence. We neither block it nor mark it `partial`; the numbers stay numbers, but they
-  cannot be read as "confidence" at `temperature > 0`.
+- **`temperature > 0`.** Logprobs are not requested at all: `truthprobeBody` returns `{}`
+  (`packages/ai/src/protocols/openai-chat.ts`), so no number and no badge appear. Logprobs of a sample
+  from a temperature-moved distribution describe that sample, not the answer.
 - **`top_logprobs` is not configurable.** `PROBE_TOP_K = 20` in `plugin-truthprobe.ts` is a constant;
   the traffic cannot be reduced; the same size in the scorer is `DEFAULT_SCORE_OPTIONS.topK`.
 - **Two TTL implementations.** `core/src/truthprobe/capability.ts` and
-  `ai/src/protocols/truthprobe-capability.ts` duplicate freshness logic without a drift test.
+  `ai/src/protocols/truthprobe-capability.ts` still duplicate freshness logic; the drift is now pinned
+  by `capability ttl > matches the core table` in `packages/ai/test/truthprobe.test.ts`, so a mismatch
+  fails the ai suite instead of passing unnoticed.

@@ -126,9 +126,10 @@ What is covered (desktop, `doubtful.test.ts`):
 Both typecheck rows were taken in one run on 2026-11-23 (`bun run typecheck` in each package,
 patched tree `90e894d`); earlier revisions of the table mixed two runs.
 
-The core row is an earlier run (328 files, before the schema fix) and is kept as history; the current
-full measurement of `packages/core` is §19: 7 713 tests, 331 files, **7 300 pass / 351 skip / 62 fail**.
-The two numbers do not argue with each other: these are two different runs, and the current one is §19.
+The core row is an earlier run (328 files, before the schema fix) and is kept as history. §19 holds the
+full measurement taken before the 0.13.20 changes: 7 713 tests, 331 files, **7 300 pass / 351 skip /
+62 fail**. The run after those changes is in §34: 7 752 tests, **7 339 pass / 351 skip / 62 fail**. These
+are two runs of the same suite on two different trees; the 39 extra tests are the ones 0.13.20 added.
 
 Separately it was verified that **the patch is self-contained**: on a clean worktree `007afb1` (then, in the 0.3.0 era:
 37 files, +2139/−34, without my working copies) `git am patches/truthprobe-0001.patch` applies without
