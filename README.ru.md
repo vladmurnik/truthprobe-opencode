@@ -51,6 +51,18 @@
 Уверенность — не приговор: бывает уверенная ложь (`docs/PRIOR-ART.md`, ECLIPSE 2512.03107).
 Поэтому в UI написано `confidence`, а не `truth`.
 
+Что это за число: геометрическое среднее вероятностей, которые модель приписала своим
+содержательным токенам, — насколько она была удивлена тем, что написала. Это сигнал *беглости*.
+Ничто в этом репозитории не измеряет истинность утверждения, и уверенная, гладко написанная
+ложь получает высокий балл (прогон про население Токио в `docs/VALIDATION.md` §31 — ровно это:
+0.9738 и `safe` для цифры без источника).
+
+Что *не* измерено: precision и recall флага `flagged` на поставляемом пороге (размеченного
+набора нужного размера нет, развёртки по порогам нет), усталость от алертов (никто не смотрел
+реальную сессию достаточно долго, чтобы сказать, игнорируется ли бейдж), и влияние цифр —
+`digitDensity` даёт +0.014 AUROC в `docs/LEARNED-WEIGHTS.md`, то есть таблица чисел сама по себе
+может двигать балл.
+
 ### Шкала уверенности
 
 Число рядом с ответом — это уровень, а не просто процент: `answer confidence 71% · uncertain`.
@@ -148,8 +160,8 @@ export TRUTHPROBE_SCORER=linear:/path/to/truthprobe-weights.json
 [`docs/LEARNED-WEIGHTS.md`](docs/LEARNED-WEIGHTS.md).
 
 **Готовый патч из релиза:**
-[`truthprobe-0001.patch`](https://github.com/vladmurnik/truthprobe-opencode/releases/download/v0.13.19/truthprobe-0001.patch)
-(532 314 Б, sha256 `3d90d3fd…1ecf`).
+[`truthprobe-0001.patch`](https://github.com/vladmurnik/truthprobe-opencode/releases/download/v0.13.20/truthprobe-0001.patch)
+(550 227 Б, sha256 `1d3aa22f…dfb8`).
 
 ## Патч вручную
 
@@ -310,7 +322,7 @@ Windows: `%APPDATA%\opencode\truthprobe\`) и живёт: `ok`/`ignored`/`reject
 | Регрессия вокруг событий текста | `test/session*.test.ts test/projector*.test.ts test/message*.test.ts` | **811 pass / 0 fail** |
 | Полный прогон core | `bun test` в `packages/core` (7 713 тестов, 331 файл) | 7 300 pass / 351 skip / 62 fail — ни одного в truthprobe: `tool-search` качает ripgrep с github.com, `provider-gitlab-oauth` ходит на gitlab.com, `cross-spawn`/MCP зависят от spawn; в окружении зарезана исходящая сеть |
 | Тесты TruthProbe, этот репозиторий | `bun test test` | **93 pass / 9 skip / 0 fail**, 211 expect, 5 файлов, 102 теста |
-| Тесты TruthProbe, пропатченное дерево | `bun test truthprobe` в `packages/core/test` | **133 pass / 0 fail**, 6 файлов |
+| Тесты TruthProbe, пропатченное дерево | `bun test truthprobe` в `packages/core/test` | **136 pass / 0 fail**, 6 файлов |
 | Патч на чистом дереве | `git am` в worktree `007afb1` | применяется без конфликтов (identity задана локально), все truthprobe-тесты зелёные |
 | Типизация | schema / ai / core / client / tui | зелёная (132 / 357+322 / 2 036 / 181 / 1 947 файлов) |
 | Типизация UI-пакетов | session-ui / app / desktop | зелёная (384 / 2 447 / 3 571 файл, desktop — 2 проекта) |
@@ -344,12 +356,12 @@ python3 scripts/tui-probe.py && python3 scripts/screen-dump.py /tmp/tui-probe.lo
 
 | Что | Как проверяли | Результат |
 | --- | --- | --- |
-| Тесты truthprobe | `bun test` шести файлов в `packages/core/test` | **133 pass, 0 fail** (пропатченное дерево; в этом репозитории — **93 pass / 9 skip**) |
+| Тесты truthprobe | `bun test` шести файлов в `packages/core/test` | **136 pass, 0 fail** (пропатченное дерево; в этом репозитории — **93 pass / 9 skip**) |
 | Тесты всего монорепо | `bun test` в `packages/core` — 7713 тестов, 331 файл | **7300 pass, 351 skip, 62 fail** |
 | Ответ `freepi/particle` | живой запрос через боевой бинарь | `score 0.7595 · likely`, предложение `#0 0.603 · uncertain` |
 | Ответ `freepi/deepseek-v4.1-flash` | живой запрос | `score 0.6893`, первый флаг `0.4849` |
 | Сменный скорер | `TRUTHPROBE_SCORER=linear:weights.json` | score сместился с `0.7595` до `0.9992` — подмена реально работает |
-| Установщик Windows | `install.ps1 -Dir <пусто> -DryRun` | клон, `git apply --check`, все 33 коммита патча применились, ошибок нет; CI повторяет это на каждом пуше |
+| Установщик Windows | `install.ps1 -Dir <пусто> -DryRun` | клон, `git apply --check`, все 34 коммита патча применились, ошибок нет; CI повторяет это на каждом пуше |
 | Сборка desktop | electron-builder | приложение 246 МБ, вложенный CLI 279 МБ |
 | CI на чужих машинах | GitHub Actions, прогоны [`44918215420`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/44918215420), [`45161855972`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45161855972) (0.13.12), [`45163760974`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45163760974) (0.13.13), [`45165859105`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45165859105) (0.13.14), [`45169068249`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45169068249) (0.13.15), [`45207888021`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45207888021) (0.13.18), [`45256323762`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45256323762) (правки после аудита), [`45257273878`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45257273878) (док.), [`45432016124`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45432016124) (усиление установщиков), [`45432598676`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45432598676) (правки честности), [`45433000897`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45433000897) (правки утверждений), [`45607797986`](https://github.com/vladmurnik/truthprobe-opencode/actions/runs/45607797986) (0.13.19) | **7 job'ов из 7 success** в каждом прогоне, чей id ещё резолвится; прежние id (`44593481931`–`44787911144`) старше пересоздания репозитория 21.11.2026 и теперь отвечают 404 |
 | Веса на модель в рантайме | два прогона на моке с разными бандлами, один и тот же ответ | `0.9997 · safe`, когда веса есть для `mock/mock-1`, и `0.0003 · unreliable`, когда они только у `other/model` — выбор по `providerID/modelID` реально работает |
@@ -388,7 +400,7 @@ python3 scripts/tui-probe.py && python3 scripts/screen-dump.py /tmp/tui-probe.lo
 
 ## Устройство патча
 
-54 файла, +3753/−59 (`git diff --shortstat 007afb1..HEAD`), 532 314 Б, тридцать три коммита поверх `007afb1`. Шов тонкий и аддитивный:
+54 файла, +3856/−59 (`git diff --shortstat 007afb1..HEAD`), 550 227 Б, тридцать четыре коммита поверх `007afb1`. Шов тонкий и аддитивный:
 
 | Слой | Файл | Что делает |
 | --- | --- | --- |

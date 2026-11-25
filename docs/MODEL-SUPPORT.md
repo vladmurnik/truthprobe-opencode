@@ -62,13 +62,16 @@ python3 scripts/probe-logprobs.py --base http://127.0.0.1:8790/v1 --key local \
   --models particle,deepseek-v4.1-flash --md
 ```
 
-## Inheritance by provider
+## One key per model, no inheritance
 
-If the probe has confirmed at least one model of a gateway, the other models of the same provider
-also get `logprobs`. This is deliberate: in free-pi's cache there is only `particle`, and without
-inheritance `deepseek-*` would be left without numbers. The flip side: a gateway where some models
-do not know the field will answer 400 — cured by `OPENCODE_TRUTHPROBE=off` or by editing
-`capabilities.json`.
+The cache is keyed by `provider/model` (`keyOf` in `packages/core/src/truthprobe/capability.ts`), and
+nothing is copied from a sibling model. A gateway whose first model returns logprobs does not lift the
+rest of its models: each one answers its own probe, and until it does, it simply has no numbers. The
+runtime enables `capabilities.logprobs` on the model object only for the exact key that was verified.
+
+The cost is one probe per model (a verdict lives 7 days, 1 hour after `auth`, 0 after `error`); the
+benefit is that a gateway where some models reject the field does not spread the rejection to the
+others, which is what a per-provider guess did before 0.13.20.
 
 ## If there are no numbers on the first attempt
 

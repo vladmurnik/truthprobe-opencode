@@ -48,6 +48,14 @@ old set measured, among other things, "can the model tell an empty string from a
 Validation is the same as before: `GroupKFold` by `qid`, five folds, standardization only on the train fold.
 The direction of the metric is risk (1 = lie).
 
+**A note on the sign.** `meanφ` is a fraction of entropy, so a *high* value means the model hesitated.
+In the risk direction it enters as `1 − meanφ`, and that is the number in the table (0.811). The header
+of `packages/core/src/truthprobe/scorer.ts` quotes the same feature in its raw direction (AUROC 0.199),
+which reads as "anti-correlated"; 0.199 and 0.811 are one measurement on two scales, not two results,
+and they are computed on different sets (the 626 labelled lines of §14 versus the out-of-fold set
+here), so they do not sum to exactly 1. Anything that reports AUROC for this feature must state which
+direction it is quoting.
+
 | score | OOF AUROC | 95% CI (cluster bootstrap by `qid`, 400 replicates) |
 | --- | --- | --- |
 | the built-in formula `1 − exp(meanLp)` | **0.799** | [0.719, 0.872] |

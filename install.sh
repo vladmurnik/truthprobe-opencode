@@ -28,7 +28,7 @@ RELEASES=https://github.com/vladmurnik/truthprobe-opencode/releases/latest/downl
 PATCH_NAME=patches/truthprobe-0001.patch
 # The patch is fetched from the branch and its code is then executed (bun install + build),
 # so we verify the bytes against a pinned sum instead of trusting the URL.
-PATCH_SHA256="3d90d3fd7067992726bf3bace862f9614791b886fd6a6830ff065603908a1ecf"
+PATCH_SHA256="1d3aa22fe026f572e9163c26252cc517bafa7171d18366e8e98ac46e15c5dfb8"
 
 DIR="${TRUTHPROBE_DIR:-opencode-truthprobe}"
 DRY_RUN=0

@@ -4,12 +4,12 @@
 
 Everything below is measured, not imagined. If something was not checked, it is written as a separate section.
 
-**Section order.** The numbering goes 1–10, then 18, 19, then 11–17, then 20–33: the sections about
+**Section order.** The numbering goes 1–10, then 18, 19, then 11–17, then 20–34: the sections about
 the live gateway (18–19) were written later than 11–17 and stand before them so that all gateway measurements
 go in a row. The numbers were not renamed because both READMEs, `docs/ROADMAP.md` and
 `docs/CALIBRATION.md` reference them.
 
-Base: `sst/opencode` @ `007afb1`. Branch `feat/truthprobe`, thirty-three commits; below are the first
+Base: `sst/opencode` @ `007afb1`. Branch `feat/truthprobe`, thirty-four commits; below are the first
 fourteen, the rest are visible in `git log 007afb1..HEAD`:
 
 | Commit | What |
@@ -29,7 +29,7 @@ fourteen, the rest are visible in `git log 007afb1..HEAD`:
 | `d153658` | fix(truthprobe): make the patched tree typecheck clean |
 | `3b720f0` | feat(truthprobe): per-model calibration weights |
 
-Total: **54 files, +3753 / −59** (`git diff --shortstat 007afb1..HEAD`), thirty-three commits. The patch is `patches/truthprobe-0001.patch` (532 314 B, `git am`).
+Total: **54 files, +3856 / −59** (`git diff --shortstat 007afb1..HEAD`), thirty-four commits. The patch is `patches/truthprobe-0001.patch` (550 227 B, `git am`).
 
 ## 1. Layers of the patch
 
@@ -63,7 +63,7 @@ Total: **54 files, +3753 / −59** (`git diff --shortstat 007afb1..HEAD`), thirt
 ## 2. Tests
 
 ```
-133 pass / 0 fail   386 expect   6 truthprobe files in packages/core/test (patched tree)
+136 pass / 0 fail   390 expect   6 truthprobe files in packages/core/test (patched tree)
   8 pass / 0 fail    26 expect   packages/ai/test/truthprobe.test.ts
   9 pass / 0 fail    23 expect   packages/session-ui/src/message/doubtful.test.ts
  93 pass / 9 skip   211 expect   test/ of the repository itself (5 files, 102 tests)
@@ -1389,3 +1389,61 @@ build pass. The release `v0.13.19` (id `458040236`) serves 532 314 B with the sa
 **What this does not prove.** The desktop application was not started — the suite was
 run, the window was not. The sentence in §32 about `scripts/collect.py` keeping one Cyrillic range
 no longer describes the code. `meanLp` still measures fluency, not truth.
+
+## 34. Numbers the review found were not measurements
+
+An external review of the scoring path was checked line by line against the code. Each item is either
+fixed in this release or recorded here as not fixed, with the reason.
+
+**Fixed.**
+
+- The answer score was `0.6 · global + 0.4 · mean(sentences)`. Both terms were the same mean logprob
+  over the same content tokens — a double count — and the weights were never derived. Now the score
+  is `exp(meanLp)` over all content tokens (`score.ts`), which is what README described.
+- Under offset drift `score.ts` emitted one pseudo-sentence for the entire answer with index `-1`;
+  both consumers render `i + 1`, so the footer showed `#1 12% · unreliable:` followed by the answer
+  cut to 96 characters (`packages/session-ui/src/message/doubtful.ts`). The sentence list is now
+  empty and the payload says `status: "partial"`, `reason: "token/text offset drift"`.
+- A non-finite `logprob` (a gateway answering `Infinity` or `NaN`) was clamped into a plausible
+  number; it is now `status: "unavailable"`, `reason: "non-finite logprobs in the response"`.
+- `truthprobeBody` asks for logprobs only when `temperature` is absent or zero. Above zero the text is
+  a sample from a moved distribution, so its logprobs describe the sample, not the answer.
+- The capability probe retries with `max_completion_tokens` after a 400 that does not mention
+  logprobs, and `hasTokens` requires token objects with a numeric `logprob`.
+- The two TTL tables (core and ai) are pinned to the same constants by a test in
+  `packages/ai/test/truthprobe.test.ts`.
+- `docs/MODEL-SUPPORT.md` claimed that a verified model lifts its siblings on the same gateway. The
+  cache is keyed by `provider/model` (`keyOf`) and nothing is inherited; the section was replaced.
+- `docs/LEARNED-WEIGHTS.md` now states the sign convention for `meanφ`: AUROC 0.199 in the raw
+  direction and 0.811 as `1 − meanφ` are one measurement on two scales, computed on different sets.
+
+**Recorded, not fixed.**
+
+- The delivery channel is still a fork: 34 commits, 54 files, pinned to `007afb1`. A local proxy that
+  adds `logprobs: true` or a PR to upstream would be cheaper to maintain and would not carry a rebase
+  cost; that is a product decision, not a code fix.
+- No experiment yet shows the score separating truth from a fluent lie on questions where the same
+  model is sometimes right (pairwise within a question). Until it exists, the levels are thresholds on
+  a fluency scale. The honest state of the evidence is `docs/LEARNED-WEIGHTS.md`: fitted models do not
+  beat the formula (`ΔAUROC` indistinguishable from zero), and orthogonality to length destroys the
+  signal (0.541).
+- Precision and recall of `flagged` at the shipped threshold were never measured, and alert fatigue
+  was never observed. `digitDensity` contributes +0.014 AUROC, so a table of figures moves the number.
+- The UI has no `unavailable` state: when a provider silently drops logprobs the badge is simply
+  absent, and the first answer of a session never carries one.
+- The desktop window was not observed in this release either; cloud providers and `opencode.ai/inference`
+  remain untested.
+
+**Measured.**
+
+```
+commits: 34, files: 54, bytes: 550227
++3856/−59   550 227 B   (git diff --shortstat 007afb1..HEAD)
+sha256 1d3aa22fe026f572e9163c26252cc517bafa7171d18366e8e98ac46e15c5dfb8
+bun test test/truthprobe (packages/core)        136 pass / 0 fail, 390 expect, 6 files
+bun test test/truthprobe (packages/ai)          11 pass / 0 fail, 35 expect
+bun test src/main/service (packages/desktop)    55 pass / 0 fail, 104 expect, 6 files
+```
+
+**What this does not prove.** That the number means what a reader wants it to mean. It still measures
+how unsurprised the model was by its own words.

@@ -1,3 +1,39 @@
+# 0.13.20 — 2026-11-25
+
+A review of the scoring path against the code itself. The idea of the product did not change; what the
+numbers say about themselves did.
+
+**Scoring.** The answer score was a blend `0.6 · global + 0.4 · mean(sentences)`; both terms were the
+same mean logprob over the same tokens, counted twice, with weights nobody derived. The score is now
+the geometric mean over all content tokens — which is what the README always described. Under
+token/text offset drift no sentence is manufactured: the list stays empty, `status` is `partial`, and
+the UI no longer draws `#1 12% · unreliable: <96 characters of the whole answer>`. Non-finite logprobs
+from a gateway are reported as `unavailable` instead of being clamped into a plausible percentage.
+Requests with `temperature > 0` no longer ask for logprobs: the text is a sample from a distribution
+the temperature moved, so its logprobs describe the sample, not the answer.
+
+**Capability probe.** A 400 that does not mention logprobs is retried once with
+`max_completion_tokens` (reasoning endpoints reject `max_tokens`). `hasTokens` requires token objects
+with a numeric `logprob`, so a 200 carrying an unrelated `tokens` array is `ignored`, not `ok`. The two
+TTL tables — `packages/core/src/truthprobe/capability.ts` and
+`packages/ai/src/protocols/truthprobe-capability.ts` — are pinned to the same constants by a test.
+
+**Docs.** `docs/MODEL-SUPPORT.md` described inheritance of the verdict by provider; there is none, the
+cache is keyed by `provider/model`, and the section now says so. `docs/LEARNED-WEIGHTS.md` and the
+`scorer.ts` header quoted AUROC for `meanφ` in opposite directions; the sign convention is written
+down. The README states what the number is (fluency, not truth), what was never measured
+(precision/recall at the shipped threshold, alert fatigue), and that `digitDensity` alone earns
++0.014 AUROC.
+
+**Measured.** Patch: 34 commits, 54 files, `+3856/−59` (`git diff --shortstat 007afb1..HEAD`),
+550 227 B, sha256 `1d3aa22f…dfb8`. `bun test test/truthprobe` in `packages/core` — 136 pass / 0 fail /
+390 expect / 6 files. `packages/ai/test/truthprobe.test.ts` — 11 pass / 35 expect. Desktop service
+suite — 55 pass / 104 expect / 6 files.
+
+**What this does not prove.** The fork is still the delivery channel; no experiment yet shows the
+score separates truth from a fluent lie on questions where the same model is sometimes right. Until
+that exists the levels are thresholds on a fluency scale, not a verdict.
+
 # 0.13.19 — 2026-11-25
 
 Five read-only audits of the shipped tree found six defects that no gate covered; this release fixes

@@ -167,10 +167,10 @@ if ($log -match "truthprobe") {
   }
   if (-not (Test-Path $patch) -or (Get-Item $patch).Length -eq 0) { Pop-Location; Fail "patch download failed" }
   $hash = (Get-FileHash -Algorithm SHA256 -Path $patch).Hash.ToLower()
-  if ($hash -ne "3d90d3fd7067992726bf3bace862f9614791b886fd6a6830ff065603908a1ecf") {
+  if ($hash -ne "1d3aa22fe026f572e9163c26252cc517bafa7171d18366e8e98ac46e15c5dfb8") {
     Remove-Item $patch -Force -ErrorAction SilentlyContinue
     Pop-Location
-    Fail "patch checksum mismatch: pinned 3d90d3fd7067992726bf3bace862f9614791b886fd6a6830ff065603908a1ecf, got $hash"
+    Fail "patch checksum mismatch: pinned 1d3aa22fe026f572e9163c26252cc517bafa7171d18366e8e98ac46e15c5dfb8, got $hash"
   }
 
   Step "checking patch"

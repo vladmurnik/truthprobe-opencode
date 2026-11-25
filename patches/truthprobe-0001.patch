@@ -1,7 +1,7 @@
 From 3ccda6cdf3320c8fbcfbb2c8656c34a2827932af Mon Sep 17 00:00:00 2001
 From: truthprobe <truthprobe@local>
 Date: Thu, 19 Nov 2026 00:59:59 +0300
-Subject: [PATCH 01/33] feat(truthprobe): score answers from token logprobs
+Subject: [PATCH 01/34] feat(truthprobe): score answers from token logprobs
 
 - schema: Truthprobe.Info, capabilities.logprobs, AssistantText.truthprobe, optional truthprobe on session.text.ended
 - ai/openai-chat: request logprobs/top_logprobs when enabled, parse choice-level logprobs into providerMetadata
@@ -1192,7 +1192,7 @@ index 6a844d7..f21811e 100644
 From a9db0dab3c3392b40e8c9366e3455be1f37b7dcf Mon Sep 17 00:00:00 2001
 From: adik <adik@local>
 Date: Thu, 19 Nov 2026 01:12:00 +0300
-Subject: [PATCH 02/33] fix(tui): apply truthprobe metadata from
+Subject: [PATCH 02/34] fix(tui): apply truthprobe metadata from
  session.text.ended events
 
 The solid client store only copied event.data.text into the in-memory
@@ -1222,7 +1222,7 @@ index 8b6d247..7368d0c 100644
 From 2870f64a9bcb19d1e1701d85101c5074646cdcac Mon Sep 17 00:00:00 2001
 From: adik <adik@local>
 Date: Thu, 19 Nov 2026 03:08:36 +0300
-Subject: [PATCH 03/33] test(truthprobe): cover segmentation, scoring and
+Subject: [PATCH 03/34] test(truthprobe): cover segmentation, scoring and
  protocol parsing
 
 - send logprobs from every chat-completions model that declares the capability
@@ -1985,7 +1985,7 @@ index eed85f3..5bde799 100755
 From f04342565c0963f466c9bae21dc1b0d9158bab44 Mon Sep 17 00:00:00 2001
 From: TruthProbe <truthprobe@local>
 Date: Thu, 19 Nov 2026 09:40:19 +0300
-Subject: [PATCH 04/33] feat(truthprobe): probe providers and enable logprobs
+Subject: [PATCH 04/34] feat(truthprobe): probe providers and enable logprobs
  automatically
 
 Adding a provider key no longer needs an environment variable.
@@ -2800,7 +2800,7 @@ index 0000000..e23e561
 From 3126939707e7c7c305f8b3c2a89d196dc1b5acd9 Mon Sep 17 00:00:00 2001
 From: adik <adik@local>
 Date: Thu, 19 Nov 2026 13:34:58 +0300
-Subject: [PATCH 05/33] feat(truthprobe): show confidence in the desktop
+Subject: [PATCH 05/34] feat(truthprobe): show confidence in the desktop
  session UI
 
 ---
@@ -2897,7 +2897,7 @@ index be526b4..659538f 100644
 From 335305a2e846ae50c7d31cec6a750b74a4d385a6 Mon Sep 17 00:00:00 2001
 From: TruthProbe <truthprobe@localhost>
 Date: Thu, 19 Nov 2026 13:44:43 +0300
-Subject: [PATCH 06/33] feat(truthprobe): list doubtful sentences in the
+Subject: [PATCH 06/34] feat(truthprobe): list doubtful sentences in the
  desktop footer
 
 ---
@@ -3082,7 +3082,7 @@ index b44a4df..2a7ef9d 100644
 From 6017d751fc1a7a9bf1eac92e2b40b161e0c48b49 Mon Sep 17 00:00:00 2001
 From: TruthProbe <truthprobe@localhost>
 Date: Thu, 19 Nov 2026 14:33:06 +0300
-Subject: [PATCH 07/33] feat(desktop): let a fork brand the desktop app
+Subject: [PATCH 07/34] feat(desktop): let a fork brand the desktop app
 
 A fork that ships its own Electron application sets OPENCODE_DESKTOP_APP and
 OPENCODE_DESKTOP_APP_ID before building. The window title, the AppUserModelID,
@@ -3294,7 +3294,7 @@ index 9688672..de655d5 100644
 From a478531b342afc1a07626aafcd1e085543cbaef2 Mon Sep 17 00:00:00 2001
 From: truthprobe <truthprobe@local>
 Date: Thu, 19 Nov 2026 19:21:40 +0300
-Subject: [PATCH 08/33] fix(truthprobe): keep logprobs that arrive without
+Subject: [PATCH 08/34] fix(truthprobe): keep logprobs that arrive without
  text, align tokens, always publish a verdict
 
 - ai: buffer token logprobs in parser state; gateways send them in a separate
@@ -3705,7 +3705,7 @@ index f21811e..edac0e3 100644
 From 5a335e31658d33202b76ac0fb58f795cb1db4e03 Mon Sep 17 00:00:00 2001
 From: truthprobe <truthprobe@local>
 Date: Thu, 19 Nov 2026 19:36:25 +0300
-Subject: [PATCH 09/33] fix(truthprobe): say so when tokens do not match the
+Subject: [PATCH 09/34] fix(truthprobe): say so when tokens do not match the
  answer text
 
 Dropping every token that cannot be found in the text silently produced
@@ -3737,7 +3737,7 @@ index e024f93..7d46333 100644
 From f0554536b5ff45535fa4a9b936aad0aa6e81c405 Mon Sep 17 00:00:00 2001
 From: adik <adik@users.noreply.github.com>
 Date: Thu, 19 Nov 2026 21:10:26 +0300
-Subject: [PATCH 10/33] feat(truthprobe): confidence levels and sentence
+Subject: [PATCH 10/34] feat(truthprobe): confidence levels and sentence
  highlights
 
 ---
@@ -4362,7 +4362,7 @@ index edac0e3..b94c95c 100644
 From 9ec1201af1ea5836177461de2cc11b34436cb8c0 Mon Sep 17 00:00:00 2001
 From: adik <adik@users.noreply.github.com>
 Date: Thu, 19 Nov 2026 21:13:56 +0300
-Subject: [PATCH 11/33] feat(truthprobe): pluggable scorer (geometric | linear
+Subject: [PATCH 11/34] feat(truthprobe): pluggable scorer (geometric | linear
  weights)
 
 ---
@@ -4744,7 +4744,7 @@ index 0000000..998bf44
 From c15925055c110d21b05b552ef0a51dc839e85f03 Mon Sep 17 00:00:00 2001
 From: adik <adik@users.noreply.github.com>
 Date: Thu, 19 Nov 2026 21:28:48 +0300
-Subject: [PATCH 12/33] fix(schema): accept null level so unavailable verdicts
+Subject: [PATCH 12/34] fix(schema): accept null level so unavailable verdicts
  decode
 
 ---
@@ -4802,7 +4802,7 @@ index 5d05c07..d6f7831 100644
 From a1322cb02fee7ea1ea5a438027d2fa3dcd10189f Mon Sep 17 00:00:00 2001
 From: TruthProbe <truthprobe@localhost>
 Date: Thu, 19 Nov 2026 21:58:03 +0300
-Subject: [PATCH 13/33] fix(truthprobe): make the patched tree typecheck clean
+Subject: [PATCH 13/34] fix(truthprobe): make the patched tree typecheck clean
 
 - schema: Level is a type alias over the Literals union, not an interface
 - core: DEFAULT_SCORE_OPTIONS omits the optional scorer field
@@ -4938,7 +4938,7 @@ index d6f7831..99b4171 100644
 From b569d694e558f29b12d7c9cdc79abf9313154e5a Mon Sep 17 00:00:00 2001
 From: TruthProbe <truthprobe@localhost>
 Date: Fri, 20 Nov 2026 07:54:47 +0300
-Subject: [PATCH 14/33] feat(truthprobe): per-model calibration weights
+Subject: [PATCH 14/34] feat(truthprobe): per-model calibration weights
 
 - core: WeightsBundle/parseWeightsBundle/bundleScorer/weightsFor read the
   {global, models} bundle written by calibrate.py --fit --by-model
@@ -5229,7 +5229,7 @@ index 0000000..57691fb
 From 0654f88a5f5277f101a3a67d658d52a6b7c14d02 Mon Sep 17 00:00:00 2001
 From: TruthProbe <truthprobe@localhost>
 Date: Fri, 20 Nov 2026 15:31:41 +0300
-Subject: [PATCH 15/33] feat(session-ui): one readable confidence verdict and a
+Subject: [PATCH 15/34] feat(session-ui): one readable confidence verdict and a
  doubtful list
 
 - session-ui: new confidence.tsx with ConfidenceMeter, ConfidenceLine and
@@ -5505,7 +5505,7 @@ index 29f537b..6043672 100644
 From a142026a4e0e051f757bf3a25ed08fce7c28f61f Mon Sep 17 00:00:00 2001
 From: vladmurnik <vladmurnik@users.noreply.github.com>
 Date: Fri, 20 Nov 2026 16:28:49 +0300
-Subject: [PATCH 16/33] feat(tui): fixed-width confidence meter and level label
+Subject: [PATCH 16/34] feat(tui): fixed-width confidence meter and level label
 
 ---
  .../tui/src/routes/session/message-parts.tsx  | 36 +++++++++++++------
@@ -5589,7 +5589,7 @@ index b94c95c..8c17cd8 100644
 From f97ddc9359f1cc6277f6a1b1edb40449dfddac32 Mon Sep 17 00:00:00 2001
 From: vladmurnik <vladmurnik@users.noreply.github.com>
 Date: Fri, 20 Nov 2026 18:15:27 +0300
-Subject: [PATCH 17/33] fix(truthprobe): drop phi and the worst token from the
+Subject: [PATCH 17/34] fix(truthprobe): drop phi and the worst token from the
  default score
 
 Measured on 626 rows (544 truthful, 82 deliberate lies): the old
@@ -5707,7 +5707,7 @@ index 998bf44..3e7db3f 100644
 From 193caada63701bb10fa69065c6b94b8bf0c0a8a2 Mon Sep 17 00:00:00 2001
 From: vladmurnik <vladmurnik@users.noreply.github.com>
 Date: Fri, 20 Nov 2026 20:23:10 +0300
-Subject: [PATCH 18/33] feat(truthprobe): carry digit density as a feature
+Subject: [PATCH 18/34] feat(truthprobe): carry digit density as a feature
 
 - core: ScorerFeatures.digitDensity and an optional LinearWeights.digitDensity,
   so old weight files keep loading with a zero weight
@@ -5890,7 +5890,7 @@ index 3e7db3f..e231a93 100644
 From 127e30f79b7622fc064dba01426201ab516f7780 Mon Sep 17 00:00:00 2001
 From: vladmurnik <vladmurnik@users.noreply.github.com>
 Date: Fri, 20 Nov 2026 20:50:16 +0300
-Subject: [PATCH 19/33] test(truthprobe): pin cyrillic, CJK, emoji and arabic
+Subject: [PATCH 19/34] test(truthprobe): pin cyrillic, CJK, emoji and arabic
  answers
 
 - core: one test file covering five scripts, offsets, sentence spans and the
@@ -6002,7 +6002,7 @@ index 0000000..92b6302
 From 5195c5a9b55ec11cdb5b122e5378a3b947c2e9a4 Mon Sep 17 00:00:00 2001
 From: vladmurnik <vladmurnik@users.noreply.github.com>
 Date: Sun, 22 Nov 2026 15:30:44 +0300
-Subject: [PATCH 20/33] fix(truthprobe): honour an explicit off switch and key
+Subject: [PATCH 20/34] fix(truthprobe): honour an explicit off switch and key
  the cache by model
 
 - OPENCODE_TRUTHPROBE=0|off|false now returns false before the capability cache
@@ -6141,7 +6141,7 @@ index e23e561..0e611e4 100644
 From b38c640a5a2cbc510c9ab1b4b966a8c55488d9b7 Mon Sep 17 00:00:00 2001
 From: vladmurnik <vladmurnik@users.noreply.github.com>
 Date: Sun, 22 Nov 2026 15:30:44 +0300
-Subject: [PATCH 21/33] fix(truthprobe): reject null weights and say when a
+Subject: [PATCH 21/34] fix(truthprobe): reject null weights and say when a
  model falls back
 
 - JSON null no longer becomes weight 0 through Number(null); it throws like NaN
@@ -6230,7 +6230,7 @@ index e231a93..d21b25e 100644
 From 8b25919b15da9ce07d09f90fcc03f649d73d050a Mon Sep 17 00:00:00 2001
 From: vladmurnik <vladmurnik@users.noreply.github.com>
 Date: Sun, 22 Nov 2026 15:30:44 +0300
-Subject: [PATCH 22/33] fix(truthprobe): keep the confidence badge when a step
+Subject: [PATCH 22/34] fix(truthprobe): keep the confidence badge when a step
  aborts
 
 - score whatever text arrived before the failure instead of dropping it
@@ -6268,7 +6268,7 @@ index 46cbf4f..6bc2c57 100644
 From c965d3e5a264bd8863c72b295006206af013f0e7 Mon Sep 17 00:00:00 2001
 From: vladmurnik <vladmurnik@users.noreply.github.com>
 Date: Sun, 22 Nov 2026 15:30:44 +0300
-Subject: [PATCH 23/33] fix(ui): always show the answer verdict and restore
+Subject: [PATCH 23/34] fix(ui): always show the answer verdict and restore
  levels from scores
 
 - TUI printed the answer line only when something was flagged; desktop always did
@@ -6450,7 +6450,7 @@ index 8c17cd8..0363da0 100644
 From 3b4978468fd4c6a2843972182796ade91a60eb75 Mon Sep 17 00:00:00 2001
 From: vladmurnik <vladmurnik@users.noreply.github.com>
 Date: Sun, 22 Nov 2026 15:30:44 +0300
-Subject: [PATCH 24/33] fix(truthprobe): measure entropy over the alternatives
+Subject: [PATCH 24/34] fix(truthprobe): measure entropy over the alternatives
  it normalises by
 
 - top_logprobs longer than top_k inflated H while still dividing by ln(top_k),
@@ -6536,7 +6536,7 @@ index 641ff03..855d26a 100755
 From 80f073b11fb1cab5fe1f78d2981b206c02b70c69 Mon Sep 17 00:00:00 2001
 From: vladmurnik <vladmurnik@users.noreply.github.com>
 Date: Sun, 22 Nov 2026 16:24:27 +0300
-Subject: [PATCH 25/33] fix(truthprobe): make the honesty switches actually
+Subject: [PATCH 25/34] fix(truthprobe): make the honesty switches actually
  switch
 
 - protocol: an explicit OPENCODE_TRUTHPROBE wins over capabilities.logprobs,
@@ -6803,7 +6803,7 @@ index 0363da0..ea90a1d 100644
 From c4dc285fafd49c7bcdb252af8fa25876f91b793e Mon Sep 17 00:00:00 2001
 From: vladmurnik <vladmurnik@users.noreply.github.com>
 Date: Mon, 23 Nov 2026 00:49:26 +0300
-Subject: [PATCH 26/33] fix(truthprobe): close the nine findings from the
+Subject: [PATCH 26/34] fix(truthprobe): close the nine findings from the
  external audit
 
 - digitDensity divides by code points, not UTF-16 units; a flag emoji or an
@@ -7159,7 +7159,7 @@ index ea90a1d..000ab12 100644
 From 1ef1e55f548aae548c22ceb26d02f0e51a01f77c Mon Sep 17 00:00:00 2001
 From: vladmurnik <vladmurnik@users.noreply.github.com>
 Date: Mon, 23 Nov 2026 13:10:03 +0300
-Subject: [PATCH 27/33] fix(desktop): keep the reported CLI version out of the
+Subject: [PATCH 27/34] fix(desktop): keep the reported CLI version out of the
  stage stamp
 
 A content hash appended to opencode-cli.version made the desktop expect
@@ -7390,7 +7390,7 @@ index 5f1ceed..4391ae7 100644
 From 90e894d350a661ee1c41bfd6ef744dd27a4052ed Mon Sep 17 00:00:00 2001
 From: vladmurnik <vladmurnik@users.noreply.github.com>
 Date: Mon, 23 Nov 2026 13:58:55 +0300
-Subject: [PATCH 28/33] fix(desktop): cut a trailing stamp separator out of the
+Subject: [PATCH 28/34] fix(desktop): cut a trailing stamp separator out of the
  version
 
 splitStamp('2.0.32+') returned the whole string as the version, so the service
@@ -7470,7 +7470,7 @@ index 78cb61e..7286429 100644
 From 27acd4340c5585680ac9e17df1bd9f05959f1d14 Mon Sep 17 00:00:00 2001
 From: vladmurnik <vladmurnik@users.noreply.github.com>
 Date: Mon, 23 Nov 2026 14:28:18 +0300
-Subject: [PATCH 29/33] test(desktop): cover the stamped stage directory in
+Subject: [PATCH 29/34] test(desktop): cover the stamped stage directory in
  cleanStages
 
 cleanStages was only exercised with plain version directories (2.0.18, 2.0.20),
@@ -7541,7 +7541,7 @@ index f9b0533..3d6cf98 100644
 From 1784470188b978891c787754888158fa95261cd5 Mon Sep 17 00:00:00 2001
 From: vladmurnik <vladmurnik@users.noreply.github.com>
 Date: Mon, 23 Nov 2026 14:47:40 +0300
-Subject: [PATCH 30/33] fix(desktop): stop presenting the fork as OpenCode in
+Subject: [PATCH 30/34] fix(desktop): stop presenting the fork as OpenCode in
  the exe metadata
 
 ---
@@ -7585,7 +7585,7 @@ index 38f901b..4a1ba52 100644
 From d54ac9f947492f386a9e87f9ccf6bd4c48ce9c8a Mon Sep 17 00:00:00 2001
 From: vladmurnik <vladmurnik@users.noreply.github.com>
 Date: Mon, 23 Nov 2026 18:31:54 +0300
-Subject: [PATCH 31/33] refactor(truthprobe): write every comment, message and
+Subject: [PATCH 31/34] refactor(truthprobe): write every comment, message and
  test name in English
 
 ---
@@ -10421,7 +10421,7 @@ index 000ab12..15235b6 100644
 From 5e8cee4b28ab3345a28862f37163ba8706999896 Mon Sep 17 00:00:00 2001
 From: vladmurnik <vladmurnik@users.noreply.github.com>
 Date: Mon, 23 Nov 2026 22:55:50 +0300
-Subject: [PATCH 32/33] fix(truthprobe): keep splitting Cyrillic answers
+Subject: [PATCH 32/34] fix(truthprobe): keep splitting Cyrillic answers
  correctly
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -10524,7 +10524,7 @@ index d7b7df9..39ec870 100755
 From 6c95c4461cd8964599f8c6749cfc3108a7ae5016 Mon Sep 17 00:00:00 2001
 From: vladmurnik <vladmurnik@users.noreply.github.com>
 Date: Wed, 25 Nov 2026 14:45:02 +0300
-Subject: [PATCH 33/33] fix(truthprobe): stop trusting numbers that are not
+Subject: [PATCH 33/34] fix(truthprobe): stop trusting numbers that are not
  finite or not ours
 
 Five read-only audits of the scoring and desktop layers found defects that the
@@ -10876,6 +10876,383 @@ index 1fbe6cd..ce0d7ca 100644
  
    if (process.platform !== "win32") yield* fs.chmod(temp, 0o755)
    yield* fs
+-- 
+2.53.0
+
+
+From 97d465cc19635be845fa575ba621c5776fb741c1 Mon Sep 17 00:00:00 2001
+From: vladmurnik <vladmurnik@users.noreply.github.com>
+Date: Wed, 25 Nov 2026 19:44:46 +0300
+Subject: [PATCH 34/34] fix(truthprobe): stop inventing numbers the data does
+ not contain
+
+The review of the scoring path found four places where a number was
+presented as a measurement of nothing:
+
+- the answer score was a blend 0.6*global + 0.4*mean(sentences), which counts
+  the same mean logprob twice and uses weights nobody derived; it is now the
+  geometric mean over all content tokens, which is what the docs claimed
+- under token/text offset drift the whole answer was emitted as one
+  pseudo-sentence with index -1, so the UI drew "#1 12% - unreliable: <96
+  chars of the entire answer>"; now the sentences list stays empty and the
+  status says "partial"
+- non-finite logprobs from a gateway were clamped into a plausible number;
+  now they are reported as "unavailable" with a reason
+- requests with temperature > 0 no longer ask for logprobs: the emitted text
+  is a sample from a distribution the temperature moved, so its logprobs
+  describe the sample, not the answer
+
+Also: the capability probe retries with max_completion_tokens when a gateway
+answers 400 without the word "logprob" (reasoning endpoints), the probe only
+accepts token objects that actually carry a numeric logprob, and the two TTL
+tables (core and ai) are pinned to the same constants by a test.
+---
+ packages/ai/src/protocols/openai-chat.ts      | 22 ++++++---
+ .../ai/src/protocols/truthprobe-capability.ts |  5 +-
+ packages/ai/test/truthprobe.test.ts           | 29 ++++++++++++
+ packages/core/src/plugin/truthprobe.ts        | 18 ++++++-
+ packages/core/src/truthprobe/capability.ts    | 19 ++++++--
+ packages/core/src/truthprobe/score.ts         | 22 ++++++---
+ packages/core/src/truthprobe/types.ts         |  3 --
+ .../core/test/truthprobe-capability.test.ts   | 10 ++++
+ packages/core/test/truthprobe.test.ts         | 47 +++++++++++++------
+ 9 files changed, 139 insertions(+), 36 deletions(-)
+
+diff --git a/packages/ai/src/protocols/openai-chat.ts b/packages/ai/src/protocols/openai-chat.ts
+index c3791a0..ca73aea 100644
+--- a/packages/ai/src/protocols/openai-chat.ts
++++ b/packages/ai/src/protocols/openai-chat.ts
+@@ -73,12 +73,20 @@ export const truthprobeEnabled = (model: {
+  * Request fields that TruthProbe turns on. A separate function so the
+  * "ask for logprobs" behaviour is covered by a test without building the whole body.
+  */
+-export const truthprobeBody = (model: {
+-  id?: string
+-  provider?: string
+-  capabilities?: { logprobs?: boolean }
+-}) =>
+-  truthprobeEnabled(model) ? { logprobs: true, top_logprobs: TRUTHPROBE_TOP_K } : {}
++export const truthprobeBody = (
++  model: {
++    id?: string
++    provider?: string
++    capabilities?: { logprobs?: boolean }
++  },
++  temperature?: number,
++) => {
++  // Any sampling above zero moves the logprobs of the emitted text away from the distribution
++  // that produced it, so the number would describe a sample, not the answer. The request is not
++  // decorated and no score is shown.
++  if (typeof temperature === "number" && temperature > 0) return {}
++  return truthprobeEnabled(model) ? { logprobs: true, top_logprobs: TRUTHPROBE_TOP_K } : {}
++}
+ 
+ // =============================================================================
+ // Request Body Schema
+@@ -994,7 +1002,7 @@ export const fromRequest = Effect.fn("OpenAIChat.fromRequest")(function* (
+     temperature: request.temperature,
+     top_p: request.topP,
+     // TruthProbe: only for models whose provider returns logprobs.
+-    ...truthprobeBody(request.model),
++    ...truthprobeBody(request.model, request.temperature),
+     frequency_penalty: request.frequencyPenalty,
+     presence_penalty: request.presencePenalty,
+     seed: request.seed,
+diff --git a/packages/ai/src/protocols/truthprobe-capability.ts b/packages/ai/src/protocols/truthprobe-capability.ts
+index c116696..5f56ba6 100644
+--- a/packages/ai/src/protocols/truthprobe-capability.ts
++++ b/packages/ai/src/protocols/truthprobe-capability.ts
+@@ -57,7 +57,10 @@ const readEntries = (): Record<string, Entry> => {
+ }
+ 
+ /** How long the verdict lives. Mirrors the core rule: auth is re-checked quickly. */
+-const ttl = (status: string) => (status === "auth" ? AUTH_TTL : DEFAULT_TTL)
++export const ttl = (status: string) =>
++  // The same table as `packages/core/src/truthprobe/capability.ts`: a temporary failure is not
++  // remembered, an auth problem is re-checked quickly, everything else lives a week.
++  status === "auth" ? AUTH_TTL : status === "error" ? 0 : DEFAULT_TTL
+ 
+ const fresh = (entry: Entry | undefined, now: number): boolean => {
+   if (!entry || entry.status !== "ok" || typeof entry.checkedAt !== "number") return false
+diff --git a/packages/ai/test/truthprobe.test.ts b/packages/ai/test/truthprobe.test.ts
+index cec4acd..06ab799 100644
+--- a/packages/ai/test/truthprobe.test.ts
++++ b/packages/ai/test/truthprobe.test.ts
+@@ -43,6 +43,8 @@ describe("openai-chat.truthprobeEnabled", () => {
+   })
+ })
+ 
++import * as TruthprobeCapability from "../src/protocols/truthprobe-capability"
++
+ describe("openai-chat.truthprobeBody", () => {
+   test("requests logprobs with the configured top-k", () => {
+     expect(TRUTHPROBE_TOP_K).toBeGreaterThan(1)
+@@ -103,3 +105,30 @@ describe("openai-chat.truthprobeFromDelta", () => {
+     expect(parsed![0].logprob).toBe(0)
+   })
+ })
++
++describe("sampling above zero", () => {
++  test("a temperature above zero does not ask for logprobs", () => {
++    // The emitted text is a sample from a distribution moved by the temperature; its logprobs
++    // describe that sample, not the answer, so the request is left alone.
++    expect(truthprobeBody({ capabilities: { logprobs: true } }, 0.7)).toEqual({})
++    expect(truthprobeBody({ capabilities: { logprobs: true } }, 1)).toEqual({})
++  })
++
++  test("zero and undefined still ask", () => {
++    const asked = { logprobs: true, top_logprobs: TRUTHPROBE_TOP_K }
++    expect(truthprobeBody({ capabilities: { logprobs: true } }, 0)).toEqual(asked)
++    expect(truthprobeBody({ capabilities: { logprobs: true } })).toEqual(asked)
++  })
++})
++
++describe("capability ttl", () => {
++  const day = 24 * 60 * 60 * 1000
++  const hour = 60 * 60 * 1000
++  test("matches the core table", () => {
++    expect(TruthprobeCapability.ttl("ok")).toBe(7 * day)
++    expect(TruthprobeCapability.ttl("ignored")).toBe(7 * day)
++    expect(TruthprobeCapability.ttl("rejected")).toBe(7 * day)
++    expect(TruthprobeCapability.ttl("auth")).toBe(hour)
++    expect(TruthprobeCapability.ttl("error")).toBe(0)
++  })
++})
+diff --git a/packages/core/src/plugin/truthprobe.ts b/packages/core/src/plugin/truthprobe.ts
+index 9d02e33..832a3b9 100644
+--- a/packages/core/src/plugin/truthprobe.ts
++++ b/packages/core/src/plugin/truthprobe.ts
+@@ -112,7 +112,23 @@ export const TruthprobePlugin = define({
+         yield* Effect.logDebug("truthprobe: probe could not reach the provider", { providerID, modelID })
+         return
+       }
+-      const status = Capability.classify(response)
++      let status = Capability.classify(response)
++      if (status === "unsupported") {
++        // Second attempt with the other token-limit field: several OpenAI-compatible reasoning
++        // endpoints reject `max_tokens` itself, and that 400 does not mention logprobs, so the
++        // first verdict would cache "this provider cannot do logprobs" for a week.
++        const alt = JSON.stringify(Capability.probeBody(modelID, PROBE_TOP_K, "max_completion_tokens"))
++        const second = yield* Effect.promise(async () => {
++          const result = await fetch(url, {
++            method: "POST",
++            headers,
++            body: alt,
++            signal: AbortSignal.timeout(PROBE_TIMEOUT_MS),
++          })
++          return { status: result.status, body: await result.text() }
++        }).pipe(Effect.orElseSucceed(() => undefined))
++        if (second) status = Capability.classify(second)
++      }
+       if (status === "error") {
+         // 429/5xx: do not cache, try again on the next request
+         yield* Effect.logDebug("truthprobe: probe inconclusive", { providerID, modelID, code: response.status })
+diff --git a/packages/core/src/truthprobe/capability.ts b/packages/core/src/truthprobe/capability.ts
+index 7d743e2..42d85a8 100644
+--- a/packages/core/src/truthprobe/capability.ts
++++ b/packages/core/src/truthprobe/capability.ts
+@@ -118,10 +118,16 @@ export const enabled = (entry: Entry | undefined, now: number) => fresh(entry, n
+  * Body of the minimal probe request. Fixed text, one token:
+  * neither the user's question nor their data is here, and never can be.
+  */
+-export const probeBody = (modelID: string, topK = 3) => ({
++export const probeBody = (
++  modelID: string,
++  topK = 3,
++  // OpenAI's reasoning endpoints answer 400 to `max_tokens` without mentioning logprobs, so the
++  // first verdict reads "unsupported" even when logprobs work. The caller retries with this field.
++  field: "max_tokens" | "max_completion_tokens" = "max_tokens",
++) => ({
+   model: modelID,
+   messages: [{ role: "user" as const, content: "ping" }],
+-  max_tokens: 1,
++  [field]: 1,
+   temperature: 0,
+   stream: false as const,
+   logprobs: true,
+@@ -178,7 +184,14 @@ export const classify = (response: ProbeResponse): Status => {
+       }
+       const choice = data.choices?.[0]
+       const hasTokens = (logprobs: Record<string, unknown> | null | undefined) =>
+-        !!logprobs && Object.values(logprobs).some((value) => Array.isArray(value) && value.length > 0)
++        !!logprobs &&
++        Object.values(logprobs).some(
++          (items) =>
++            Array.isArray(items) &&
++            items.some((item) => typeof (item as { logprob?: unknown } | null)?.logprob === "number"),
++        )
++      // A 200 with an array of token objects but without a numeric logprob is not support:
++      // a proxy that strips the field leaves the shape behind.
+       return hasTokens(choice?.logprobs) || hasTokens(choice?.reasoning_logprobs) ? "ok" : "ignored"
+     } catch {
+       return "ignored"
+diff --git a/packages/core/src/truthprobe/score.ts b/packages/core/src/truthprobe/score.ts
+index 5aca228..c6e10cf 100644
+--- a/packages/core/src/truthprobe/score.ts
++++ b/packages/core/src/truthprobe/score.ts
+@@ -279,7 +279,10 @@ export function scoreAnswer(
+ 
+   const scored: SentenceScore[] = [];
+   for (const [i, arr] of [...buckets.entries()].sort((a, b) => a[0] - b[0])) {
+-    const s = i === DRIFT_BUCKET ? { i: 0, start: 0, end: text.length, text } : sentences[i];
++    // A drifted bucket has no sentence: it carried the whole answer under the index 0, and the
++    // UI rendered it as "#1 12% - unreliable: <first 96 characters of everything>".
++    if (i === DRIFT_BUCKET) continue;
++    const s = sentences[i];
+     if (!s) continue;
+     const lps = arr.map((t) => t.logprob);
+     const geo = geometricMean(lps);
+@@ -331,20 +334,25 @@ export function scoreAnswer(
+   const globalScore = scorer
+     ? clamp01(scorer.score({ features: globalFeatures, text, model }))
+     : globalGeo;
+-  const meanSentence = scored.length
+-    ? scored.reduce((a, s) => a + s.score, 0) / scored.length
+-    : globalScore;
+-  const score = clamp01(opt.globalWeight * globalScore + (1 - opt.globalWeight) * meanSentence);
++  // One number, not a blend: the per-sentence scores are means over the same tokens the global
++  // score already averages, so weighting them together counted the same logprob twice and the
++  // 0.6/0.4 split had no measurement behind it.
++  const score = clamp01(globalScore);
+ 
++  const nonFinite = content.some((t) => !Number.isFinite(t.logprob));
+   return {
+-    status: offsetDrift ? "partial" : "ok",
++    status: nonFinite ? "unavailable" : offsetDrift ? "partial" : "ok",
+     score,
+     risk: clamp01(1 - score),
+     level: levelOf(score),
+     first,
+     sentences: scored,
+     flagged: scored.filter((s) => s.flag).length,
+-    ...(offsetDrift ? { reason: "token/text offset drift" } : {}),
++    ...(nonFinite
++      ? { reason: "non-finite logprobs in the response" }
++      : offsetDrift
++        ? { reason: "token/text offset drift" }
++        : {}),
+   };
+ }
+ 
+diff --git a/packages/core/src/truthprobe/types.ts b/packages/core/src/truthprobe/types.ts
+index 0b80060..932db46 100644
+--- a/packages/core/src/truthprobe/types.ts
++++ b/packages/core/src/truthprobe/types.ts
+@@ -73,8 +73,6 @@ export interface ScoreOptions {
+   riskyThreshold?: number;
+   /** Minimum length of a content token for it to count as significant. */
+   minTokenChars?: number;
+-  /** Share of the whole-answer weight given to the global geometric mean. */
+-  globalWeight?: number;
+   /** Scorer: null/undefined means the built-in formula (see scorer.ts). */
+   scorer?: Scorer | null;
+ }
+@@ -133,5 +131,4 @@ export const DEFAULT_SCORE_OPTIONS: Required<Omit<ScoreOptions, "scorer">> = {
+   // of them silently split "disputed sentence" from "uncertain level".
+   riskyThreshold: 1 - LEVEL_BOUNDS.uncertain,
+   minTokenChars: 2,
+-  globalWeight: 0.6,
+ };
+diff --git a/packages/core/test/truthprobe-capability.test.ts b/packages/core/test/truthprobe-capability.test.ts
+index 12f334d..23a6a8b 100644
+--- a/packages/core/test/truthprobe-capability.test.ts
++++ b/packages/core/test/truthprobe-capability.test.ts
+@@ -108,6 +108,11 @@ describe("probeBody", () => {
+   test("topK is configurable", () => {
+     expect(Capability.probeBody("m", 1).top_logprobs).toBe(1)
+   })
++  test("the token limit field can be swapped for reasoning endpoints", () => {
++    const body = Capability.probeBody("m", 3, "max_completion_tokens")
++    expect(body.max_completion_tokens).toBe(1)
++    expect("max_tokens" in body).toBe(false)
++  })
+ })
+ 
+ describe("originOf", () => {
+@@ -140,6 +145,11 @@ describe("classify", () => {
+   test("200 with logprobs — ok", () => {
+     expect(Capability.classify({ status: 200, body: okBody })).toBe("ok")
+   })
++  test("200 with token objects but no logprob — ignored", () => {
++    expect(Capability.classify({ status: 200, body: '{"choices":[{"logprobs":{"content":[{"token":"a"}]}}]}' })).toBe(
++      "ignored",
++    )
++  })
+   test("200 without logprobs — ignored", () => {
+     expect(Capability.classify({ status: 200, body: '{"choices":[{}]}' })).toBe("ignored")
+     expect(Capability.classify({ status: 200, body: '{"choices":[{"logprobs":null}]}' })).toBe("ignored")
+diff --git a/packages/core/test/truthprobe.test.ts b/packages/core/test/truthprobe.test.ts
+index 0cc4527..9402da2 100755
+--- a/packages/core/test/truthprobe.test.ts
++++ b/packages/core/test/truthprobe.test.ts
+@@ -355,11 +355,22 @@ describe("truthprobe.scoreAnswer — arithmetic", () => {
+     expect(strict.flagged).toBeGreaterThan(0)
+   })
+ 
+-  test("globalWeight=1 gives the geometric mean over all tokens", () => {
+-    const text = "One two three four."
+-    const raw = tokens([["One", -0.1], [" two", -0.3], [" three", -0.2], [" four", -0.4], [".", -0.1]])
+-    const result = scoreAnswer(text, raw, { globalWeight: 1 })
+-    const expected = Math.exp((-0.1 - 0.3 - 0.2 - 0.4) / 4) // punctuation is not counted
++  test("the score is the geometric mean over all content tokens, not a blend", () => {
++    const text = "One two. Three four five six."
++    const raw = tokens([
++      ["One", -0.1],
++      [" two", -0.2],
++      [".", -0.1],
++      [" Three", -2.0],
++      [" four", -2.0],
++      [" five", -2.0],
++      [" six", -2.0],
++    ])
++    const result = scoreAnswer(text, raw)
++    // Six content tokens, punctuation is not counted. The old formula mixed this mean with the
++    // mean of the per-sentence means (0.6/0.4), which counts the same logprob twice and has no
++    // measurement behind the weights.
++    const expected = Math.exp((-0.1 - 0.2 - 2.0 * 4) / 6)
+     expect(result.score!).toBeCloseTo(expected, 10)
+   })
+ 
+@@ -422,7 +433,7 @@ describe("boundaries and states", () => {
+     expect(digitDensity("\u{20000}7")).toBeCloseTo(0.5, 6)
+   })
+ 
+-  test("under offset drift the score does not vanish: one pseudo-sentence for the whole text", () => {
++  test("under offset drift no sentence is fabricated", () => {
+     const text = "Hello world, how are you today."
+     // Two tokens matched the text, the third did not: the offsets drifted and tokens
+     // cannot be bound to sentences.
+@@ -433,14 +444,22 @@ describe("boundaries and states", () => {
+     ]
+     const result = scoreAnswer(text, raw as never)
+     expect(result.status).toBe("partial")
+-    // Before the fix `sentences` was empty, and outside that read as "nothing is disputed".
+-    expect(result.sentences).toHaveLength(1)
+-    expect(result.sentences[0].text).toBe(text)
+-    expect(result.sentences[0].tokens).toBe(2)
+-    expect(result.sentences[0].level).toBe("likely")
+-    // The bucket key of the drift branch is -1; the payload must carry the sentence index,
+-    // otherwise both consumers render `i + 1` and show "#0" for the only sentence.
+-    expect(result.sentences[0].i).toBe(0)
++    expect(result.reason).toBe("token/text offset drift")
++    // The whole answer used to be published as one pseudo-sentence under index 0, which the UI
++    // rendered as "#1 12% - unreliable" over the first 96 characters of everything.
++    expect(result.sentences).toHaveLength(0)
++    expect(result.flagged).toBe(0)
++    expect(result.score!).toBeGreaterThan(0.5)
++  })
++
++  test("a non-finite logprob is reported, not smoothed into a number", () => {
++    const raw = [
++      { token: "aaa", logprob: 1000 },
++      { token: "bbb", logprob: -Infinity },
++    ]
++    const result = scoreAnswer("aaabbb", raw as never)
++    expect(result.status).toBe("unavailable")
++    expect(result.reason).toBe("non-finite logprobs in the response")
+   })
+ 
+   test("the payload stays finite when a gateway returns an infinite logprob", () => {
 -- 
 2.53.0
 
