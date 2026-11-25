@@ -27,8 +27,15 @@ down. The README states what the number is (fluency, not truth), what was never 
 
 **Measured.** Patch: 34 commits, 54 files, `+3856/−59` (`git diff --shortstat 007afb1..HEAD`),
 550 227 B, sha256 `1d3aa22f…dfb8`. `bun test test/truthprobe` in `packages/core` — 136 pass / 0 fail /
-390 expect / 6 files. `packages/ai/test/truthprobe.test.ts` — 11 pass / 35 expect. Desktop service
-suite — 55 pass / 104 expect / 6 files.
+390 expect / 6 files; the whole `packages/core` suite — 7 752 tests, 7 339 pass / 351 skip / 62 fail,
+none of them in truthprobe; `packages/ai/test/truthprobe.test.ts` — 11 pass / 35 expect; desktop —
+545 tests, 541 pass / 4 skip / 0 fail, 1 769 expect, 68 files, service subset 55 pass / 104 expect.
+
+**Measured in CI.** Run `45657575396` on `afdd3c2` — 7 of 7 jobs success: the patch applies from
+`007afb1` on ubuntu and windows, both installer dry-runs, end-to-end and the CLI build. The release
+`v0.13.20` is published (id `458376344`, asset 550 227 B, `digest: sha256:1d3aa22f…dfb8`), and
+`releases/latest/download/truthprobe-0001.patch` was downloaded and hashed by hand: 550 227 bytes, the
+same `sha256`.
 
 **What this does not prove.** The fork is still the delivery channel; no experiment yet shows the
 score separates truth from a fluent lie on questions where the same model is sometimes right. Until

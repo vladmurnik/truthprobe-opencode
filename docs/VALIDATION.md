@@ -1443,6 +1443,10 @@ sha256 1d3aa22fe026f572e9163c26252cc517bafa7171d18366e8e98ac46e15c5dfb8
 bun test test/truthprobe (packages/core)        136 pass / 0 fail, 390 expect, 6 files
 bun test test/truthprobe (packages/ai)          11 pass / 0 fail, 35 expect
 bun test src/main/service (packages/desktop)    55 pass / 0 fail, 104 expect, 6 files
+bun test test (packages/core, whole suite)      7752 tests: 7339 pass / 351 skip / 62 fail, none in truthprobe
+CI run 45657575396 on afdd3c2                   7 of 7 jobs success, patch applied from 007afb1
+release v0.13.20                                 id 458376344, asset 550227 B, digest 1d3aa22f…dfb8
+releases/latest/download/...                    550227 B, sha256 1d3aa22f…dfb8 — matches the pin
 ```
 
 **What this does not prove.** That the number means what a reader wants it to mean. It still measures

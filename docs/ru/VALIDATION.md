@@ -1446,6 +1446,10 @@ sha256 1d3aa22fe026f572e9163c26252cc517bafa7171d18366e8e98ac46e15c5dfb8
 bun test test/truthprobe (packages/core)        136 pass / 0 fail, 390 expect, 6 файлов
 bun test test/truthprobe (packages/ai)          11 pass / 0 fail, 35 expect
 bun test src/main/service (packages/desktop)    55 pass / 0 fail, 104 expect, 6 файлов
+bun test test (packages/core, весь набор)       7752 теста: 7339 pass / 351 skip / 62 fail, ни одного в truthprobe
+Прогон CI 45657575396 на afdd3c2                7 из 7 job'ов success, патч применён от 007afb1
+релиз v0.13.20                                  id 458376344, ассет 550227 Б, digest 1d3aa22f…dfb8
+releases/latest/download/...                    550227 Б, sha256 1d3aa22f…dfb8 — совпадает с пином
 ```
 
 **Чего это не доказывает.** Что число значит то, что читателю хочется. Оно по-прежнему измеряет,

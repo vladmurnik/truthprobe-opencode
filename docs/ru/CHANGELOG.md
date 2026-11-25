@@ -27,8 +27,15 @@ README описывал и раньше. При дрейфе смещений т
 
 **Измерено.** Патч: 34 коммита, 54 файла, `+3856/−59` (`git diff --shortstat 007afb1..HEAD`),
 550 227 Б, sha256 `1d3aa22f…dfb8`. `bun test test/truthprobe` в `packages/core` — 136 pass / 0 fail /
-390 expect / 6 файлов. `packages/ai/test/truthprobe.test.ts` — 11 pass / 35 expect. Набор сервиса
-desktop — 55 pass / 104 expect / 6 файлов.
+390 expect / 6 файлов; весь набор `packages/core` — 7 752 теста, 7 339 pass / 351 skip / 62 fail,
+ни одного в truthprobe; `packages/ai/test/truthprobe.test.ts` — 11 pass / 35 expect; desktop —
+545 тестов, 541 pass / 4 skip / 0 fail, 1 769 expect, 68 файлов, поднабор сервиса 55 pass / 104 expect.
+
+**Измерено в CI.** Прогон `45657575396` на `afdd3c2` — 7 из 7 job'ов success: патч применяется от
+`007afb1` на ubuntu и windows, оба dry-run установщика, end-to-end и сборка CLI. Релиз `v0.13.20`
+опубликован (id `458376344`, ассет 550 227 Б, `digest: sha256:1d3aa22f…dfb8`), а
+`releases/latest/download/truthprobe-0001.patch` скачан и захеширован вручную: 550 227 байт, тот же
+`sha256`.
 
 **Чего это не доказывает.** Форк остаётся каналом доставки; ни один эксперимент пока не показывает,
 что балл отделяет истину от беглой лжи на вопросах, где одна и та же модель иногда права. Пока
