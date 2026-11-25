@@ -18,6 +18,7 @@ is written to /tmp/mock/requests.jsonl — it shows whether the client really se
 from __future__ import annotations
 
 import json
+import math
 import os
 import sys
 from http.server import BaseHTTPRequestHandler, HTTPServer
@@ -44,6 +45,27 @@ ANSWER = [
     (" people", -2.9, [(" people", -2.9), (" residents", -3.2)]),
     (".", -0.3, [(".", -0.3), ("!", -3.0)]),
 ]
+
+
+def top_of(token: str, logprob: float, alternatives) -> list[dict]:
+    """A top-k distribution cannot hold more than 1.0 of probability in total.
+
+    The fixture is handwritten, and three rows summed past 1 (1.0297, 1.0006, 1.0001),
+    which no real gateway emits. The chosen token is never touched: the alternatives
+    are scaled down to fit the remaining probability mass.
+    """
+    main = math.exp(logprob)
+    rest = [(alt, math.exp(value)) for alt, value in alternatives if alt != token]
+    budget = 1.0 - main
+    total = sum(prob for _, prob in rest)
+    scale = budget / total if total > budget > 0 else 1.0
+    rows = [{"token": token, "logprob": logprob, "bytes": None}]
+    rows.extend(
+        {"token": alt, "logprob": math.log(prob * scale), "bytes": None}
+        for alt, prob in rest
+        if prob > 0
+    )
+    return rows
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -107,9 +129,7 @@ class Handler(BaseHTTPRequestHandler):
                     "token": first[0],
                     "logprob": first[1],
                     "bytes": None,
-                    "top_logprobs": [
-                        {"token": alt, "logprob": value, "bytes": None} for alt, value in first[2]
-                    ],
+                    "top_logprobs": top_of(first[0], first[1], first[2]),
                 }
             ]
             choice = {
@@ -161,10 +181,7 @@ class Handler(BaseHTTPRequestHandler):
                                         "token": token,
                                         "logprob": logprob,
                                         "bytes": None,
-                                        "top_logprobs": [
-                                            {"token": alt, "logprob": value, "bytes": None}
-                                            for alt, value in alternatives
-                                        ],
+                                        "top_logprobs": top_of(token, logprob, alternatives),
                                     }
                                 ]
                             },

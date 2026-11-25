@@ -210,7 +210,9 @@ def read_bank(path: str) -> dict[str, list[str]]:
     return bank
 
 
-WORD = re.compile(r"[a-zа-я0-9]+")
+# Any Cyrillic letter counts, including "ё" (U+0451) and the letters outside the a-я block,
+# which is why the range is written as a code point range rather than a character run.
+WORD = re.compile(r"[0-9a-z\u0400-\u04ff]+")
 
 
 def matches(answer: str, expect: list[str]) -> bool:
@@ -229,6 +231,10 @@ def matches(answer: str, expect: list[str]) -> bool:
 def autolabel(answer: str, expect: list[str]) -> int | None:
     if not (answer or "").strip():
         return None  # refusal or empty answer: no label, not used for training
+    if not WORD.search(answer.lower()):
+        # Nothing to compare against: a CJK answer would be labelled 0 and silently
+        # trained as a hallucination. Unlabelled is the honest answer.
+        return None
     return 1 if matches(answer, expect) else 0
 
 

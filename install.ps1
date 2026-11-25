@@ -146,8 +146,10 @@ if ($DryRun) {
       git fetch -q origin
       if ($LASTEXITCODE -ne 0) { Pop-Location; Fail "git fetch of $Base failed" }
     }
-    git reset -q --hard $Base
-    git checkout -q -B truthprobe
+    # `reset --hard` on the current branch would move the user's own branch back and
+    # leave their commits only in the reflog, so switch to a fresh branch at $Base instead.
+    git checkout -q -B truthprobe $Base
+    if ($LASTEXITCODE -ne 0) { Pop-Location; Fail "git checkout of $Base failed" }
   }
 }
 
@@ -165,10 +167,10 @@ if ($log -match "truthprobe") {
   }
   if (-not (Test-Path $patch) -or (Get-Item $patch).Length -eq 0) { Pop-Location; Fail "patch download failed" }
   $hash = (Get-FileHash -Algorithm SHA256 -Path $patch).Hash.ToLower()
-  if ($hash -ne "4436386b5457eb2cb2187054c064187e7e70e8bcda3d99c4214ee392df606f34") {
+  if ($hash -ne "3d90d3fd7067992726bf3bace862f9614791b886fd6a6830ff065603908a1ecf") {
     Remove-Item $patch -Force -ErrorAction SilentlyContinue
     Pop-Location
-    Fail "patch checksum mismatch: pinned 4436386b5457eb2cb2187054c064187e7e70e8bcda3d99c4214ee392df606f34, got $hash"
+    Fail "patch checksum mismatch: pinned 3d90d3fd7067992726bf3bace862f9614791b886fd6a6830ff065603908a1ecf, got $hash"
   }
 
   Step "checking patch"

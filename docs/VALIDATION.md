@@ -4,12 +4,12 @@
 
 Everything below is measured, not imagined. If something was not checked, it is written as a separate section.
 
-**Section order.** The numbering goes 1–10, then 18, 19, then 11–17, then 20–32: the sections about
+**Section order.** The numbering goes 1–10, then 18, 19, then 11–17, then 20–33: the sections about
 the live gateway (18–19) were written later than 11–17 and stand before them so that all gateway measurements
 go in a row. The numbers were not renamed because both READMEs, `docs/ROADMAP.md` and
 `docs/CALIBRATION.md` reference them.
 
-Base: `sst/opencode` @ `007afb1`. Branch `feat/truthprobe`, thirty-two commits; below are the first
+Base: `sst/opencode` @ `007afb1`. Branch `feat/truthprobe`, thirty-three commits; below are the first
 fourteen, the rest are visible in `git log 007afb1..HEAD`:
 
 | Commit | What |
@@ -29,7 +29,7 @@ fourteen, the rest are visible in `git log 007afb1..HEAD`:
 | `d153658` | fix(truthprobe): make the patched tree typecheck clean |
 | `3b720f0` | feat(truthprobe): per-model calibration weights |
 
-Total: **53 files, +3638 / −55** (`git diff --shortstat 007afb1..HEAD`), thirty-two commits. The patch is `patches/truthprobe-0001.patch` (514 039 B, `git am`).
+Total: **54 files, +3753 / −59** (`git diff --shortstat 007afb1..HEAD`), thirty-three commits. The patch is `patches/truthprobe-0001.patch` (532 314 B, `git am`).
 
 ## 1. Layers of the patch
 
@@ -63,7 +63,7 @@ Total: **53 files, +3638 / −55** (`git diff --shortstat 007afb1..HEAD`), thirt
 ## 2. Tests
 
 ```
-131 pass / 0 fail   6 truthprobe files in packages/core/test (patched tree)
+133 pass / 0 fail   386 expect   6 truthprobe files in packages/core/test (patched tree)
   8 pass / 0 fail    26 expect   packages/ai/test/truthprobe.test.ts
   9 pass / 0 fail    23 expect   packages/session-ui/src/message/doubtful.test.ts
  93 pass / 9 skip   211 expect   test/ of the repository itself (5 files, 102 tests)
@@ -1344,3 +1344,45 @@ reference answers (`[a-zа-я0-9]+`), and changing it would change behaviour. Ci
 changes the tree, so every documentation commit that records one starts a run of its own; the
 numbers above describe the patch artifact, not the commit that quotes them, and the chain of
 citations stops at the last run whose tree carries the same bytes.
+
+## 33. Numbers the code trusted that were not ours
+
+Five read-only audits of the patched tree found six defects; commit 33 of the patch fixes them.
+
+**Scoring.** `score.ts` pushed the drift bucket key (`-1`) instead of the sentence index, so a single
+doubtful sentence was rendered as `#0` in both the TUI and the desktop footer. `meanLp` and `minLp`
+were not clamped: a gateway answering with `logprob: 1000` produced `Infinity`, which JSON turns into
+`null` while the client type says `number`. The flag threshold was a copy of `0.45` instead of
+`1 - LEVEL_BOUNDS.uncertain`.
+
+**Desktop service.** A version made only of a build stamp (`"+abc"`) kept the `+` in the compared
+version; `keptStages` reconstructed the directory name from a version without a stamp, did not
+recognise the directory of the running service, and `cleanStages` deleted it; a failed `copyFile` left
+a partial `<pid>.tmp`. Directories are now matched by version prefix through `stageMatches`.
+
+**Data.** `collect.py` tokenised reference answers with `[a-zа-я0-9]+`, which has no `ё`, so
+`ещё раз` became `ещ раз` and a correct answer was labelled a hallucination; the class now covers
+`\u0400-\u04ff`. An answer with no Latin or Cyrillic word returns `None` instead of `0`, so a CJK
+answer is skipped rather than recorded as a hallucination. The mock server emitted `top_logprobs`
+whose exponentials summed to more than 1; the alternatives are scaled, the chosen token untouched.
+
+**Installers.** Both scripts ran `git reset --hard $BASE` on the branch the user was standing on
+before creating `truthprobe`; now the branch is created from `$BASE` and the current branch is left
+alone.
+
+**Measured** (`git diff --shortstat 007afb1..HEAD`, `wc -c`, `sha256sum`, `bun test`):
+
+```
+commits: 33, files: 54, bytes: 532314
++3753/−59   532 314 B
+sha256 3d90d3fd7067992726bf3bace862f9614791b886fd6a6830ff065603908a1ecf
+bun test test/truthprobe (packages/core)        133 pass / 0 fail, 386 expect, 6 files
+bun test src/main/service (packages/desktop)     55 pass / 0 fail, 104 expect, 6 files
+bun test (packages/desktop)                     545 tests, 541 pass, 4 skip, 1769 expect, 68 files
+bun test test (this repository)                  93 pass / 9 skip / 0 fail, 211 expect, 102 tests
+```
+
+**What this does not prove.** No CI run is cited here: the tag `v0.13.19` and its release are
+published after this section was written. The desktop application was not started — the suite was
+run, the window was not. The sentence in §32 about `scripts/collect.py` keeping one Cyrillic range
+no longer describes the code. `meanLp` still measures fluency, not truth.

@@ -1,3 +1,46 @@
+# 0.13.19 — 2026-11-25
+
+Five read-only audits of the shipped tree found six defects that no gate covered; this release fixes
+them and re-measures everything the patch touches.
+
+**Scoring.** `score.ts` pushed the drift bucket key (`-1`) instead of the sentence index, so a single
+doubtful sentence was rendered as `#0` in both the TUI and the desktop footer. `meanLp` and `minLp`
+were not clamped: a gateway answering with `logprob: 1000` produced `Infinity`, which JSON turns into
+`null` while the client type says `number`. The flag threshold was a copy of `0.45` instead of
+`1 - LEVEL_BOUNDS.uncertain`, so the flag and the level could disagree when the environment variable
+was set. Three tests now pin all three: the index in the drift branch, finiteness of the payload, and
+`DEFAULT_SCORE_OPTIONS.riskyThreshold === 1 - LEVEL_BOUNDS.uncertain`.
+
+**Desktop service.** A version made only of a build stamp (`"+abc"`) kept the `+` in the compared
+version, so the service could restart before its own timeout. `keptStages` reconstructed the
+directory name from a version that carries no stamp and therefore did not recognise the directory of
+the running service — `cleanStages` then deleted it. A failed `copyFile` left a partial `<pid>.tmp`.
+Directories are now matched by version prefix through `stageMatches`.
+
+**Data.** `scripts/collect.py` tokenised reference answers with `[a-zа-я0-9]+`, which has no `ё`:
+`ещё раз` became `ещ раз`, so a correct answer was labelled a hallucination. The class now covers
+`\u0400-\u04ff`, and an answer with no Latin or Cyrillic word returns `None` instead of `0`, so a
+CJK answer is skipped rather than recorded as a hallucination. The mock server emitted
+`top_logprobs` whose exponentials summed to more than 1 (`The` 1.0297, `France` 1.0006, `of` 1.0001);
+the alternatives are scaled down and the chosen token is untouched.
+
+**Installers.** Both scripts ran `git reset --hard $BASE` on the branch the user was standing on
+before creating `truthprobe`, so a foreign checkout was rewound and the user's commits survived only
+in the reflog. The branch is now created from `$BASE` with the current branch left alone, and
+`install.ps1` checks `$LASTEXITCODE`.
+
+**Measured.** Patch: 33 commits, 54 files, `+3753/−59` (`git diff --shortstat 007afb1..HEAD`),
+532 314 B, sha256 `3d90d3fd7067992726bf3bace862f9614791b886fd6a6830ff065603908a1ecf`;
+`bun test test/truthprobe` in `packages/core` → 133 pass / 0 fail, 386 expect, 6 files;
+`bun test src/main/service` in `packages/desktop` → 55 pass / 0 fail, 104 expect, 6 files;
+`bun test` in `packages/desktop` → 545 tests, 541 pass, 4 skip, 1769 expect, 68 files;
+`bun test test` in this repository → 93 pass / 9 skip / 0 fail, 211 expect, 102 tests.
+
+**What this does not prove.** No CI run is cited: the tag and the release are published after this
+entry, and the first run on them is not recorded here. The desktop application was not started — the
+suite was run, the window was not. `meanLp` still measures fluency, not truth: the audits fixed how
+the number is carried, not what it means.
+
 # 0.13.18 — 2026-11-23
 
 The project speaks English now; Russian survives as an optional translation.

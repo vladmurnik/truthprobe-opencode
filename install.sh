@@ -28,7 +28,7 @@ RELEASES=https://github.com/vladmurnik/truthprobe-opencode/releases/latest/downl
 PATCH_NAME=patches/truthprobe-0001.patch
 # The patch is fetched from the branch and its code is then executed (bun install + build),
 # so we verify the bytes against a pinned sum instead of trusting the URL.
-PATCH_SHA256="4436386b5457eb2cb2187054c064187e7e70e8bcda3d99c4214ee392df606f34"
+PATCH_SHA256="3d90d3fd7067992726bf3bace862f9614791b886fd6a6830ff065603908a1ecf"
 
 DIR="${TRUTHPROBE_DIR:-opencode-truthprobe}"
 DRY_RUN=0
@@ -176,8 +176,9 @@ if [ -d "$DIR/.git" ] && git -C "$DIR" rev-parse --git-dir >/dev/null 2>&1; then
       die "$DIR has uncommitted changes; commit them or set TRUTHPROBE_ALLOW_DIRTY=1"
     fi
     fetch_base || die "failed to download $BASE_SHORT"
-    git reset -q --hard "$BASE"
-    git checkout -q -B truthprobe
+    # `reset --hard` on the current branch would move the user's own branch back and
+    # leave their commits only in the reflog, so switch to a fresh branch at $BASE instead.
+    git checkout -q -B truthprobe "$BASE"
   fi
 else
   mkdir -p "$DIR"
